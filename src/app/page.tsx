@@ -475,29 +475,21 @@ export default function DashboardPage() {
               label="Active Streak" 
               value={streak} 
               unit="days" 
-              icon={Flame} 
-              colorClass="bg-orange-500/10 text-orange-500" 
             />
             <SummaryCard 
               label="Workouts Logged" 
               value={totals.workouts} 
               unit="sessions" 
-              icon={Dumbbell} 
-              colorClass="bg-emerald-500/10 text-emerald-500" 
             />
             <SummaryCard 
               label="Total Points" 
               value={totals.points} 
               unit="pts" 
-              icon={Trophy} 
-              colorClass="bg-amber-500/10 text-amber-500" 
             />
             <SummaryCard 
               label="Sets Completed" 
               value={totals.sets} 
               unit="sets" 
-              icon={Layers} 
-              colorClass="bg-cyan-500/10 text-cyan-500" 
             />
           </div>
         </div>
@@ -671,14 +663,10 @@ function SummaryCard({
   label,
   value,
   unit,
-  icon: Icon,
-  colorClass,
 }: {
   label: string
   value: number
   unit: string
-  icon: any
-  colorClass: string
 }) {
   return (
     <div className="group rounded-xl border bg-card p-4 md:p-5 shadow-sm hover:shadow-md hover:border-primary/40 transition-all">
@@ -686,9 +674,6 @@ function SummaryCard({
         <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground transition-colors">
           {label}
         </span>
-        <div className={`p-1.5 rounded-lg ${colorClass} transition-transform group-hover:scale-110 duration-200`}>
-          <Icon className="h-4 w-4" />
-        </div>
       </div>
       <div className="flex items-baseline gap-1.5">
         <span className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">

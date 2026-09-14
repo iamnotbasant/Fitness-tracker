@@ -11,7 +11,6 @@ import { WorkoutDensity } from "@/components/charts/workout-density"
 import { TimeUnderTension } from "@/components/charts/time-under-tension"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { MuscleAnatomyMap } from "@/components/charts/muscle-anatomy-map"
 import { RadialGoalsChart } from "@/components/charts/radial-goals-chart"
 import { MuscleRadarChart } from "@/components/charts/muscle-radar-chart"
 import { Activity, Dumbbell, TrendingUp, Award, Flame, Calendar } from "lucide-react"
@@ -169,13 +168,8 @@ export default function ProgressPage() {
             </TabsTrigger>
           </TabsList>
 
-          {/* TAB 1: Heatmaps (Muscle Anatomy & Consistency Grid) */}
+          {/* TAB 1: Consistency & Activity */}
           <TabsContent value="heatmaps" className="space-y-8 focus-visible:outline-none">
-            {/* Centerpiece: Interactive Muscle Anatomy Map */}
-            <div>
-              <MuscleAnatomyMap workouts={filtered} exercises={exercises} />
-            </div>
-
             {/* Workout Consistency 365-Day Activity Heatmap */}
             <div>
               <WorkoutHeatmap workouts={workouts} />

@@ -46,8 +46,8 @@ export async function GET(request: NextRequest) {
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
 
-    // Remove userId check - allow any authenticated user to view all workouts
-    const conditions = [];
+    // Filter by current authenticated user so user only sees their own workouts
+    const conditions = [eq(workouts.userId, currentUser.id)];
 
     if (search) {
       conditions.push(
