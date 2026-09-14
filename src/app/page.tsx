@@ -79,8 +79,6 @@ export default function DashboardPage() {
   const [mounted, setMounted] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [pendingDeleteIds, setPendingDeleteIds] = useState<string[]>([])
-  const [searchQuery, setSearchQuery] = useState("")
-  const [splitFilter, setSplitFilter] = useState<"all" | "push" | "pull" | "legs" | "core">("all")
   
   // Client-side mounting check to prevent hydration mismatch
   useEffect(() => {
@@ -116,7 +114,7 @@ export default function DashboardPage() {
     }
   }, [timePeriod, currentDate])
   
-  // Filter workouts based on date range, search query, and split
+  // Filter workouts based on date range
   const filteredWorkouts = useMemo(() => {
     let list = workouts
     if (timePeriod !== "all") {
@@ -124,21 +122,8 @@ export default function DashboardPage() {
       const endISO = toLocalDateString(dateRange.end)
       list = list.filter((w) => w.date >= startISO && w.date <= endISO)
     }
-    
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase().trim()
-      list = list.filter((w) => w.exerciseName.toLowerCase().includes(q))
-    }
-
-    if (splitFilter !== "all") {
-      list = list.filter((w) => {
-        const split = exerciseSplitMap.get(w.exerciseName.toLowerCase()) || ""
-        return split.includes(splitFilter)
-      })
-    }
-    
     return list
-  }, [workouts, dateRange, timePeriod, searchQuery, splitFilter, exerciseSplitMap])
+  }, [workouts, dateRange, timePeriod])
 
   // Group filtered workouts by date AND exercise name
   const groupedWorkouts = useMemo(() => {
@@ -551,45 +536,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Quick Search and Split Filter */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <input
-                type="text"
-                placeholder="Search workouts by exercise name..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-8 py-2 text-sm bg-card border rounded-lg focus:outline-none focus:ring-1 focus:ring-primary text-foreground placeholder:text-muted-foreground transition-all"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery("")}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5 cursor-pointer"
-                  aria-label="Clear search"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              )}
-            </div>
 
-            {/* Split Filter Pills */}
-            <div className="flex items-center gap-1.5 overflow-x-auto py-0.5">
-              {(["all", "push", "pull", "legs", "core"] as const).map((split) => (
-                <button
-                  key={split}
-                  onClick={() => setSplitFilter(split)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium capitalize whitespace-nowrap transition-all cursor-pointer ${
-                    splitFilter === split
-                      ? "bg-primary text-primary-foreground shadow-sm"
-                      : "bg-muted/80 text-muted-foreground hover:text-foreground hover:bg-muted"
-                  }`}
-                >
-                  {split}
-                </button>
-              ))}
-            </div>
-          </div>
 
           {workoutsLoading ? (
             <div className="flex items-center justify-center py-12">
@@ -602,9 +549,7 @@ export default function DashboardPage() {
             <div className="rounded-xl border border-dashed p-8 text-center bg-card/40">
               <p className="text-sm font-medium text-foreground">No workouts found</p>
               <p className="text-xs text-muted-foreground mt-1">
-                {searchQuery || splitFilter !== "all" 
-                  ? "Try adjusting your search or split filter." 
-                  : "No workouts logged for this period. Start a session!"}
+                No workouts logged for this period. Start a session!
               </p>
             </div>
           ) : (

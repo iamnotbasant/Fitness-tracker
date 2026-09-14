@@ -802,62 +802,39 @@ export default function WorkoutHub() {
               </button>
             </div>
             
-            {/* Dual Filter Pills (Split and Level) */}
-            <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 scrollbar-none flex-wrap">
-              {/* Split Filter */}
-              <div className="flex items-center gap-1 bg-secondary/50 p-1 rounded-xl border border-border/50">
-                {(
-                  [
-                    { key: "all", label: "All" },
-                    { key: "push", label: "Push" },
-                    { key: "pull", label: "Pull" },
-                    { key: "legs", label: "Legs" },
-                    { key: "core", label: "Core" },
-                  ] as const
-                ).map((tab) => {
-                  const active = splitFilter === tab.key
-                  return (
-                    <button
-                      key={tab.key}
-                      onClick={() => setSplitFilter(tab.key)}
-                      className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
-                        active
-                          ? "bg-primary text-primary-foreground shadow-xs font-semibold"
-                          : "text-muted-foreground hover:text-foreground"
-                      }`}
-                    >
-                      {tab.label}
-                    </button>
-                  )
-                })}
-              </div>
+            {/* Minimal Dropdown Filters ("drop box" for clean aesthetics) */}
+            <div className="flex items-center gap-2">
+              <select
+                value={splitFilter}
+                onChange={(e) => {
+                  soundManager.play('click', 0.3)
+                  setSplitFilter(e.target.value as any)
+                }}
+                className="h-8.5 rounded-xl bg-card border border-border/80 px-3 py-1 text-xs font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer hover:border-primary/50 transition-colors"
+                aria-label="Filter by split"
+              >
+                <option value="all">All Splits</option>
+                <option value="push">Push</option>
+                <option value="pull">Pull</option>
+                <option value="legs">Legs</option>
+                <option value="core">Core</option>
+              </select>
 
-              {/* Level Filter */}
-              <div className="flex items-center gap-1 bg-secondary/50 p-1 rounded-xl border border-border/50">
-                {(
-                  [
-                    { key: "all", label: "All Lvl" },
-                    { key: "1", label: "Lvl 1" },
-                    { key: "2", label: "Lvl 2" },
-                    { key: "3", label: "Lvl 3" },
-                  ] as const
-                ).map((lvl) => {
-                  const active = levelFilter === lvl.key
-                  return (
-                    <button
-                      key={lvl.key}
-                      onClick={() => setLevelFilter(lvl.key)}
-                      className={`px-2 py-1 rounded-lg text-xs font-medium transition-all ${
-                        active
-                          ? "bg-primary text-primary-foreground shadow-xs font-semibold"
-                          : "text-muted-foreground hover:text-foreground"
-                      }`}
-                    >
-                      {lvl.label}
-                    </button>
-                  )
-                })}
-              </div>
+              <select
+                value={levelFilter}
+                onChange={(e) => {
+                  soundManager.play('click', 0.3)
+                  setLevelFilter(e.target.value as any)
+                }}
+                className="h-8.5 rounded-xl bg-card border border-border/80 px-3 py-1 text-xs font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer hover:border-primary/50 transition-colors"
+                aria-label="Filter by level"
+              >
+                <option value="all">All Levels</option>
+                <option value="1">Level 1</option>
+                <option value="2">Level 2</option>
+                <option value="3">Level 3</option>
+                <option value="4">Level 4</option>
+              </select>
             </div>
           </div>
 

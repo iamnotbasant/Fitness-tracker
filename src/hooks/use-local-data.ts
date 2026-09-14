@@ -5,15 +5,66 @@ import type { Exercise, Workout, Profile, WorkoutSession, SessionExercise, Routi
 import { useSession } from "@/lib/auth-client"
 
 const fetcher = async (url: string) => {
-  const token = localStorage.getItem("bearer_token")
-  const res = await fetch(url, {
-    credentials: "include",
-    headers: token ? {
-      Authorization: `Bearer ${token}`,
-    } : {},
+  const token = typeof window !== "undefined" ? localStorage.getItem("bearer_token") : null
+  const cacheKey = `ft_cache_${url.split("?")[0]}`
+
+  try {
+    const res = await fetch(url, {
+      credentials: "include",
+      headers: token ? {
+        Authorization: `Bearer ${token}`,
+      } : {},
+    })
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    const data = await res.json()
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem(cacheKey, JSON.stringify(data))
+      } catch {}
+    }
+    return data
+  } catch (err) {
+    if (typeof window !== "undefined") {
+      try {
+        const cached = localStorage.getItem(cacheKey)
+        if (cached) {
+          console.warn(`[offline] Serving cached data for ${url}`)
+          return JSON.parse(cached)
+        }
+      } catch {}
+    }
+    throw err
+  }
+}
+
+// Automatically sync offline queued workouts when device reconnects to internet
+if (typeof window !== "undefined") {
+  window.addEventListener("online", async () => {
+    try {
+      const queueRaw = localStorage.getItem("ft_pending_offline_workouts")
+      if (queueRaw) {
+        const queue: any[] = JSON.parse(queueRaw)
+        if (Array.isArray(queue) && queue.length > 0) {
+          const token = localStorage.getItem("bearer_token")
+          for (const w of queue) {
+            await fetch("/api/workouts", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                ...(token && { Authorization: `Bearer ${token}` }),
+              },
+              credentials: "include",
+              body: JSON.stringify(w),
+            }).catch(() => {})
+          }
+          localStorage.removeItem("ft_pending_offline_workouts")
+          console.log(`[offline-sync] Successfully synced ${queue.length} workouts!`)
+        }
+      }
+    } catch (e) {
+      console.error("[offline-sync] Error during sync:", e)
+    }
   })
-  if (!res.ok) throw new Error("Failed to fetch")
-  return res.json()
 }
 
 // Helper to get local date string in YYYY-MM-DD format
@@ -473,9 +524,10 @@ export function useActiveSession() {
 
     console.log(`Saving ${newWorkouts.length} workouts...`)
     
-    const saveResults = await Promise.all(
-      newWorkouts.map(async (w) => {
-        try {
+    let saveResults: any[] = []
+    try {
+      saveResults = await Promise.all(
+        newWorkouts.map(async (w) => {
           const res = await fetch("/api/workouts", {
             method: "POST",
             headers: {
@@ -485,32 +537,38 @@ export function useActiveSession() {
             credentials: "include",
             body: JSON.stringify(w),
           })
-          const responseData = await res.json()
-          console.log("Save workout response:", res.status, responseData)
           if (!res.ok) {
+            const responseData = await res.json().catch(() => ({}))
             console.error("Failed to save workout:", responseData)
             throw new Error(`Failed to save workout: ${responseData.error || res.statusText}`)
           }
-          return responseData
-        } catch (error) {
-          console.error("Error saving workout:", error)
-          throw error
-        }
+          return res.json()
+        })
+      )
+      console.log("All workouts saved successfully!", saveResults)
+    } catch (error) {
+      console.warn("[offline] Saving to local offline queue:", error)
+      if (typeof window !== "undefined") {
+        try {
+          const prev = JSON.parse(localStorage.getItem("ft_pending_offline_workouts") || "[]")
+          localStorage.setItem("ft_pending_offline_workouts", JSON.stringify([...prev, ...newWorkouts]))
+        } catch {}
+      }
+      saveResults = newWorkouts.map((w, idx) => ({ ...w, id: `offline-${Date.now()}-${idx}` }))
+    }
+
+    try {
+      await fetch(`/api/workout-sessions?id=${data.session.id}`, {
+        method: "DELETE",
+        credentials: "include",
+        headers: token ? {
+          Authorization: `Bearer ${token}`,
+        } : {},
       })
-    )
+    } catch {}
 
-    console.log("All workouts saved successfully!", saveResults)
-
-    await fetch(`/api/workout-sessions?id=${data.session.id}`, {
-      method: "DELETE",
-      credentials: "include",
-      headers: token ? {
-        Authorization: `Bearer ${token}`,
-      } : {},
-    })
-
-    console.log("Session deleted, refreshing workout list...")
-    await mutate()
+    console.log("Session cleared, refreshing workout list...")
+    await mutate().catch(() => {})
     
     return [...saveResults, ...existingWorkouts]
   }

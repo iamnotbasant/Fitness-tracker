@@ -304,8 +304,9 @@ function LiveExerciseCard({
     return previousReps
   }
 
-  const isTimerExercise = exerciseType === "timer"
-  const isWeightedExercise = exerciseType === "weighted"
+  const typeStr = String(exerciseType || "").toLowerCase()
+  const isTimerExercise = typeStr.includes("timer")
+  const isWeightedExercise = typeStr.includes("weighted")
 
   // Calculate completion percentage for progress indicator
   const completionPercentage = (item.sets.filter(s => s.done).length / item.sets.length) * 100

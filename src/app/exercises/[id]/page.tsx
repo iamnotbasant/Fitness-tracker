@@ -73,7 +73,7 @@ export default function ExerciseDetailPage() {
   const [currentDate, setCurrentDate] = useState(new Date())
 
   const [editName, setEditName] = useState("")
-  const [editType, setEditType] = useState<Exercise["type"]>("standard")
+  const [editSelectedTypes, setEditSelectedTypes] = useState<string[]>(["standard"])
   const [editSplit, setEditSplit] = useState("")
   const [editLevel, setEditLevel] = useState("")
   const [editDescription, setEditDescription] = useState("")
@@ -96,7 +96,9 @@ export default function ExerciseDetailPage() {
   useEffect(() => {
     if (exercise && isEditMode) {
       setEditName(exercise.name || "")
-      setEditType(exercise.type || "standard")
+      const rawType = exercise.type || "standard"
+      const typesList = rawType.includes(",") ? rawType.split(",").map((t) => t.trim()) : [rawType]
+      setEditSelectedTypes(typesList)
       setEditSplit(exercise.split || "")
       setEditLevel(exercise.level != null ? exercise.level.toString() : "1")
       setEditDescription(exercise.description || "")
@@ -173,10 +175,11 @@ export default function ExerciseDetailPage() {
     
     setIsSaving(true)
     try {
+      const finalType = editSelectedTypes.length > 1 ? editSelectedTypes.join(",") : (editSelectedTypes[0] || "standard")
       const updatePayload: Exercise = {
         id: exercise.id,
         name: editName.trim(),
-        type: editType,
+        type: finalType as any,
         split: editSplit as any,
         level: editLevel ? parseInt(editLevel) : undefined,
         description: editDescription.trim() || undefined,
@@ -639,21 +642,36 @@ export default function ExerciseDetailPage() {
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
               <div>
-                <label htmlFor="type" className="block text-sm font-medium mb-2">
-                  Exercise Type
+                <label className="block text-sm font-medium mb-2">
+                  Exercise Types (Multi-select)
                 </label>
-                <select
-                  id="type"
-                  value={editType}
-                  onChange={(e) => setEditType(e.target.value as any)}
-                  className="w-full rounded-lg border bg-background px-4 py-2 text-sm capitalize focus:outline-none focus:ring-2 focus:ring-ring"
-                >
-                  {EXERCISE_TYPES.map((t) => (
-                    <option key={t} value={t}>
-                      {t}
-                    </option>
-                  ))}
-                </select>
+                <div className="flex flex-wrap gap-1.5">
+                  {EXERCISE_TYPES.map((t) => {
+                    const isSelected = editSelectedTypes.includes(t)
+                    return (
+                      <button
+                        type="button"
+                        key={t}
+                        onClick={() => {
+                          setEditSelectedTypes((prev) => {
+                            if (prev.includes(t)) {
+                              return prev.length > 1 ? prev.filter((x) => x !== t) : prev
+                            } else {
+                              return [...prev, t]
+                            }
+                          })
+                        }}
+                        className={`px-2.5 py-1 rounded-lg text-xs font-medium border capitalize transition-all cursor-pointer ${
+                          isSelected
+                            ? "bg-primary text-primary-foreground border-primary shadow-xs font-semibold"
+                            : "bg-secondary/60 text-muted-foreground border-border/70 hover:text-foreground hover:bg-secondary"
+                        }`}
+                      >
+                        {t}
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
 
               <div>

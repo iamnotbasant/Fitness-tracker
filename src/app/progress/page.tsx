@@ -29,28 +29,37 @@ export default function ProgressPage() {
   }, [])
 
   const filtered = useMemo(() => {
+    if (timeRange === "all") return workouts
+
     const now = new Date()
-    let startDate = new Date()
+    let daysToSubtract = 0
 
     switch (timeRange) {
       case "7days":
-        startDate.setDate(now.getDate() - 7)
+        daysToSubtract = 7
         break
       case "month":
-        startDate.setMonth(now.getMonth() - 1)
+        daysToSubtract = 30
         break
       case "3months":
-        startDate.setMonth(now.getMonth() - 3)
+        daysToSubtract = 90
         break
       case "year":
-        startDate.setFullYear(now.getFullYear() - 1)
+        daysToSubtract = 365
         break
-      case "all":
-        return workouts
     }
 
-    const startDateStr = startDate.toISOString().slice(0, 10)
-    return workouts.filter((w) => w.date >= startDateStr)
+    const startDate = new Date(now)
+    startDate.setDate(now.getDate() - daysToSubtract)
+    const y = startDate.getFullYear()
+    const m = String(startDate.getMonth() + 1).padStart(2, "0")
+    const d = String(startDate.getDate()).padStart(2, "0")
+    const startDateStr = `${y}-${m}-${d}`
+
+    return workouts.filter((w) => {
+      const wDate = (w.date || "").slice(0, 10)
+      return wDate >= startDateStr
+    })
   }, [workouts, timeRange])
 
   // Overview unique non-repetitive stats
@@ -106,7 +115,7 @@ export default function ProgressPage() {
               <span>Analytics & Progress</span>
             </h1>
             <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-              Comprehensive anatomical activation, training consistency, and progressive overload metrics
+              Training progress and volume metrics
             </p>
           </div>
 
@@ -194,9 +203,9 @@ export default function ProgressPage() {
               <MuscleAnatomyMap workouts={filtered} exercises={exercises} />
             </div>
 
-            {/* Workout Consistency 365-Day Activity Heatmap */}
+            {/* Workout Consistency Activity Heatmap */}
             <div>
-              <WorkoutHeatmap workouts={workouts} />
+              <WorkoutHeatmap workouts={filtered.length > 0 ? filtered : workouts} />
             </div>
 
             {/* Weekly Goal Completion Rings */}
@@ -210,7 +219,7 @@ export default function ProgressPage() {
             <div className="rounded-2xl border border-border/70 bg-card p-4 sm:p-6 shadow-sm space-y-4">
               <div>
                 <h3 className="text-base font-bold text-foreground">Point Volume Progression</h3>
-                <p className="text-xs text-muted-foreground">Historical progressive overload and points trajectory</p>
+                <p className="text-xs text-muted-foreground">Volume & load trajectory</p>
               </div>
               <TotalVolumeChart workouts={filtered} />
             </div>
@@ -218,7 +227,7 @@ export default function ProgressPage() {
             <div className="rounded-2xl border border-border/70 bg-card p-4 sm:p-6 shadow-sm space-y-4">
               <div>
                 <h3 className="text-base font-bold text-foreground">Personal Records (PRs)</h3>
-                <p className="text-xs text-muted-foreground">Peak single-session volume and max performance milestones</p>
+                <p className="text-xs text-muted-foreground">Personal bests & peak records</p>
               </div>
               <PersonalRecords workouts={filtered} />
             </div>
@@ -226,9 +235,9 @@ export default function ProgressPage() {
             <div className="rounded-2xl border border-border/70 bg-card p-4 sm:p-6 shadow-sm space-y-4">
               <div>
                 <h3 className="text-base font-bold text-foreground">Skill Progression Timeline</h3>
-                <p className="text-xs text-muted-foreground">Milestones unlocked throughout your training journey</p>
+                <p className="text-xs text-muted-foreground">Unlocked journey milestones</p>
               </div>
-              <ProgressionTimeline workouts={workouts} />
+              <ProgressionTimeline workouts={filtered.length > 0 ? filtered : workouts} />
             </div>
           </TabsContent>
 
@@ -249,7 +258,7 @@ export default function ProgressPage() {
               <div className="rounded-2xl border border-border/70 bg-card p-4 sm:p-6 shadow-sm space-y-4">
                 <div>
                   <h3 className="text-base font-bold text-foreground">Workout Density</h3>
-                  <p className="text-xs text-muted-foreground">Pace efficiency: Reps completed per minute of workout</p>
+                  <p className="text-xs text-muted-foreground">Reps completed per minute</p>
                 </div>
                 <WorkoutDensity workouts={filtered} />
               </div>
@@ -257,7 +266,7 @@ export default function ProgressPage() {
               <div className="rounded-2xl border border-border/70 bg-card p-4 sm:p-6 shadow-sm space-y-4">
                 <div>
                   <h3 className="text-base font-bold text-foreground">Time Under Tension (TUT)</h3>
-                  <p className="text-xs text-muted-foreground">Estimated muscle contraction duration for hypertrophy stimulus</p>
+                  <p className="text-xs text-muted-foreground">Hypertrophy tension duration</p>
                 </div>
                 <TimeUnderTension workouts={filtered} />
               </div>

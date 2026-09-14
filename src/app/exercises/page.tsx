@@ -221,7 +221,7 @@ function NewExerciseForm({
   onCreate: (payload: Omit<Exercise, "id">) => Promise<void>
 }) {
   const [name, setName] = useState("")
-  const [type, setType] = useState<Exercise["type"]>("standard")
+  const [selectedTypes, setSelectedTypes] = useState<string[]>(["standard"])
   const [split, setSplit] = useState<Exercise["split"]>("push")
   const [description, setDescription] = useState("")
   const [level, setLevel] = useState<number>(1)
@@ -296,9 +296,10 @@ function NewExerciseForm({
       className="mt-4 grid gap-4 rounded-xl border bg-card p-4 shadow-sm md:p-6"
       onSubmit={async (e) => {
         e.preventDefault()
+        const finalType = selectedTypes.length > 1 ? selectedTypes.join(",") : (selectedTypes[0] || "standard")
         await onCreate({
           name: name.trim(),
-          type,
+          type: finalType as any,
           split,
           description: description.trim() || undefined,
           level,
@@ -314,7 +315,7 @@ function NewExerciseForm({
         setBodyParts([])
         setTags([])
         setLevel(1)
-        setType("standard")
+        setSelectedTypes(["standard"])
         setSplit("push")
         setRepGoal("")
       }}
@@ -332,25 +333,45 @@ function NewExerciseForm({
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
         <div>
-          <label className="text-sm font-medium text-muted-foreground">Exercise Type</label>
-          <select
-            value={type}
-            onChange={(e) => setType(e.target.value as any)}
-            className="mt-2 w-full rounded-lg border bg-card px-4 py-2.5 text-base capitalize cursor-pointer"
-          >
-            {EXERCISE_TYPES.map((t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
-            ))}
-          </select>
+          <label className="text-sm font-medium text-muted-foreground flex items-center justify-between">
+            <span>Exercise Type (Multi-select)</span>
+            <span className="text-xs text-primary font-medium">{selectedTypes.join(", ")}</span>
+          </label>
+          <div className="flex flex-wrap gap-1.5 mt-2">
+            {EXERCISE_TYPES.map((t) => {
+              const isSelected = selectedTypes.includes(t)
+              return (
+                <button
+                  type="button"
+                  key={t}
+                  onClick={() => {
+                    setSelectedTypes((prev) => {
+                      if (prev.includes(t)) {
+                        return prev.length > 1 ? prev.filter((x) => x !== t) : prev
+                      } else {
+                        return [...prev, t]
+                      }
+                    })
+                  }}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-medium border capitalize transition-all cursor-pointer ${
+                    isSelected
+                      ? "bg-primary text-primary-foreground border-primary shadow-xs font-semibold"
+                      : "bg-secondary/60 text-muted-foreground border-border/70 hover:text-foreground hover:bg-secondary"
+                  }`}
+                >
+                  {t}
+                </button>
+              )
+            })}
+          </div>
           <p className="mt-1.5 text-xs text-muted-foreground">
-            {type === "standard" && "Rep-based exercise"}
-            {type === "timer" && "Time-based exercise (e.g., plank)"}
-            {type === "weighted" && "Exercise with weight tracking"}
-            {type === "bodyweight" && "No equipment needed"}
-            {type === "cardio" && "Cardio/endurance exercise"}
-            {type === "mobility" && "Flexibility/mobility work"}
+            {selectedTypes.includes("timer") && selectedTypes.includes("weighted")
+              ? "Weighted + Timer combined (stopwatch & kg tracking)"
+              : selectedTypes.includes("timer")
+              ? "Time-based exercise (stopwatch/countdown)"
+              : selectedTypes.includes("weighted")
+              ? "Weight tracking enabled (kg)"
+              : "Standard rep-based exercise"}
           </p>
         </div>
         <div>

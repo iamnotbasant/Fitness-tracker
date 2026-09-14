@@ -3,6 +3,7 @@
 import { useMemo, useState, useRef, useEffect } from "react"
 import type { Workout } from "@/lib/types"
 import { Flame, Trophy, Calendar, Zap, ChevronRight } from "lucide-react"
+import soundManager from "@/lib/sounds"
 
 interface DayData {
   date: string
@@ -12,10 +13,18 @@ interface DayData {
 }
 
 type Palette = "emerald" | "flame" | "cyan"
+export type HeatmapRange = "4w" | "12w" | "26w" | "52w" | "all"
 
 export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
   const [palette, setPalette] = useState<Palette>("emerald")
+  const [range, setRange] = useState<HeatmapRange>("52w")
   const scrollContainerRef = useRef<HTMLDivElement>(null)
+
+  const earliestWorkoutDate = useMemo(() => {
+    if (!workouts || workouts.length === 0) return null
+    const sorted = [...workouts].filter((w) => w.date).sort((a, b) => a.date.localeCompare(b.date))
+    return sorted[0]?.date || null
+  }, [workouts])
 
   const { heatmapData, streakStats } = useMemo(() => {
     const dataByDate = new Map<string, { volume: number; points: number; workouts: { name: string; sets: number; reps: number; points: number }[] }>()
@@ -33,11 +42,27 @@ export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
       })
     })
 
-    // Get last 52 weeks (approx 1 year)
     const weeks: DayData[][] = []
     const today = new Date()
     const startDate = new Date(today)
-    startDate.setDate(today.getDate() - 364) // 52 weeks
+
+    if (range === "4w") {
+      startDate.setDate(today.getDate() - 28)
+    } else if (range === "12w") {
+      startDate.setDate(today.getDate() - 84)
+    } else if (range === "26w") {
+      startDate.setDate(today.getDate() - 182)
+    } else if (range === "all" && earliestWorkoutDate) {
+      const earliest = new Date(earliestWorkoutDate)
+      if (!isNaN(earliest.getTime())) {
+        startDate.setTime(earliest.getTime())
+      } else {
+        startDate.setDate(today.getDate() - 364)
+      }
+    } else {
+      // 52w default
+      startDate.setDate(today.getDate() - 364)
+    }
 
     // Start from the first Sunday before or on startDate
     const dayOfWeek = startDate.getDay()
@@ -196,50 +221,91 @@ export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
       {/* Heatmap Card Header */}
       <div className="flex items-center justify-between gap-4 flex-wrap pb-2 border-b border-border/40">
         <div>
-          <h3 className="text-base font-bold text-foreground">365-Day Workout Consistency</h3>
-          <p className="text-xs text-muted-foreground">Historical visual heatmap of daily exercise activity</p>
+          <h3 className="text-base font-bold text-foreground">Workout Consistency</h3>
+          <p className="text-xs text-muted-foreground">Daily exercise activity frequency</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Start Date Box */}
+          <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-secondary/50 border border-border/60 text-xs">
+            <Calendar className="h-3.5 w-3.5 text-primary" />
+            <span className="text-muted-foreground">Started:</span>
+            <span className="font-semibold text-foreground">
+              {earliestWorkoutDate
+                ? new Date(earliestWorkoutDate).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  })
+                : "Today"}
+            </span>
+          </div>
+
           <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-secondary text-secondary-foreground">
-            {streakStats.activeDays} active days / year
+            {streakStats.activeDays} active days
           </span>
         </div>
       </div>
 
-      {/* Palette Selector and Subtitle */}
+      {/* Range and Palette Selectors */}
       <div className="flex items-center justify-between gap-3 flex-wrap pt-1">
+        {/* Time Span Filter */}
         <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold text-muted-foreground">Intensity Scheme:</span>
+          <span className="text-xs font-semibold text-muted-foreground">Span:</span>
           <div className="flex items-center bg-secondary/70 p-0.5 rounded-lg border border-border/50">
-            <button
-              onClick={() => setPalette("emerald")}
-              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
-                palette === "emerald" ? "bg-background text-foreground shadow-sm font-semibold" : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Emerald
-            </button>
-            <button
-              onClick={() => setPalette("flame")}
-              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
-                palette === "flame" ? "bg-background text-foreground shadow-sm font-semibold" : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Flame
-            </button>
-            <button
-              onClick={() => setPalette("cyan")}
-              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
-                palette === "cyan" ? "bg-background text-foreground shadow-sm font-semibold" : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Cyan
-            </button>
+            {(
+              [
+                { id: "4w", label: "1 Mo" },
+                { id: "12w", label: "3 Mo" },
+                { id: "26w", label: "6 Mo" },
+                { id: "52w", label: "1 Yr" },
+                { id: "all", label: "All" },
+              ] as const
+            ).map((r) => (
+              <button
+                key={r.id}
+                onClick={() => {
+                  soundManager.play("click", 0.3)
+                  setRange(r.id)
+                }}
+                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer ${
+                  range === r.id
+                    ? "bg-background text-foreground shadow-xs font-semibold"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {r.label}
+              </button>
+            ))}
           </div>
         </div>
 
-        <div className="text-xs text-muted-foreground hidden sm:block">
-          Scroll horizontally to view past 52 weeks
+        {/* Color Palette Selector */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-semibold text-muted-foreground">Theme:</span>
+          <div className="flex items-center bg-secondary/70 p-0.5 rounded-lg border border-border/50">
+            {(
+              [
+                { id: "emerald", label: "Emerald" },
+                { id: "flame", label: "Flame" },
+                { id: "cyan", label: "Cyan" },
+              ] as const
+            ).map((p) => (
+              <button
+                key={p.id}
+                onClick={() => {
+                  soundManager.play("click", 0.3)
+                  setPalette(p.id)
+                }}
+                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer ${
+                  palette === p.id
+                    ? "bg-background text-foreground shadow-xs font-semibold"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
