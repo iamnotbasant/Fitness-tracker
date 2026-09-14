@@ -85,8 +85,7 @@ export function MuscleBalance({ workouts, exercises }: { workouts: Workout[]; ex
     <div className="w-full rounded-2xl border border-border/70 bg-card p-4 sm:p-6 shadow-sm space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/60 pb-4">
         <div>
-          <h3 className="text-base font-bold text-foreground">Muscular Balance Distribution</h3>
-          <p className="text-xs text-muted-foreground">Volume and load ratio across major functional movement splits</p>
+          <h3 className="text-sm font-semibold text-foreground">Muscle Distribution</h3>
         </div>
         <span className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-secondary text-foreground self-start sm:self-auto">
           Total: {totalPoints.toLocaleString()} pts

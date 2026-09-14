@@ -111,12 +111,9 @@ export default function ProgressPage() {
       <section className="mx-auto max-w-5xl px-4 pt-6 pb-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-foreground flex items-center gap-2.5">
-              <span>Analytics & Progress</span>
+            <h1 className="text-lg font-semibold text-foreground">
+              Progress
             </h1>
-            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-              Training progress and volume metrics
-            </p>
           </div>
 
           {/* Time Range Filter */}
@@ -217,26 +214,17 @@ export default function ProgressPage() {
           {/* TAB 2: Strength & Overload */}
           <TabsContent value="strength" className="space-y-8 focus-visible:outline-none">
             <div className="rounded-2xl border border-border/70 bg-card p-4 sm:p-6 shadow-sm space-y-4">
-              <div>
-                <h3 className="text-base font-bold text-foreground">Point Volume Progression</h3>
-                <p className="text-xs text-muted-foreground">Volume & load trajectory</p>
-              </div>
+              <h3 className="text-sm font-semibold text-foreground">Volume Progression</h3>
               <TotalVolumeChart workouts={filtered} />
             </div>
 
             <div className="rounded-2xl border border-border/70 bg-card p-4 sm:p-6 shadow-sm space-y-4">
-              <div>
-                <h3 className="text-base font-bold text-foreground">Personal Records (PRs)</h3>
-                <p className="text-xs text-muted-foreground">Personal bests & peak records</p>
-              </div>
+              <h3 className="text-sm font-semibold text-foreground">Personal Records</h3>
               <PersonalRecords workouts={filtered} />
             </div>
 
             <div className="rounded-2xl border border-border/70 bg-card p-4 sm:p-6 shadow-sm space-y-4">
-              <div>
-                <h3 className="text-base font-bold text-foreground">Skill Progression Timeline</h3>
-                <p className="text-xs text-muted-foreground">Unlocked journey milestones</p>
-              </div>
+              <h3 className="text-sm font-semibold text-foreground">Milestones</h3>
               <ProgressionTimeline workouts={filtered.length > 0 ? filtered : workouts} />
             </div>
           </TabsContent>
@@ -256,18 +244,12 @@ export default function ProgressPage() {
             {/* Workout Density & TUT Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="rounded-2xl border border-border/70 bg-card p-4 sm:p-6 shadow-sm space-y-4">
-                <div>
-                  <h3 className="text-base font-bold text-foreground">Workout Density</h3>
-                  <p className="text-xs text-muted-foreground">Reps completed per minute</p>
-                </div>
+                <h3 className="text-sm font-semibold text-foreground">Workout Density</h3>
                 <WorkoutDensity workouts={filtered} />
               </div>
 
               <div className="rounded-2xl border border-border/70 bg-card p-4 sm:p-6 shadow-sm space-y-4">
-                <div>
-                  <h3 className="text-base font-bold text-foreground">Time Under Tension (TUT)</h3>
-                  <p className="text-xs text-muted-foreground">Hypertrophy tension duration</p>
-                </div>
+                <h3 className="text-sm font-semibold text-foreground">Time Under Tension</h3>
                 <TimeUnderTension workouts={filtered} />
               </div>
             </div>

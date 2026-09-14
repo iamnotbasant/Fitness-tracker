@@ -108,13 +108,10 @@ export function RadialGoalsChart({ workouts }: RadialGoalsChartProps) {
     <div className="rounded-2xl border border-border bg-card p-4 sm:p-6 shadow-sm">
       <div className="flex items-center justify-between pb-3 border-b border-border mb-4">
         <div>
-          <h3 className="text-base font-semibold flex items-center gap-2">
-            <Target className="h-4 w-4 text-emerald-400" />
-            Weekly Goal Rings (EvilCharts Radial)
+          <h3 className="text-sm font-semibold flex items-center gap-2 text-foreground">
+            <Target className="h-4 w-4 text-primary" />
+            Weekly Goals
           </h3>
-          <p className="text-xs text-muted-foreground">
-            Concentric activity targets for sessions, volume, sets, and points
-          </p>
         </div>
       </div>
 

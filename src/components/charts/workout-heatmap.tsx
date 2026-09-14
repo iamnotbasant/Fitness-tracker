@@ -221,8 +221,7 @@ export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
       {/* Heatmap Card Header */}
       <div className="flex items-center justify-between gap-4 flex-wrap pb-2 border-b border-border/40">
         <div>
-          <h3 className="text-base font-bold text-foreground">Workout Consistency</h3>
-          <p className="text-xs text-muted-foreground">Daily exercise activity frequency</p>
+          <h3 className="text-sm font-semibold text-foreground">Consistency</h3>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           {/* Start Date Box */}

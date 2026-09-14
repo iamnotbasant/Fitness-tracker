@@ -331,21 +331,11 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
   return (
     <div className="rounded-2xl border border-border/70 bg-card p-4 sm:p-6 shadow-sm space-y-5">
       {/* Header & View Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/40 pb-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <h3 className="text-base font-bold text-foreground">Male Anatomical Muscle Map</h3>
-            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground">
-              Colpan Male Engine
-            </span>
-          </div>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Interactive anatomical heatmap visualizing muscle group activation from logged volume
-          </p>
-        </div>
+      <div className="flex items-center justify-between gap-4 border-b border-border/40 pb-3">
+        <h3 className="text-sm font-semibold text-foreground">Muscle Map</h3>
 
         {/* View Switcher: Both, Front, Back */}
-        <div className="flex items-center gap-1.5 self-start sm:self-auto bg-secondary/50 p-1 rounded-xl border border-border/60">
+        <div className="flex items-center gap-1 bg-secondary/50 p-1 rounded-xl border border-border/60">
           <button
             onClick={() => setActiveView("both")}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
@@ -534,16 +524,11 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
                 exit={{ opacity: 0, y: -8 }}
                 className="rounded-2xl border border-border/60 bg-secondary/30 p-4 sm:p-5 space-y-4 shadow-xs"
               >
-                <div className="border-b border-border/40 pb-3">
-                  <div className="flex items-center gap-2">
-                    <BarChart3 className="h-4 w-4 text-primary" />
-                    <h4 className="text-base font-bold tracking-tight text-foreground">
-                      Full Body Activation
-                    </h4>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    Click any muscle on the anatomical model to view targeted sets & exercises
-                  </p>
+                <div className="border-b border-border/40 pb-2.5 flex items-center gap-2">
+                  <BarChart3 className="h-4 w-4 text-primary" />
+                  <h4 className="text-sm font-semibold text-foreground">
+                    Activation Overview
+                  </h4>
                 </div>
 
                 {/* Quick Stats Grid */}

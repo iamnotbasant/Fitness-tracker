@@ -111,13 +111,10 @@ export function MuscleRadarChart({ workouts, exercises }: MuscleRadarChartProps)
     <div className="rounded-2xl border border-border bg-card p-4 sm:p-6 shadow-sm">
       <div className="flex items-center justify-between pb-2 border-b border-border mb-4">
         <div>
-          <h3 className="text-base font-semibold flex items-center gap-2">
+          <h3 className="text-sm font-semibold flex items-center gap-2 text-foreground">
             <Activity className="h-4 w-4 text-sky-400" />
-            Full-Body Split Balance (EvilCharts Radar)
+            Split Balance
           </h3>
-          <p className="text-xs text-muted-foreground">
-            Symmetry analysis across 6 training splits to avoid muscular imbalances
-          </p>
         </div>
         <div className="flex items-center gap-3 text-xs">
           <div className="flex items-center gap-1.5">
