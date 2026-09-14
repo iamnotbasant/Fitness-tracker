@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation"
 import { useActiveSession, useExercises, useWorkouts, useRoutines } from "@/hooks/use-local-data"
-import { Dumbbell, Plus, Search, ChevronLeft, Clock, Play, Loader2 } from "lucide-react"
+import { Dumbbell, Plus, Search, ChevronLeft, Clock, Play, Loader2, Pin } from "lucide-react"
 import { useSession } from "@/lib/auth-client"
 import { useEffect, useState, useMemo, useCallback, memo } from "react"
 import { toast } from "sonner"
@@ -45,8 +45,33 @@ export default function WorkoutHub() {
   // Routine starting state
   const [startingRoutine, setStartingRoutine] = useState<string | null>(null)
 
-  // Routine filter state
-  const [routineFilter, setRoutineFilter] = useState<"all" | "level1" | "level2" | "push" | "pull" | "legs">("all")
+  // Routine filters & Pinning state
+  const [pinnedRoutineIds, setPinnedRoutineIds] = useState<string[]>([])
+  const [splitFilter, setSplitFilter] = useState<"all" | "push" | "pull" | "legs" | "core">("all")
+  const [levelFilter, setLevelFilter] = useState<"all" | "1" | "2" | "3" | "4">("all")
+
+  // Load pinned routines from localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("ft_pinned_routines")
+      if (saved) {
+        setPinnedRoutineIds(JSON.parse(saved))
+      }
+    } catch {}
+  }, [])
+
+  const togglePinRoutine = (routineId: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setPinnedRoutineIds((prev) => {
+      const isPinned = prev.includes(routineId)
+      const next = isPinned ? prev.filter((id) => id !== routineId) : [routineId, ...prev]
+      try {
+        localStorage.setItem("ft_pinned_routines", JSON.stringify(next))
+      } catch {}
+      toast.success(isPinned ? "Routine unpinned" : "Routine pinned to top!")
+      return next
+    })
+  }
 
   // Client-side mounting check
   useEffect(() => {
@@ -173,30 +198,69 @@ export default function WorkoutHub() {
     return { sets, reps, volume }
   }, [activeSession])
 
+  const routineUsageMap = useMemo(() => {
+    const map = new Map<string, number>()
+    workouts.forEach((w) => {
+      if (w.routineId) {
+        map.set(String(w.routineId), (map.get(String(w.routineId)) || 0) + 1)
+      }
+      if (w.workoutName) {
+        const matching = routines.find(
+          (r) => r.name?.toLowerCase() === w.workoutName?.toLowerCase()
+        )
+        if (matching) {
+          map.set(String(matching.id), (map.get(String(matching.id)) || 0) + 1)
+        }
+      }
+    })
+    return map
+  }, [workouts, routines])
+
   const filteredRoutines = useMemo(() => {
-    if (routineFilter === "all") return routines
-    return routines.filter((r) => {
+    const list = routines.filter((r) => {
       const name = (r.name || "").toLowerCase()
       const desc = (r.description || "").toLowerCase()
       const exList = (r.exercises || []) as Array<{ exerciseName?: string; split?: string; level?: number }>
-      if (routineFilter === "level1") {
-        return name.includes("level 1") || desc.includes("level 1") || exList.some((e) => e.level === 1)
+
+      // Check Split
+      if (splitFilter !== "all") {
+        const matchesSplit =
+          name.includes(splitFilter) ||
+          desc.includes(splitFilter) ||
+          exList.some(
+            (e) =>
+              e.split?.toLowerCase() === splitFilter ||
+              (splitFilter === "legs" && e.split?.toLowerCase() === "leg")
+          )
+        if (!matchesSplit) return false
       }
-      if (routineFilter === "level2") {
-        return name.includes("level 2") || desc.includes("level 2") || exList.some((e) => e.level === 2)
+
+      // Check Level
+      if (levelFilter !== "all") {
+        const targetLvl = Number(levelFilter)
+        const matchesLevel =
+          name.includes(`level ${targetLvl}`) ||
+          desc.includes(`level ${targetLvl}`) ||
+          exList.some((e) => e.level === targetLvl)
+        if (!matchesLevel) return false
       }
-      if (routineFilter === "push") {
-        return name.includes("push") || desc.includes("push") || exList.some((e) => e.split?.toLowerCase() === "push")
-      }
-      if (routineFilter === "pull") {
-        return name.includes("pull") || desc.includes("pull") || exList.some((e) => e.split?.toLowerCase() === "pull")
-      }
-      if (routineFilter === "legs") {
-        return name.includes("leg") || desc.includes("leg") || exList.some((e) => e.split?.toLowerCase() === "legs")
-      }
+
       return true
     })
-  }, [routines, routineFilter])
+
+    // Sort: (1) Pinned routines at the very top, (2) Most used routines, (3) Alphabetical
+    return [...list].sort((a, b) => {
+      const aPinned = pinnedRoutineIds.includes(String(a.id)) ? 1 : 0
+      const bPinned = pinnedRoutineIds.includes(String(b.id)) ? 1 : 0
+      if (bPinned !== aPinned) return bPinned - aPinned
+
+      const aUsage = routineUsageMap.get(String(a.id)) || 0
+      const bUsage = routineUsageMap.get(String(b.id)) || 0
+      if (bUsage !== aUsage) return bUsage - aUsage
+
+      return (a.name || "").localeCompare(b.name || "")
+    })
+  }, [routines, splitFilter, levelFilter, pinnedRoutineIds, routineUsageMap])
 
   const handleStartWorkout = async () => {
     let token = localStorage.getItem("bearer_token")
@@ -602,7 +666,7 @@ export default function WorkoutHub() {
               transition={{ type: "spring", stiffness: 450, damping: 32 }}
               className="fixed bottom-20 md:bottom-6 left-4 right-4 max-w-md mx-auto z-50 pointer-events-auto"
             >
-              <div className="rounded-2xl border border-primary/30 bg-card/95 backdrop-blur-xl p-3.5 shadow-2xl shadow-primary/10">
+              <div className="rounded-2xl border border-border/80 bg-card/95 backdrop-blur-xl p-3.5 shadow-xl">
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
                     <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary font-bold">
@@ -694,14 +758,6 @@ export default function WorkoutHub() {
               <p className="text-xs text-muted-foreground hidden sm:block">Choose an empty workout or launch a saved routine</p>
             </div>
           </div>
-          <button
-            onClick={() => router.push("/workout/routines/new")}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs md:text-sm font-semibold rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm transition-all"
-            title="Create new routine"
-          >
-            <Plus className="h-4 w-4" />
-            <span>New Routine</span>
-          </button>
         </div>
       </header>
 
@@ -736,47 +792,87 @@ export default function WorkoutHub() {
               <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
                 {filteredRoutines.length}
               </span>
+              <button
+                onClick={() => router.push("/workout/routines/new")}
+                className="h-7 w-7 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 flex items-center justify-center transition-all shadow-xs"
+                title="Create New Routine"
+                aria-label="Create New Routine"
+              >
+                <Plus className="h-4 w-4" />
+              </button>
             </div>
             
-            {/* Filter Pills */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
-              {(
-                [
-                  { key: "all", label: "All" },
-                  { key: "level1", label: "Level 1" },
-                  { key: "level2", label: "Level 2" },
-                  { key: "push", label: "Push" },
-                  { key: "pull", label: "Pull" },
-                  { key: "legs", label: "Legs" },
-                ] as const
-              ).map((tab) => {
-                const active = routineFilter === tab.key
-                return (
-                  <button
-                    key={tab.key}
-                    onClick={() => setRoutineFilter(tab.key)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all shrink-0 ${
-                      active
-                        ? "bg-primary text-primary-foreground shadow-sm font-semibold"
-                        : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
-                    }`}
-                  >
-                    {tab.label}
-                  </button>
-                )
-              })}
+            {/* Dual Filter Pills (Split and Level) */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 scrollbar-none flex-wrap">
+              {/* Split Filter */}
+              <div className="flex items-center gap-1 bg-secondary/50 p-1 rounded-xl border border-border/50">
+                {(
+                  [
+                    { key: "all", label: "All" },
+                    { key: "push", label: "Push" },
+                    { key: "pull", label: "Pull" },
+                    { key: "legs", label: "Legs" },
+                    { key: "core", label: "Core" },
+                  ] as const
+                ).map((tab) => {
+                  const active = splitFilter === tab.key
+                  return (
+                    <button
+                      key={tab.key}
+                      onClick={() => setSplitFilter(tab.key)}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
+                        active
+                          ? "bg-primary text-primary-foreground shadow-xs font-semibold"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  )
+                })}
+              </div>
+
+              {/* Level Filter */}
+              <div className="flex items-center gap-1 bg-secondary/50 p-1 rounded-xl border border-border/50">
+                {(
+                  [
+                    { key: "all", label: "All Lvl" },
+                    { key: "1", label: "Lvl 1" },
+                    { key: "2", label: "Lvl 2" },
+                    { key: "3", label: "Lvl 3" },
+                  ] as const
+                ).map((lvl) => {
+                  const active = levelFilter === lvl.key
+                  return (
+                    <button
+                      key={lvl.key}
+                      onClick={() => setLevelFilter(lvl.key)}
+                      className={`px-2 py-1 rounded-lg text-xs font-medium transition-all ${
+                        active
+                          ? "bg-primary text-primary-foreground shadow-xs font-semibold"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {lvl.label}
+                    </button>
+                  )
+                })}
+              </div>
             </div>
           </div>
 
           {/* Routine Cards Grid */}
           {filteredRoutines.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-border/80 p-8 text-center bg-card/40">
-              <p className="text-sm text-muted-foreground mb-3">No routines found for this filter</p>
+              <p className="text-sm text-muted-foreground mb-3">No routines found matching these filters</p>
               <button
-                onClick={() => setRoutineFilter("all")}
+                onClick={() => {
+                  setSplitFilter("all")
+                  setLevelFilter("all")
+                }}
                 className="text-xs font-medium text-primary hover:underline"
               >
-                Reset filter
+                Reset filters
               </button>
             </div>
           ) : (
@@ -787,18 +883,42 @@ export default function WorkoutHub() {
                 const isL1 = nameLower.includes("level 1") || routine.exercises?.some((e: any) => e.level === 1)
                 const isL2 = nameLower.includes("level 2") || routine.exercises?.some((e: any) => e.level === 2)
                 const splitTag = nameLower.includes("push") ? "Push" : nameLower.includes("pull") ? "Pull" : (nameLower.includes("leg") || nameLower.includes("legs")) ? "Legs" : null
+                const isPinned = pinnedRoutineIds.includes(String(routine.id))
+                const usageCount = routineUsageMap.get(String(routine.id)) || 0
 
                 return (
                   <div
                     key={routine.id}
-                    className="group rounded-2xl border border-border/60 bg-card p-4 hover:border-primary/50 transition-all flex flex-col justify-between gap-3 shadow-sm hover:shadow"
+                    className={`group rounded-2xl border p-4 transition-all flex flex-col justify-between gap-3 shadow-xs hover:shadow-sm ${
+                      isPinned
+                        ? "border-primary/50 bg-card"
+                        : "border-border/60 bg-card hover:border-primary/40"
+                    }`}
                   >
                     <div>
                       <div className="flex items-start justify-between gap-2 mb-1.5">
-                        <h3 className="font-semibold text-base tracking-tight truncate group-hover:text-primary transition-colors">
-                          {routine.name}
-                        </h3>
+                        <div className="flex items-center gap-2 min-w-0">
+                          <button
+                            onClick={(e) => togglePinRoutine(String(routine.id), e)}
+                            title={isPinned ? "Unpin routine" : "Pin routine to top"}
+                            className={`p-1 rounded-lg transition-colors shrink-0 ${
+                              isPinned
+                                ? "text-amber-400 bg-amber-400/15"
+                                : "text-muted-foreground/40 hover:text-foreground hover:bg-muted"
+                            }`}
+                          >
+                            <Pin className={`h-3.5 w-3.5 ${isPinned ? "fill-amber-400" : ""}`} />
+                          </button>
+                          <h3 className="font-semibold text-base tracking-tight truncate group-hover:text-primary transition-colors">
+                            {routine.name}
+                          </h3>
+                        </div>
                         <div className="flex items-center gap-1.5 shrink-0">
+                          {usageCount > 0 && (
+                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-primary/10 text-primary">
+                              {usageCount}x used
+                            </span>
+                          )}
                           {splitTag && (
                             <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-md bg-secondary text-secondary-foreground">
                               {splitTag}

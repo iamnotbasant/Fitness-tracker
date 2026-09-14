@@ -472,24 +472,20 @@ export default function DashboardPage() {
           </div>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             <SummaryCard 
-              label="Active Streak" 
+              label="Streak" 
               value={streak} 
-              unit="days" 
             />
             <SummaryCard 
-              label="Workouts Logged" 
+              label="Workouts" 
               value={totals.workouts} 
-              unit="sessions" 
             />
             <SummaryCard 
               label="Total Points" 
               value={totals.points} 
-              unit="pts" 
             />
             <SummaryCard 
-              label="Sets Completed" 
+              label="Sets" 
               value={totals.sets} 
-              unit="sets" 
             />
           </div>
         </div>
@@ -662,25 +658,18 @@ export default function DashboardPage() {
 function SummaryCard({
   label,
   value,
-  unit,
 }: {
   label: string
   value: number
-  unit: string
 }) {
   return (
-    <div className="group rounded-xl border bg-card p-4 md:p-5 shadow-sm hover:shadow-md hover:border-primary/40 transition-all">
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground transition-colors">
-          {label}
-        </span>
-      </div>
-      <div className="flex items-baseline gap-1.5">
-        <span className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">
-          {value.toLocaleString()}
-        </span>
-        <span className="text-xs text-muted-foreground font-medium">{unit}</span>
-      </div>
+    <div className="rounded-2xl border border-border/50 bg-[#12141a]/80 dark:bg-card/70 p-5 md:p-6 flex flex-col items-center justify-center text-center transition-all">
+      <span className="text-xs md:text-sm font-medium text-muted-foreground mb-1.5">
+        {label}
+      </span>
+      <span className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">
+        {value.toLocaleString()}
+      </span>
     </div>
   )
 }

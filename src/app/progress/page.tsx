@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useEffect } from "react"
 import { useWorkouts, useExercises } from "@/hooks/use-local-data"
+import { MuscleAnatomyMap } from "@/components/charts/muscle-anatomy-map"
 import { TotalVolumeChart } from "@/components/charts/total-volume-chart"
 import { PersonalRecords } from "@/components/charts/personal-records"
 import { WorkoutHeatmap } from "@/components/charts/workout-heatmap"
@@ -13,7 +14,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { RadialGoalsChart } from "@/components/charts/radial-goals-chart"
 import { MuscleRadarChart } from "@/components/charts/muscle-radar-chart"
-import { Activity, Dumbbell, TrendingUp, Award, Flame, Calendar } from "lucide-react"
+import { Dumbbell, Award, Flame, Calendar } from "lucide-react"
 
 type TimeRange = "7days" | "month" | "3months" | "year" | "all"
 
@@ -52,19 +53,37 @@ export default function ProgressPage() {
     return workouts.filter((w) => w.date >= startDateStr)
   }, [workouts, timeRange])
 
-  // Overview quick stats
+  // Overview unique non-repetitive stats
   const quickStats = useMemo(() => {
     const totalPts = filtered.reduce((acc, w) => acc + (w.points ?? w.total_points ?? 0), 0)
     const totalSets = filtered.reduce((acc, w) => acc + (w.sets || 1), 0)
     const uniqueDays = new Set(filtered.map((w) => w.date)).size
+
+    // Calculate current streak
+    const dates = new Set(workouts.map((w) => w.date))
+    let currentStreak = 0
+    const today = new Date()
+    const todayStr = today.toISOString().slice(0, 10)
+    const yesterday = new Date(today)
+    yesterday.setDate(today.getDate() - 1)
+    const yesterdayStr = yesterday.toISOString().slice(0, 10)
+
+    if (dates.has(todayStr) || dates.has(yesterdayStr)) {
+      const check = new Date(dates.has(todayStr) ? today : yesterday)
+      while (dates.has(check.toISOString().slice(0, 10))) {
+        currentStreak++
+        check.setDate(check.getDate() - 1)
+      }
+    }
 
     return {
       totalWorkouts: filtered.length,
       totalPoints: totalPts,
       totalSets,
       activeDays: uniqueDays,
+      currentStreak,
     }
-  }, [filtered])
+  }, [filtered, workouts])
 
   if (!mounted || workoutsLoading) {
     return (
@@ -109,7 +128,7 @@ export default function ProgressPage() {
           </div>
         </div>
 
-        {/* Quick Highlights Summary Bar */}
+        {/* Quick Highlights Summary Bar (Non-repetitive metrics) */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-5">
           <div className="rounded-2xl border border-border/60 bg-card/60 p-3.5 flex items-center gap-3">
             <div className="h-9 w-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
@@ -132,22 +151,22 @@ export default function ProgressPage() {
           </div>
 
           <div className="rounded-2xl border border-border/60 bg-card/60 p-3.5 flex items-center gap-3">
+            <div className="h-9 w-9 rounded-xl bg-orange-500/10 text-orange-500 flex items-center justify-center shrink-0">
+              <Flame className="h-4.5 w-4.5" />
+            </div>
+            <div>
+              <span className="text-[11px] font-medium text-muted-foreground block">Current Streak</span>
+              <span className="text-lg font-black text-foreground">{quickStats.currentStreak} <span className="text-xs font-normal text-muted-foreground">days</span></span>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-border/60 bg-card/60 p-3.5 flex items-center gap-3">
             <div className="h-9 w-9 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
               <Calendar className="h-4.5 w-4.5" />
             </div>
             <div>
               <span className="text-[11px] font-medium text-muted-foreground block">Active Days</span>
               <span className="text-lg font-black text-foreground">{quickStats.activeDays} <span className="text-xs font-normal text-muted-foreground">days</span></span>
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-border/60 bg-card/60 p-3.5 flex items-center gap-3">
-            <div className="h-9 w-9 rounded-xl bg-purple-500/10 text-purple-500 flex items-center justify-center shrink-0">
-              <TrendingUp className="h-4.5 w-4.5" />
-            </div>
-            <div>
-              <span className="text-[11px] font-medium text-muted-foreground block">Sessions Logged</span>
-              <span className="text-lg font-black text-foreground">{quickStats.totalWorkouts}</span>
             </div>
           </div>
         </div>
@@ -170,6 +189,11 @@ export default function ProgressPage() {
 
           {/* TAB 1: Consistency & Activity */}
           <TabsContent value="heatmaps" className="space-y-8 focus-visible:outline-none">
+            {/* Male Muscle Anatomy Heatmap from Melih Colpan */}
+            <div>
+              <MuscleAnatomyMap workouts={filtered} exercises={exercises} />
+            </div>
+
             {/* Workout Consistency 365-Day Activity Heatmap */}
             <div>
               <WorkoutHeatmap workouts={workouts} />

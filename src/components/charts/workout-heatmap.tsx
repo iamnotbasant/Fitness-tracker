@@ -149,19 +149,19 @@ export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
     if (palette === "emerald") {
       if (volume <= levelThresholds.low) return "bg-[#065f46] border-[#047857]/50"
       if (volume <= levelThresholds.medium) return "bg-[#059669] border-[#10b981]/60"
-      if (volume <= levelThresholds.high) return "bg-[#10b981] border-[#34d399]/70 shadow-[0_0_8px_rgba(16,185,129,0.3)]"
-      return "bg-[#34d399] border-[#6ee7b7] shadow-[0_0_10px_rgba(52,211,153,0.5)]"
+      if (volume <= levelThresholds.high) return "bg-[#10b981] border-[#34d399]/70"
+      return "bg-[#34d399] border-[#6ee7b7]"
     } else if (palette === "flame") {
       if (volume <= levelThresholds.low) return "bg-[#9a3412] border-[#c2410c]/50"
       if (volume <= levelThresholds.medium) return "bg-[#ea580c] border-[#f97316]/60"
-      if (volume <= levelThresholds.high) return "bg-[#f97316] border-[#fb923c]/70 shadow-[0_0_8px_rgba(249,115,22,0.3)]"
-      return "bg-[#fb923c] border-[#fdba74] shadow-[0_0_10px_rgba(251,146,60,0.5)]"
+      if (volume <= levelThresholds.high) return "bg-[#f97316] border-[#fb923c]/70"
+      return "bg-[#fb923c] border-[#fdba74]"
     } else {
       // cyan
       if (volume <= levelThresholds.low) return "bg-[#0369a1] border-[#0284c7]/50"
       if (volume <= levelThresholds.medium) return "bg-[#0284c7] border-[#38bdf8]/60"
-      if (volume <= levelThresholds.high) return "bg-[#00e5ff] border-[#38bdf8]/70 shadow-[0_0_8px_rgba(0,229,255,0.4)]"
-      return "bg-[#38bdf8] border-[#7dd3fc] shadow-[0_0_10px_rgba(56,189,248,0.5)]"
+      if (volume <= levelThresholds.high) return "bg-[#0284c7] border-[#38bdf8]/70"
+      return "bg-[#38bdf8] border-[#7dd3fc]"
     }
   }
 
@@ -193,54 +193,16 @@ export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
 
   return (
     <div className="rounded-2xl border border-border/70 bg-card p-4 sm:p-6 shadow-sm space-y-5">
-      {/* Top Stat Ribbon */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="flex items-center gap-3 p-3 rounded-xl bg-secondary/30 border border-border/50">
-          <div className="h-9 w-9 rounded-xl bg-orange-500/15 text-orange-500 flex items-center justify-center shrink-0">
-            <Flame className="h-5 w-5" />
-          </div>
-          <div>
-            <span className="text-[11px] font-medium text-muted-foreground block">Current Streak</span>
-            <span className="text-lg font-black tracking-tight text-foreground">
-              {streakStats.currentStreak} {streakStats.currentStreak === 1 ? "day" : "days"}
-            </span>
-          </div>
+      {/* Heatmap Card Header */}
+      <div className="flex items-center justify-between gap-4 flex-wrap pb-2 border-b border-border/40">
+        <div>
+          <h3 className="text-base font-bold text-foreground">365-Day Workout Consistency</h3>
+          <p className="text-xs text-muted-foreground">Historical visual heatmap of daily exercise activity</p>
         </div>
-
-        <div className="flex items-center gap-3 p-3 rounded-xl bg-secondary/30 border border-border/50">
-          <div className="h-9 w-9 rounded-xl bg-amber-500/15 text-amber-500 flex items-center justify-center shrink-0">
-            <Trophy className="h-5 w-5" />
-          </div>
-          <div>
-            <span className="text-[11px] font-medium text-muted-foreground block">Longest Streak</span>
-            <span className="text-lg font-black tracking-tight text-foreground">
-              {streakStats.longestStreak} {streakStats.longestStreak === 1 ? "day" : "days"}
-            </span>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3 p-3 rounded-xl bg-secondary/30 border border-border/50">
-          <div className="h-9 w-9 rounded-xl bg-emerald-500/15 text-emerald-500 flex items-center justify-center shrink-0">
-            <Calendar className="h-5 w-5" />
-          </div>
-          <div>
-            <span className="text-[11px] font-medium text-muted-foreground block">Active Days</span>
-            <span className="text-lg font-black tracking-tight text-foreground">
-              {streakStats.activeDays} <span className="text-xs font-normal text-muted-foreground">/ 365</span>
-            </span>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3 p-3 rounded-xl bg-secondary/30 border border-border/50">
-          <div className="h-9 w-9 rounded-xl bg-primary/15 text-primary flex items-center justify-center shrink-0">
-            <Zap className="h-5 w-5" />
-          </div>
-          <div>
-            <span className="text-[11px] font-medium text-muted-foreground block">Logged Sessions</span>
-            <span className="text-lg font-black tracking-tight text-foreground">
-              {streakStats.totalWorkouts}
-            </span>
-          </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-secondary text-secondary-foreground">
+            {streakStats.activeDays} active days / year
+          </span>
         </div>
       </div>
 
