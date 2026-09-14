@@ -164,9 +164,9 @@ export function PersonalRecords({ workouts }: { workouts: Workout[] }) {
                         />
                         <Tooltip
                           contentStyle={{
-                            backgroundColor: '#111827',
-                            border: '1px solid #374151',
-                            borderRadius: '8px',
+                            backgroundColor: '#0a0a0c',
+                            border: '1px solid #1c1c20',
+                            borderRadius: '10px',
                             fontSize: '12px',
                             color: '#FFFFFF',
                           }}

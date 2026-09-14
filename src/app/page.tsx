@@ -608,7 +608,7 @@ function SummaryCard({
   value: number
 }) {
   return (
-    <div className="rounded-2xl border border-border/50 bg-[#12141a]/80 dark:bg-card/70 p-5 md:p-6 flex flex-col items-center justify-center text-center transition-all">
+    <div className="rounded-2xl border border-border/80 bg-card p-5 md:p-6 flex flex-col items-center justify-center text-center transition-all hover:border-border">
       <span className="text-xs md:text-sm font-medium text-muted-foreground mb-1.5">
         {label}
       </span>

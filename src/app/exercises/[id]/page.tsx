@@ -1206,9 +1206,9 @@ export default function ExerciseDetailPage() {
                         <Tooltip
                           contentStyle={{ 
                             fontSize: 12,
-                            backgroundColor: '#111827',
-                            border: '1px solid #374151',
-                            borderRadius: '8px',
+                            backgroundColor: '#0a0a0c',
+                            border: '1px solid #1c1c20',
+                            borderRadius: '10px',
                             padding: '8px 12px',
                             color: '#ffffff'
                           }}

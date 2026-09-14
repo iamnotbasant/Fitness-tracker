@@ -140,7 +140,7 @@ export function RadialGoalsChart({ workouts }: RadialGoalsChartProps) {
               />
               <Tooltip content={<CustomTooltip />} />
               <RadialBar
-                background={{ fill: "#1e293b" }}
+                background={{ fill: "#141417" }}
                 dataKey="value"
                 cornerRadius={6}
               />

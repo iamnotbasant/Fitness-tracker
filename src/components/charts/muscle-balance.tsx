@@ -115,7 +115,7 @@ export function MuscleBalance({ workouts, exercises }: { workouts: Workout[]; ex
                     fill={entry.color}
                     opacity={hoveredIndex !== null && hoveredIndex !== index ? 0.4 : 1}
                     className="transition-all duration-200 cursor-pointer"
-                    stroke="#0f172a"
+                    stroke="#000000"
                     strokeWidth={2}
                   />
                 ))}
