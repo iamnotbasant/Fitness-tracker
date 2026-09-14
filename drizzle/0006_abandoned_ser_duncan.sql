@@ -1,0 +1,1 @@
+ALTER TABLE `exercises` ADD `created_by` text NOT NULL REFERENCES user(id);

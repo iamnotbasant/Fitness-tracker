@@ -1,0 +1,248 @@
+/* Updated: 2025-11-04T05:25:56.117Z */
+/* Updated: 2025-11-04T05:12:59.713Z */
+/* Updated: 2025-11-04T04:40:29.023Z */
+/* Updated: 2025-11-04T03:56:38.750Z */
+/* Updated: 2025-11-03T10:02:05.110Z */
+/* Updated: 2025-11-03T06:14:01.415Z */
+/* Updated: 2025-11-03T05:46:53.078Z */
+/* Updated: 2025-11-03T05:35:05.108Z */
+/* Updated: 2025-11-01T15:05:29.472Z */
+/* Updated: 2025-11-01T13:30:04.642Z */
+/* Updated: 2025-11-01T12:31:44.178Z */
+/* Updated: 2025-11-01T07:17:08.742Z */
+/* Updated: 2025-11-01T04:53:58.789Z */
+/* Updated: 2025-11-01T04:15:22.066Z */
+/* Updated: 2025-10-31T17:47:55.839Z */
+/* Updated: 2025-10-31T16:40:37.441Z */
+/* Updated: 2025-10-31T16:18:08.968Z */
+/* Updated: 2025-10-31T15:53:35.264Z */
+/* Updated: 2025-10-31T15:52:53.828Z */
+/* Updated: 2025-10-31T15:46:56.226Z */
+/* Updated: 2025-10-31T15:24:59.880Z */
+/* Updated: 2025-10-22T12:24:05.103Z */
+/* Updated: 2025-10-21T06:18:07.048Z */
+/* Updated: 2025-10-21T04:11:38.834Z */
+/* Updated: 2025-10-21T03:33:32.597Z */
+/* Updated: 2025-10-21T02:43:17.459Z */
+/* Updated: 2025-10-20T10:37:18.858Z */
+/* Updated: 2025-10-20T07:55:43.209Z */
+/* Updated: 2025-10-20T04:38:00.042Z */
+/* Updated: 2025-10-20T03:29:47.859Z */
+/* Updated: 2025-10-18T14:05:45.206Z */
+/* Updated: 2025-10-17T13:13:45.865Z */
+/* Updated: 2025-10-17T11:05:38.809Z */
+/* Updated: 2025-10-17T10:05:36.272Z */
+/* Updated: 2025-10-17T10:05:31.976Z */
+/* Updated: 2025-10-17T04:30:29.281Z */
+/* Updated: 2025-10-17T04:21:19.319Z */
+/* Updated: 2025-10-16T14:25:28.052Z */
+/* Updated: 2025-10-16T11:24:42.225Z */
+/* Updated: 2025-10-16T09:44:48.083Z */
+/* Updated: 2025-10-15T10:37:01.736Z */
+/* Updated: 2025-10-15T09:46:49.064Z */
+/* Updated: 2025-10-14T03:34:03.160Z */
+/* Updated: 2025-10-14T03:26:04.238Z */
+/* Updated: 2025-10-13T16:16:41.483Z */
+/* Updated: 2025-10-13T16:14:44.539Z */
+/* Updated: 2025-10-13T15:21:48.342Z */
+/* Updated: 2025-10-13T14:57:27.402Z */
+/* Updated: 2025-10-13T10:09:34.219Z */
+/* Updated: 2025-10-13T07:16:30.128Z */
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
+
+/* ─── LIGHT THEME ─── */
+:root {
+  --background: #F5F6F8;
+  --foreground: #111318;
+  --card: #FFFFFF;
+  --card-foreground: #111318;
+  --popover: #FFFFFF;
+  --popover-foreground: #111318;
+  --primary: #111318;
+  --primary-foreground: #FFFFFF;
+  --secondary: #EEF0F4;
+  --secondary-foreground: #374151;
+  --muted: #EEF0F4;
+  --muted-foreground: #6B7280;
+  --accent: #EEF0F4;
+  --accent-foreground: #374151;
+  --destructive: #EF4444;
+  --destructive-foreground: #FFFFFF;
+  --border: rgba(0, 0, 0, 0.08);
+  --input: #E5E7EB;
+  --ring: #111318;
+  --chart-1: #3B82F6;
+  --chart-2: #10B981;
+  --chart-3: #F59E0B;
+  --chart-4: #8B5CF6;
+  --chart-5: #EF4444;
+  --radius: 0.75rem;
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #111318;
+  --sidebar-primary: #111318;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #EEF0F4;
+  --sidebar-accent-foreground: #374151;
+  --sidebar-border: rgba(0, 0, 0, 0.07);
+  --sidebar-ring: #111318;
+
+  /* Progress Page */
+  --progress-bg: #F5F6F8;
+  --progress-card-bg: #FFFFFF;
+  --progress-accent: #3B82F6;
+  --progress-heading: #111318;
+  --progress-data: #111318;
+  --progress-description: #6B7280;
+}
+
+/* ─── DARK THEME – Premium Enterprise SaaS ─── */
+.dark {
+  --background: #0F1115;
+  --foreground: #E5E7EB;
+  --card: #161A20;
+  --card-foreground: #E5E7EB;
+  --popover: #1C2128;
+  --popover-foreground: #E5E7EB;
+  --primary: #FFFFFF;
+  --primary-foreground: #0F1115;
+  --secondary: #1C2128;
+  --secondary-foreground: #E5E7EB;
+  --muted: #1C2128;
+  --muted-foreground: #9CA3AF;
+  --accent: #1C2128;
+  --accent-foreground: #E5E7EB;
+  --destructive: #7F1D1D;
+  --destructive-foreground: #FCA5A5;
+  --border: rgba(255, 255, 255, 0.06);
+  --input: #1C2128;
+  --ring: #E5E7EB;
+  --chart-1: #3B82F6;
+  --chart-2: #10B981;
+  --chart-3: #F59E0B;
+  --chart-4: #8B5CF6;
+  --chart-5: #EF4444;
+  --radius: 0.75rem;
+  --sidebar: #12151B;
+  --sidebar-foreground: #E5E7EB;
+  --sidebar-primary: #FFFFFF;
+  --sidebar-primary-foreground: #0F1115;
+  --sidebar-accent: #1C2128;
+  --sidebar-accent-foreground: #E5E7EB;
+  --sidebar-border: rgba(255, 255, 255, 0.06);
+  --sidebar-ring: #E5E7EB;
+
+  /* Progress Page */
+  --progress-bg: #0F1115;
+  --progress-card-bg: #161A20;
+  --progress-accent: #3B82F6;
+  --progress-heading: #E5E7EB;
+  --progress-data: #E5E7EB;
+  --progress-description: #9CA3AF;
+}
+
+@theme inline {
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+/* ─── Premium card & surface refinements ─── */
+.dark .card-surface {
+  background: var(--card);
+  border: 1px solid var(--border);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
+  border-radius: var(--radius);
+}
+
+/* Universal cursor pointer on interactive elements */
+button,
+[role="button"],
+input[type="button"],
+input[type="submit"],
+input[type="reset"],
+a,
+select,
+summary,
+[tabindex="0"] {
+  cursor: pointer;
+}
+
+button:disabled,
+[role="button"][aria-disabled="true"],
+input:disabled {
+  cursor: not-allowed;
+}
+
+/* Fast theme transitions without global selector performance penalty */
+body {
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+/* Scrollbar styling for dark mode */
+.dark ::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.dark ::-webkit-scrollbar-track {
+  background: #0F1115;
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: #2A3040;
+  border-radius: 3px;
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #374151;
+}
+
+/* Hide Next.js error overlay portal */
+nextjs-portal {
+  display: none !important;
+}

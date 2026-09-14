@@ -1,0 +1,1 @@
+ALTER TABLE `workouts` ADD `duration_seconds` integer;

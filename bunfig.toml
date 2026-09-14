@@ -1,0 +1,14 @@
+[install]
+# Force flat node_modules structure - no nested dependencies
+hoistPattern = ["**"]
+flat = true
+
+# Force dedupe all packages
+dedupe = ["zod", "@better-auth/core", "@better-auth/utils"]
+
+# Force overrides for all zod installations
+[install.overrides]
+"zod" = "3.23.8"
+"@better-auth/core>zod" = "3.23.8"
+"better-auth>zod" = "3.23.8"
+"@better-auth/utils>zod" = "3.23.8"
