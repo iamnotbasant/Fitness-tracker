@@ -98,7 +98,7 @@ export function MuscleRadarChart({ workouts, exercises }: MuscleRadarChartProps)
             </div>
             <div className="flex justify-between gap-4">
               <span>Split Score:</span>
-              <span className="font-semibold text-sky-400">{data.normalized}%</span>
+              <span className="font-semibold text-rose-400">{data.normalized}%</span>
             </div>
           </div>
         </div>
@@ -112,13 +112,13 @@ export function MuscleRadarChart({ workouts, exercises }: MuscleRadarChartProps)
       <div className="flex items-center justify-between pb-2 border-b border-border mb-4">
         <div>
           <h3 className="text-sm font-semibold flex items-center gap-2 text-foreground">
-            <Activity className="h-4 w-4 text-sky-400" />
+            <Activity className="h-4 w-4 text-rose-400" />
             Split Balance
           </h3>
         </div>
         <div className="flex items-center gap-3 text-xs">
           <div className="flex items-center gap-1.5">
-            <span className="h-2.5 w-2.5 rounded-full bg-sky-500" />
+            <span className="h-2.5 w-2.5 rounded-full bg-rose-500" />
             <span className="text-muted-foreground">Your Output</span>
           </div>
           <div className="flex items-center gap-1.5">
@@ -131,15 +131,15 @@ export function MuscleRadarChart({ workouts, exercises }: MuscleRadarChartProps)
       <div className="h-72 w-full">
         <ResponsiveContainer width="100%" height="100%">
           <RadarChart cx="50%" cy="50%" outerRadius="75%" data={radarData}>
-            <PolarGrid stroke="#334155" strokeDasharray="3 3" />
+            <PolarGrid stroke="#27272a" strokeDasharray="3 3" />
             <PolarAngleAxis
               dataKey="subject"
-              tick={{ fill: "#94a3b8", fontSize: 12, fontWeight: 500 }}
+              tick={{ fill: "#a1a1aa", fontSize: 12, fontWeight: 500 }}
             />
             <PolarRadiusAxis
               angle={30}
               domain={[0, 100]}
-              tick={{ fill: "#64748b", fontSize: 10 }}
+              tick={{ fill: "#71717a", fontSize: 10 }}
             />
             <Tooltip content={<CustomTooltip />} />
             {/* Target Baseline */}
@@ -156,9 +156,9 @@ export function MuscleRadarChart({ workouts, exercises }: MuscleRadarChartProps)
             <Radar
               name="Your Score"
               dataKey="normalized"
-              stroke="#38bdf8"
+              stroke="#f43f5e"
               strokeWidth={2}
-              fill="#0ea5e9"
+              fill="#ea384c"
               fillOpacity={0.4}
             />
           </RadarChart>

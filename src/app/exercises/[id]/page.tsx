@@ -1005,10 +1005,10 @@ export default function ExerciseDetailPage() {
                       </div>
                       
                       {personalRecords.bestWeight && (
-                        <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-4 backdrop-blur-sm">
+                        <div className="rounded-xl border border-rose-500/20 bg-rose-500/5 p-4 backdrop-blur-sm">
                           <div className="flex items-center gap-2 mb-1">
-                            <Award className="h-4 w-4 text-blue-500" />
-                            <div className="text-xs font-semibold text-blue-600 dark:text-blue-400">Best Weight</div>
+                            <Award className="h-4 w-4 text-rose-500" />
+                            <div className="text-xs font-semibold text-rose-600 dark:text-rose-400">Best Weight</div>
                           </div>
                           <div className="text-2xl font-bold text-foreground">{personalRecords.bestWeight} kg</div>
                         </div>

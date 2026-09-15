@@ -65,7 +65,7 @@ export function RadialGoalsChart({ workouts }: RadialGoalsChartProps) {
         value: pctWorkouts,
         actual: totalWorkouts,
         target: targetWorkouts,
-        fill: "#0ea5e9", // sky blue
+        fill: "#ffffff", // clean white
       },
     ]
 

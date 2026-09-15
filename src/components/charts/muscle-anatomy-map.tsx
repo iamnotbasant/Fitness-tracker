@@ -216,26 +216,26 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
   // Get color for a muscle based on its intensity (Animated Workout Heatmap: Gray -> Yellow -> Orange -> Red)
   const getFillColor = (slug: string, isHovered: boolean, isSelected: boolean) => {
     if (NEUTRAL_SLUGS.has(slug)) {
-      if (slug === "hair") return "#16181d"
-      if (slug === "head") return "#232730"
-      return "#1f222a"
+      if (slug === "hair") return "#121214"
+      if (slug === "head") return "#1c1c1f"
+      return "#18181b"
     }
 
     const muscleKey = slugToMuscleKey(slug)
-    if (!muscleKey) return "#22252e"
+    if (!muscleKey) return "#18181b"
 
     const stat = muscleStats[muscleKey]
     const intensity = stat?.intensity ?? 0
 
     if (isSelected) {
-      return intensity > 0 ? "#ef4444" : "#3b82f6"
+      return intensity > 0 ? "#ef4444" : "#ffffff"
     }
     if (isHovered) {
-      return intensity > 0 ? "#fb923c" : "#4b5563"
+      return intensity > 0 ? "#fb923c" : "#3f3f46"
     }
 
     if (intensity === 0) {
-      return "#22252e" // Neutral dark body fill
+      return "#18181b" // Neutral dark body fill
     }
 
     // Smooth workout color scale (no glow, crisp fills)
@@ -250,9 +250,9 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
 
   const getStrokeColor = (slug: string, isHovered: boolean, isSelected: boolean) => {
     if (isSelected) return "#ffffff"
-    if (isHovered) return "#94a3b8"
-    if (NEUTRAL_SLUGS.has(slug)) return "#2e3340"
-    return "#333846"
+    if (isHovered) return "#a1a1aa"
+    if (NEUTRAL_SLUGS.has(slug)) return "#27272a"
+    return "#27272a"
   }
 
   const selectedStat = selectedMuscle ? muscleStats[selectedMuscle] : null

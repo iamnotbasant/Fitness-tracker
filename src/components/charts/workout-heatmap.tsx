@@ -12,7 +12,7 @@ interface DayData {
   workouts: { name: string; sets: number; reps: number; points: number }[]
 }
 
-type Palette = "emerald" | "flame" | "cyan"
+type Palette = "emerald" | "flame" | "monochrome"
 export type HeatmapRange = "4w" | "12w" | "26w" | "52w" | "all"
 
 export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
@@ -182,11 +182,11 @@ export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
       if (volume <= levelThresholds.high) return "bg-[#f97316] border-[#fb923c]/70"
       return "bg-[#fb923c] border-[#fdba74]"
     } else {
-      // cyan
-      if (volume <= levelThresholds.low) return "bg-[#0369a1] border-[#0284c7]/50"
-      if (volume <= levelThresholds.medium) return "bg-[#0284c7] border-[#38bdf8]/60"
-      if (volume <= levelThresholds.high) return "bg-[#0284c7] border-[#38bdf8]/70"
-      return "bg-[#38bdf8] border-[#7dd3fc]"
+      // monochrome (clean white & neutral zinc)
+      if (volume <= levelThresholds.low) return "bg-[#3f3f46] border-[#52525b]/50"
+      if (volume <= levelThresholds.medium) return "bg-[#71717a] border-[#a1a1aa]/60"
+      if (volume <= levelThresholds.high) return "bg-[#d4d4d8] border-[#e4e4e7]/70"
+      return "bg-[#ffffff] border-[#ffffff]"
     }
   }
 
@@ -286,7 +286,7 @@ export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
               [
                 { id: "emerald", label: "Emerald" },
                 { id: "flame", label: "Flame" },
-                { id: "cyan", label: "Cyan" },
+                { id: "monochrome", label: "Monochrome" },
               ] as const
             ).map((p) => (
               <button

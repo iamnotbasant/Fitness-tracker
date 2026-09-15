@@ -74,7 +74,7 @@
   --border: rgba(0, 0, 0, 0.08);
   --input: #E5E7EB;
   --ring: #111318;
-  --chart-1: #3B82F6;
+  --chart-1: #111318;
   --chart-2: #10B981;
   --chart-3: #F59E0B;
   --chart-4: #8B5CF6;
@@ -92,55 +92,55 @@
   /* Progress Page */
   --progress-bg: #F5F6F8;
   --progress-card-bg: #FFFFFF;
-  --progress-accent: #3B82F6;
+  --progress-accent: #EA384C;
   --progress-heading: #111318;
   --progress-data: #111318;
   --progress-description: #6B7280;
 }
 
-/* ─── DARK THEME – Premium Enterprise SaaS ─── */
+/* ─── DARK THEME – DockOS Studio Pitch Black ─── */
 .dark {
-  --background: #0F1115;
-  --foreground: #E5E7EB;
-  --card: #161A20;
-  --card-foreground: #E5E7EB;
-  --popover: #1C2128;
-  --popover-foreground: #E5E7EB;
+  --background: #000000;
+  --foreground: #FFFFFF;
+  --card: #0D0D0F;
+  --card-foreground: #FFFFFF;
+  --popover: #121214;
+  --popover-foreground: #FFFFFF;
   --primary: #FFFFFF;
-  --primary-foreground: #0F1115;
-  --secondary: #1C2128;
-  --secondary-foreground: #E5E7EB;
-  --muted: #1C2128;
-  --muted-foreground: #9CA3AF;
-  --accent: #1C2128;
-  --accent-foreground: #E5E7EB;
-  --destructive: #7F1D1D;
-  --destructive-foreground: #FCA5A5;
-  --border: rgba(255, 255, 255, 0.06);
-  --input: #1C2128;
-  --ring: #E5E7EB;
-  --chart-1: #3B82F6;
+  --primary-foreground: #000000;
+  --secondary: #161618;
+  --secondary-foreground: #E4E4E7;
+  --muted: #161618;
+  --muted-foreground: #71717A;
+  --accent: #18181B;
+  --accent-foreground: #FFFFFF;
+  --destructive: #EF4444;
+  --destructive-foreground: #FFFFFF;
+  --border: rgba(255, 255, 255, 0.08);
+  --input: #121214;
+  --ring: #D4D4D8;
+  --chart-1: #FFFFFF;
   --chart-2: #10B981;
   --chart-3: #F59E0B;
   --chart-4: #8B5CF6;
   --chart-5: #EF4444;
   --radius: 0.75rem;
-  --sidebar: #12151B;
-  --sidebar-foreground: #E5E7EB;
+  --sidebar: #000000;
+  --sidebar-foreground: #FFFFFF;
   --sidebar-primary: #FFFFFF;
-  --sidebar-primary-foreground: #0F1115;
-  --sidebar-accent: #1C2128;
-  --sidebar-accent-foreground: #E5E7EB;
-  --sidebar-border: rgba(255, 255, 255, 0.06);
-  --sidebar-ring: #E5E7EB;
+  --sidebar-primary-foreground: #000000;
+  --sidebar-accent: #161618;
+  --sidebar-accent-foreground: #FFFFFF;
+  --sidebar-border: rgba(255, 255, 255, 0.08);
+  --sidebar-ring: #FFFFFF;
 
   /* Progress Page */
-  --progress-bg: #0F1115;
-  --progress-card-bg: #161A20;
-  --progress-accent: #3B82F6;
-  --progress-heading: #E5E7EB;
-  --progress-data: #E5E7EB;
-  --progress-description: #9CA3AF;
+  --progress-bg: #000000;
+  --progress-card-bg: #0D0D0F;
+  --progress-accent: #EA384C;
+  --progress-heading: #FFFFFF;
+  --progress-data: #FFFFFF;
+  --progress-description: #71717A;
 }
 
 @theme inline {
@@ -232,14 +232,14 @@ body {
   height: 6px;
 }
 .dark ::-webkit-scrollbar-track {
-  background: #0F1115;
+  background: #000000;
 }
 .dark ::-webkit-scrollbar-thumb {
-  background: #2A3040;
+  background: #262628;
   border-radius: 3px;
 }
 .dark ::-webkit-scrollbar-thumb:hover {
-  background: #374151;
+  background: #38383C;
 }
 
 /* Hide Next.js error overlay portal */

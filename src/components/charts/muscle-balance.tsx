@@ -5,12 +5,12 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Label } from "recharts"
 import type { Workout, Exercise } from "@/lib/types"
 
 const SPLIT_COLORS: Record<string, string> = {
-  push: "#38bdf8", // Sky blue
+  push: "#ea384c", // DockOS Crimson / Coral
   pull: "#a855f7", // Purple
   legs: "#10b981", // Emerald
   core: "#f59e0b", // Amber
-  arms: "#ec4899", // Pink
-  other: "#94a3b8", // Slate
+  arms: "#f97316", // Orange
+  other: "#71717a", // Neutral Zinc
 }
 
 const MUSCLE_GROUP_LABELS: Record<string, string> = {
