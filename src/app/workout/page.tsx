@@ -204,9 +204,10 @@ export default function WorkoutHub() {
       if (w.routineId) {
         map.set(String(w.routineId), (map.get(String(w.routineId)) || 0) + 1)
       }
-      if (w.workoutName) {
+      const routineName = w.workoutName || w.name
+      if (routineName) {
         const matching = routines.find(
-          (r) => r.name?.toLowerCase() === w.workoutName?.toLowerCase()
+          (r) => r.name?.toLowerCase() === routineName.toLowerCase()
         )
         if (matching) {
           map.set(String(matching.id), (map.get(String(matching.id)) || 0) + 1)

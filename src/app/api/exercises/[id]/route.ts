@@ -148,8 +148,8 @@ export async function PUT(
       description?: string;
       imageUrl?: string;
       type?: string;
-      bodyParts?: unknown;
-      tags?: unknown;
+      bodyParts?: string[] | null;
+      tags?: string[] | null;
       level?: string | null;
       split?: string;
       repGoal?: number | null;
@@ -159,8 +159,12 @@ export async function PUT(
     if (body.description !== undefined) updateData.description = typeof body.description === 'string' ? body.description.trim() : body.description;
     if (body.imageUrl !== undefined) updateData.imageUrl = typeof body.imageUrl === 'string' ? body.imageUrl.trim() : body.imageUrl;
     if (body.type !== undefined) updateData.type = typeof body.type === 'string' ? body.type.trim() : body.type;
-    if (body.bodyParts !== undefined) updateData.bodyParts = body.bodyParts;
-    if (body.tags !== undefined) updateData.tags = body.tags;
+    if (body.bodyParts !== undefined) {
+      updateData.bodyParts = Array.isArray(body.bodyParts) ? body.bodyParts : (body.bodyParts === null ? null : undefined);
+    }
+    if (body.tags !== undefined) {
+      updateData.tags = Array.isArray(body.tags) ? body.tags : (body.tags === null ? null : undefined);
+    }
     if (body.level !== undefined) updateData.level = body.level !== null && body.level !== undefined ? String(body.level) : null;
     if (body.split !== undefined) updateData.split = typeof body.split === 'string' ? body.split.trim() : body.split;
     if (body.repGoal !== undefined) updateData.repGoal = body.repGoal;

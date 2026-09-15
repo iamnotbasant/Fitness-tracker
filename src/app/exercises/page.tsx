@@ -556,7 +556,7 @@ function NewExerciseForm({
             setBodyParts([])
             setTags([])
             setLevel(1)
-            setType("standard")
+            setSelectedTypes(["standard"])
             setSplit("push")
             setRepGoal("")
           }}

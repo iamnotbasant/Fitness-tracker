@@ -16,6 +16,8 @@ export type Exercise = {
 export type Workout = {
   id: ID
   name?: string
+  workoutName?: string
+  routineId?: ID | number
   date: string
   time?: string
   exerciseId: ID

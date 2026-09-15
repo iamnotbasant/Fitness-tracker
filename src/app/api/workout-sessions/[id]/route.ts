@@ -99,7 +99,7 @@ export async function PUT(
     const updates: {
       startedAt?: Date;
       finishedAt?: Date;
-      items?: unknown;
+      items?: any[];
     } = {};
 
     if (body.startedAt !== undefined) {
