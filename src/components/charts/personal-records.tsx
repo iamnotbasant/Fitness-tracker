@@ -3,33 +3,75 @@
 import { useMemo, useState, useEffect } from "react"
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts"
 import type { Workout } from "@/lib/types"
-import { ChevronDown, ChevronUp, Settings } from "lucide-react"
+import { ChevronDown, ChevronUp, Settings, Search, Flame, TrendingUp } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
+import { AnimatedTrophy } from "@/components/ui/animated-icons"
 
 export function PersonalRecords({ workouts }: { workouts: Workout[] }) {
   const [expandedExercise, setExpandedExercise] = useState<string | null>(null)
   const [showSettings, setShowSettings] = useState(false)
   const [selectedExercises, setSelectedExercises] = useState<string[]>([])
+  const [searchQuery, setSearchQuery] = useState("")
 
-  // Get all available exercises with their PRs
+  // Get all available exercises with their PRs and history
   const allExercises = useMemo(() => {
-    const exerciseMap = new Map<string, { maxReps: number; history: { date: string; reps: number }[] }>()
+    const exerciseMap = new Map<
+      string,
+      {
+        maxReps: number
+        maxWeight: number
+        estimated1RM: number
+        prDate: string
+        history: { date: string; reps: number; weight: number; points: number }[]
+      }
+    >()
     
     workouts.forEach((w) => {
-      const existing = exerciseMap.get(w.exerciseName) || { maxReps: 0, history: [] }
-      const currentMax = Math.max(existing.maxReps, w.reps)
+      const exName = w.exerciseName || w.name || "Unknown Exercise"
+      const existing = exerciseMap.get(exName) || {
+        maxReps: 0,
+        maxWeight: 0,
+        estimated1RM: 0,
+        prDate: w.date,
+        history: [],
+      }
       
-      exerciseMap.set(w.exerciseName, {
-        maxReps: currentMax,
-        history: [...existing.history, { date: w.date, reps: w.reps }].sort((a, b) => a.date.localeCompare(b.date))
+      const reps = w.reps || 0
+      const weight = w.weight || 0
+      const e1RM = weight > 0 ? Math.round(weight * (1 + reps / 30)) : 0
+
+      if (reps > existing.maxReps || (reps === existing.maxReps && weight > existing.maxWeight)) {
+        existing.prDate = w.date
+      }
+
+      existing.maxReps = Math.max(existing.maxReps, reps)
+      existing.maxWeight = Math.max(existing.maxWeight, weight)
+      existing.estimated1RM = Math.max(existing.estimated1RM, e1RM)
+      existing.history.push({
+        date: w.date,
+        reps,
+        weight,
+        points: w.points ?? w.total_points ?? 0,
       })
+
+      exerciseMap.set(exName, existing)
     })
 
     return Array.from(exerciseMap.entries())
-      .map(([name, data]) => ({ name, ...data }))
+      .map(([name, data]) => {
+        const sortedHistory = [...data.history].sort((a, b) => a.date.localeCompare(b.date))
+        const firstReps = sortedHistory[0]?.reps || 1
+        const improvement = Math.round(((data.maxReps - firstReps) / Math.max(1, firstReps)) * 100)
+        return {
+          name,
+          ...data,
+          history: sortedHistory,
+          improvement: Math.max(0, improvement),
+        }
+      })
       .sort((a, b) => b.maxReps - a.maxReps)
   }, [workouts])
 
@@ -37,19 +79,23 @@ export function PersonalRecords({ workouts }: { workouts: Workout[] }) {
   useEffect(() => {
     const stored = localStorage.getItem("pr-selected-exercises")
     if (stored) {
-      setSelectedExercises(JSON.parse(stored))
+      try {
+        setSelectedExercises(JSON.parse(stored))
+      } catch {}
     } else if (allExercises.length > 0) {
-      // Default to top 4 exercises
-      const defaultSelected = allExercises.slice(0, 4).map(e => e.name)
+      // Default to top 6 exercises
+      const defaultSelected = allExercises.slice(0, 6).map((e) => e.name)
       setSelectedExercises(defaultSelected)
       localStorage.setItem("pr-selected-exercises", JSON.stringify(defaultSelected))
     }
   }, [allExercises])
 
-  // Filter to show only selected exercises
+  // Filter to show only selected exercises and search
   const displayedPRs = useMemo(() => {
-    return allExercises.filter(e => selectedExercises.includes(e.name))
-  }, [allExercises, selectedExercises])
+    return allExercises
+      .filter((e) => selectedExercises.includes(e.name))
+      .filter((e) => e.name.toLowerCase().includes(searchQuery.toLowerCase()))
+  }, [allExercises, selectedExercises, searchQuery])
 
   const handleSaveSettings = () => {
     localStorage.setItem("pr-selected-exercises", JSON.stringify(selectedExercises))
@@ -57,9 +103,9 @@ export function PersonalRecords({ workouts }: { workouts: Workout[] }) {
   }
 
   const handleToggleExercise = (exerciseName: string) => {
-    setSelectedExercises(prev => {
+    setSelectedExercises((prev) => {
       if (prev.includes(exerciseName)) {
-        return prev.filter(e => e !== exerciseName)
+        return prev.filter((e) => e !== exerciseName)
       } else {
         return [...prev, exerciseName]
       }
@@ -67,64 +113,100 @@ export function PersonalRecords({ workouts }: { workouts: Workout[] }) {
   }
 
   const toggleExpand = (exerciseName: string) => {
-    setExpandedExercise(prev => prev === exerciseName ? null : exerciseName)
+    setExpandedExercise((prev) => (prev === exerciseName ? null : exerciseName))
   }
 
   if (allExercises.length === 0) {
     return (
-      <div className="flex h-64 items-center justify-center text-sm text-muted-foreground">
-        No workout data yet
+      <div className="flex h-64 items-center justify-center text-sm text-muted-foreground bg-secondary/20 rounded-2xl border border-dashed border-border/70">
+        No workout data logged yet for Personal Records.
       </div>
     )
   }
 
   return (
     <>
-      {/* Settings Button - Top Right */}
-      <div className="mb-4 flex justify-end">
+      {/* Controls: Search + Exercise Config */}
+      <div className="flex items-center justify-between gap-3 pb-3 border-b border-border/40 flex-wrap">
+        <div className="relative flex-1 max-w-xs">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Search PR records..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-secondary/40 border border-border/60 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/60"
+          />
+        </div>
+
         <button
           onClick={() => setShowSettings(true)}
-          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-secondary/50 border border-border/60 text-xs font-semibold text-muted-foreground hover:text-foreground hover:border-border transition-all cursor-pointer"
         >
-          <Settings className="h-4 w-4" />
-          <span>Select Exercises</span>
+          <Settings className="h-3.5 w-3.5" />
+          <span>Customize PRs</span>
         </button>
       </div>
 
-      {/* PR List - Vertical */}
-      <div className="space-y-1">
+      {/* PR List Cards */}
+      <div className="space-y-2 pt-1">
         {displayedPRs.map((pr) => {
           const isExpanded = expandedExercise === pr.name
-          
+
           return (
-            <div key={pr.name} className="border-b border-border/40 last:border-none">
+            <div
+              key={pr.name}
+              className={`rounded-2xl border transition-all ${
+                isExpanded
+                  ? "bg-secondary/40 border-primary/40 shadow-sm"
+                  : "bg-secondary/20 border-border/50 hover:bg-secondary/30 hover:border-border"
+              }`}
+            >
               {/* PR Row */}
               <button
                 onClick={() => toggleExpand(pr.name)}
-                className="w-full py-4 px-3 flex items-center justify-between rounded-lg transition-colors hover:bg-muted/40 cursor-pointer"
+                className="w-full p-3.5 sm:p-4 flex items-center justify-between gap-3 text-left cursor-pointer"
               >
-                {/* Left: Exercise Name */}
-                <div className="flex-1 text-left font-medium text-base text-foreground">
-                  {pr.name}
+                {/* Left: Exercise Name & Date */}
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="h-9 w-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                    <AnimatedTrophy className="h-4.5 w-4.5" />
+                  </div>
+                  <div className="min-w-0">
+                    <span className="font-bold text-sm text-foreground block truncate">
+                      {pr.name}
+                    </span>
+                    <span className="text-[11px] text-muted-foreground block">
+                      Set on {new Date(pr.prDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                    </span>
+                  </div>
                 </div>
 
-                {/* Middle: PR Value (Visual Centerpiece) */}
-                <div className="flex-1 text-center font-bold text-lg text-primary">
-                  {pr.maxReps} reps
+                {/* Middle: PR Metric */}
+                <div className="text-right shrink-0">
+                  <div className="flex items-center gap-1.5 justify-end">
+                    <span className="text-lg font-black text-primary">
+                      {pr.maxReps} <span className="text-xs font-bold text-muted-foreground">reps</span>
+                    </span>
+                  </div>
+                  {pr.estimated1RM > 0 ? (
+                    <span className="text-[10px] font-bold text-muted-foreground block">
+                      ~{pr.estimated1RM} kg 1RM
+                    </span>
+                  ) : pr.improvement > 0 ? (
+                    <span className="text-[10px] font-bold text-emerald-400 flex items-center gap-0.5 justify-end">
+                      <TrendingUp className="h-2.5 w-2.5" />
+                      +{pr.improvement}% growth
+                    </span>
+                  ) : null}
                 </div>
 
-                {/* Right: View Progression Link */}
-                <div className="flex-1 text-right flex items-center justify-end gap-1 text-sm text-muted-foreground">
+                {/* Right: Expand Toggle */}
+                <div className="pl-1 shrink-0 text-muted-foreground">
                   {isExpanded ? (
-                    <>
-                      <span>Hide</span>
-                      <ChevronUp className="h-4 w-4" />
-                    </>
+                    <ChevronUp className="h-4 w-4" />
                   ) : (
-                    <>
-                      <span>View</span>
-                      <ChevronDown className="h-4 w-4 -rotate-90" />
-                    </>
+                    <ChevronDown className="h-4 w-4" />
                   )}
                 </div>
               </button>

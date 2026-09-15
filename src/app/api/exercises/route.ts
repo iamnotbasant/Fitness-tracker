@@ -21,16 +21,23 @@ export async function GET(request: NextRequest) {
     const type = searchParams.get('type');
     const level = searchParams.get('level');
 
-    // Return ALL exercises for all users
-    const conditions = [];
+    // Return exercises created by an admin (official default exercises) OR created by current user
+    const conditions = [
+      or(
+        eq(user.isAdmin, true),
+        eq(exercises.userId, currentUser.id),
+        eq(exercises.createdBy, currentUser.id)
+      )!
+    ];
 
     if (search) {
-      conditions.push(
-        or(
-          like(exercises.name, `%${search}%`),
-          like(exercises.description, `%${search}%`)
-        )
+      const searchCond = or(
+        like(exercises.name, `%${search}%`),
+        like(exercises.description, `%${search}%`)
       );
+      if (searchCond) {
+        conditions.push(searchCond);
+      }
     }
 
     if (type) {

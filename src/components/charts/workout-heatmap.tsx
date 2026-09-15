@@ -3,6 +3,7 @@
 import { useMemo, useState, useRef, useEffect } from "react"
 import type { Workout } from "@/lib/types"
 import { Flame, Trophy, Calendar, Zap, ChevronRight } from "lucide-react"
+import { AnimatedFlame, AnimatedTrophy, AnimatedCalendar, AnimatedActivity } from "@/components/ui/animated-icons"
 import soundManager from "@/lib/sounds"
 
 interface DayData {
@@ -16,7 +17,7 @@ type Palette = "emerald" | "flame" | "monochrome"
 export type HeatmapRange = "4w" | "12w" | "26w" | "52w" | "all"
 
 export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
-  const [palette, setPalette] = useState<Palette>("emerald")
+  const [palette, setPalette] = useState<Palette>("flame")
   const [range, setRange] = useState<HeatmapRange>("52w")
   const scrollContainerRef = useRef<HTMLDivElement>(null)
 
@@ -220,13 +221,13 @@ export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
     <div className="rounded-2xl border border-border/70 bg-card p-4 sm:p-6 shadow-sm space-y-5">
       {/* Heatmap Card Header */}
       <div className="flex items-center justify-between gap-4 flex-wrap pb-2 border-b border-border/40">
-        <div>
-          <h3 className="text-sm font-semibold text-foreground">Consistency</h3>
+        <div className="flex items-center gap-2">
+          <AnimatedCalendar className="h-4.5 w-4.5 text-primary" />
+          <h3 className="text-sm font-semibold text-foreground">Workout Consistency</h3>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           {/* Start Date Box */}
           <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-secondary/50 border border-border/60 text-xs">
-            <Calendar className="h-3.5 w-3.5 text-primary" />
             <span className="text-muted-foreground">Started:</span>
             <span className="font-semibold text-foreground">
               {earliestWorkoutDate
@@ -242,6 +243,57 @@ export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
           <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-secondary text-secondary-foreground">
             {streakStats.activeDays} active days
           </span>
+        </div>
+      </div>
+
+      {/* Animated Consistency Highlight Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+        <div className="p-3 rounded-xl bg-secondary/30 border border-border/50 flex items-center gap-2.5">
+          <div className="h-8 w-8 rounded-lg bg-orange-500/10 text-orange-500 flex items-center justify-center shrink-0">
+            <AnimatedFlame className="h-4 w-4" />
+          </div>
+          <div>
+            <span className="text-[10px] text-muted-foreground block font-medium">Current Streak</span>
+            <span className="text-base font-black text-foreground">
+              {streakStats.currentStreak} <span className="text-[10px] text-muted-foreground font-normal">days</span>
+            </span>
+          </div>
+        </div>
+
+        <div className="p-3 rounded-xl bg-secondary/30 border border-border/50 flex items-center gap-2.5">
+          <div className="h-8 w-8 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0">
+            <AnimatedTrophy className="h-4 w-4" />
+          </div>
+          <div>
+            <span className="text-[10px] text-muted-foreground block font-medium">Longest Streak</span>
+            <span className="text-base font-black text-foreground">
+              {streakStats.longestStreak} <span className="text-[10px] text-muted-foreground font-normal">days</span>
+            </span>
+          </div>
+        </div>
+
+        <div className="p-3 rounded-xl bg-secondary/30 border border-border/50 flex items-center gap-2.5">
+          <div className="h-8 w-8 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
+            <AnimatedCalendar className="h-4 w-4" />
+          </div>
+          <div>
+            <span className="text-[10px] text-muted-foreground block font-medium">Active Days</span>
+            <span className="text-base font-black text-foreground">
+              {streakStats.activeDays} <span className="text-[10px] text-muted-foreground font-normal">days</span>
+            </span>
+          </div>
+        </div>
+
+        <div className="p-3 rounded-xl bg-secondary/30 border border-border/50 flex items-center gap-2.5">
+          <div className="h-8 w-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+            <AnimatedActivity className="h-4 w-4" />
+          </div>
+          <div>
+            <span className="text-[10px] text-muted-foreground block font-medium">Logged Sessions</span>
+            <span className="text-base font-black text-primary">
+              {streakStats.totalWorkouts} <span className="text-[10px] text-muted-foreground font-normal">total</span>
+            </span>
+          </div>
         </div>
       </div>
 

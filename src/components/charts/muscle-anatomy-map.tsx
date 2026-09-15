@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react"
 import type { Workout, Exercise } from "@/lib/types"
 import { Dumbbell, Flame, Layers, Activity, Info, CheckCircle2, X, BarChart3 } from "lucide-react"
+import { AnimatedFlame, AnimatedDumbbell, AnimatedActivity } from "@/components/ui/animated-icons"
 import soundManager from "@/lib/sounds"
 import { motion, AnimatePresence } from "framer-motion"
 import {
@@ -332,7 +333,10 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
     <div className="rounded-2xl border border-border/70 bg-card p-4 sm:p-6 shadow-sm space-y-5">
       {/* Header & View Controls */}
       <div className="flex items-center justify-between gap-4 border-b border-border/40 pb-3">
-        <h3 className="text-sm font-semibold text-foreground">Muscle Map</h3>
+        <div className="flex items-center gap-2">
+          <AnimatedFlame className="h-4.5 w-4.5 text-primary" />
+          <h3 className="text-sm font-semibold text-foreground">Muscle Map & Heatmap</h3>
+        </div>
 
         {/* View Switcher: Both, Front, Back */}
         <div className="flex items-center gap-1 bg-secondary/50 p-1 rounded-xl border border-border/60">
@@ -372,7 +376,7 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
       {/* Main Grid: Body Map + Muscle Inspector */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Anatomical Models Container */}
-        <div className="lg:col-span-7 flex flex-col items-center justify-center p-4 sm:p-6 rounded-2xl bg-[#0e1015] border border-border/60">
+        <div className="lg:col-span-7 flex flex-col items-center justify-center p-4 sm:p-6 rounded-2xl bg-[#08080a] border border-border/60">
           <div className={`w-full flex ${activeView === "both" ? "flex-row justify-center gap-4 sm:gap-8" : "justify-center"} items-center`}>
             {/* Anterior (Front) View */}
             {(activeView === "both" || activeView === "front") && (
@@ -411,7 +415,7 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
           <div className="flex items-center gap-4 pt-6 text-[11px] text-muted-foreground flex-wrap justify-center border-t border-border/30 w-full mt-4">
             <span className="font-semibold text-foreground/80">Activation Legend:</span>
             <div className="flex items-center gap-1.5">
-              <span className="h-3 w-3 rounded-sm bg-[#22252e] border border-[#333846]" />
+              <span className="h-3 w-3 rounded-sm bg-[#18181b] border border-[#27272a]" />
               <span>Unworked</span>
             </div>
             <div className="flex items-center gap-1.5">
@@ -469,6 +473,35 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
                   </div>
                 </div>
 
+                {/* Heat Intensity Gauge */}
+                <div className="p-3 rounded-xl bg-background/80 border border-border/50 space-y-1.5">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-muted-foreground font-medium flex items-center gap-1.5">
+                      <AnimatedActivity className="h-3.5 w-3.5 text-primary" />
+                      Heat Intensity
+                    </span>
+                    <span className="font-bold text-foreground">
+                      {Math.round(selectedStat.intensity * 100)}%
+                    </span>
+                  </div>
+                  <div className="h-2 w-full rounded-full bg-secondary overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all duration-500"
+                      style={{
+                        width: `${Math.max(4, Math.round(selectedStat.intensity * 100))}%`,
+                        backgroundColor:
+                          selectedStat.intensity === 0
+                            ? "#27272a"
+                            : selectedStat.intensity < 0.35
+                            ? "#eab308"
+                            : selectedStat.intensity < 0.7
+                            ? "#f97316"
+                            : "#ef4444",
+                      }}
+                    />
+                  </div>
+                </div>
+
                 {/* Quick Stats Grid */}
                 <div className="grid grid-cols-3 gap-2.5 text-center">
                   <div className="p-2.5 rounded-xl bg-background/80 border border-border/50">
@@ -488,7 +521,7 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
                 {/* Targeted Exercises List */}
                 <div className="space-y-2 pt-1">
                   <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
-                    <Dumbbell className="h-3.5 w-3.5" />
+                    <AnimatedDumbbell className="h-3.5 w-3.5 text-primary" />
                     Targeted Exercises Logged
                   </span>
                   {selectedStat.exercises.length === 0 ? (

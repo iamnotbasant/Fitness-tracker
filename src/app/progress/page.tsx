@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { RadialGoalsChart } from "@/components/charts/radial-goals-chart"
 import { MuscleRadarChart } from "@/components/charts/muscle-radar-chart"
 import { Dumbbell, Award, Flame, Calendar } from "lucide-react"
+import { AnimatedDumbbell, AnimatedTrophy, AnimatedFlame, AnimatedCalendar } from "@/components/ui/animated-icons"
 
 type TimeRange = "7days" | "month" | "3months" | "year" | "all"
 
@@ -138,7 +139,7 @@ export default function ProgressPage() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-5">
           <div className="rounded-2xl border border-border/60 bg-card/60 p-3.5 flex items-center gap-3">
             <div className="h-9 w-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
-              <Dumbbell className="h-4.5 w-4.5" />
+              <AnimatedDumbbell className="h-4.5 w-4.5" />
             </div>
             <div>
               <span className="text-[11px] font-medium text-muted-foreground block">Total Volume</span>
@@ -148,7 +149,7 @@ export default function ProgressPage() {
 
           <div className="rounded-2xl border border-border/60 bg-card/60 p-3.5 flex items-center gap-3">
             <div className="h-9 w-9 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0">
-              <Award className="h-4.5 w-4.5" />
+              <AnimatedTrophy className="h-4.5 w-4.5" />
             </div>
             <div>
               <span className="text-[11px] font-medium text-muted-foreground block">Workout Points</span>
@@ -158,7 +159,7 @@ export default function ProgressPage() {
 
           <div className="rounded-2xl border border-border/60 bg-card/60 p-3.5 flex items-center gap-3">
             <div className="h-9 w-9 rounded-xl bg-orange-500/10 text-orange-500 flex items-center justify-center shrink-0">
-              <Flame className="h-4.5 w-4.5" />
+              <AnimatedFlame className="h-4.5 w-4.5" />
             </div>
             <div>
               <span className="text-[11px] font-medium text-muted-foreground block">Current Streak</span>
@@ -168,7 +169,7 @@ export default function ProgressPage() {
 
           <div className="rounded-2xl border border-border/60 bg-card/60 p-3.5 flex items-center gap-3">
             <div className="h-9 w-9 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
-              <Calendar className="h-4.5 w-4.5" />
+              <AnimatedCalendar className="h-4.5 w-4.5" />
             </div>
             <div>
               <span className="text-[11px] font-medium text-muted-foreground block">Active Days</span>

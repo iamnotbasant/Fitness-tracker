@@ -10,13 +10,14 @@ import {
 } from "recharts"
 import type { Workout } from "@/lib/types"
 import { Target, Flame, Dumbbell, Zap } from "lucide-react"
+import { AnimatedTarget, AnimatedFlame, AnimatedCheckmark } from "@/components/ui/animated-icons"
 
 interface RadialGoalsChartProps {
   workouts: Workout[]
 }
 
 export function RadialGoalsChart({ workouts }: RadialGoalsChartProps) {
-  const { chartData, totals } = useMemo(() => {
+  const { chartData, totals, avgCompletion } = useMemo(() => {
     // Calculate stats from workouts
     const totalWorkouts = workouts.length
     const totalSets = workouts.reduce((acc, w) => acc + (w.sets || 1), 0)
@@ -37,6 +38,8 @@ export function RadialGoalsChart({ workouts }: RadialGoalsChartProps) {
     const pctReps = Math.min(Math.round((totalReps / targetReps) * 100), 100)
     const pctPoints = Math.min(Math.round((totalPoints / targetPoints) * 100), 100)
 
+    const avg = Math.round((pctWorkouts + pctSets + pctReps + pctPoints) / 4)
+
     // Recharts RadialBar expects outer rings to be at the end of the array
     const data = [
       {
@@ -44,21 +47,21 @@ export function RadialGoalsChart({ workouts }: RadialGoalsChartProps) {
         value: pctPoints,
         actual: totalPoints,
         target: targetPoints,
-        fill: "#f43f5e", // rose
+        fill: "#ea384c", // DockOS coral/crimson
       },
       {
         name: "Reps Volume",
         value: pctReps,
         actual: totalReps,
         target: targetReps,
-        fill: "#f59e0b", // amber
+        fill: "#f97316", // orange
       },
       {
         name: "Total Sets",
         value: pctSets,
         actual: totalSets,
         target: targetSets,
-        fill: "#10b981", // emerald
+        fill: "#eab308", // yellow/amber
       },
       {
         name: "Workouts Frequency",
@@ -77,6 +80,7 @@ export function RadialGoalsChart({ workouts }: RadialGoalsChartProps) {
         reps: totalReps,
         points: totalPoints,
       },
+      avgCompletion: avg,
     }
   }, [workouts])
 
@@ -105,24 +109,35 @@ export function RadialGoalsChart({ workouts }: RadialGoalsChartProps) {
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-4 sm:p-6 shadow-sm">
-      <div className="flex items-center justify-between pb-3 border-b border-border mb-4">
-        <div>
-          <h3 className="text-sm font-semibold flex items-center gap-2 text-foreground">
-            <Target className="h-4 w-4 text-primary" />
-            Weekly Goals
+    <div className="rounded-2xl border border-border/70 bg-card p-4 sm:p-6 shadow-sm space-y-4">
+      <div className="flex items-center justify-between pb-3 border-b border-border/40 flex-wrap gap-2">
+        <div className="flex items-center gap-2">
+          <AnimatedTarget className="h-4.5 w-4.5 text-primary" />
+          <h3 className="text-sm font-semibold text-foreground">
+            Weekly Goals & Targets
           </h3>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${
+            avgCompletion >= 100 
+              ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-400" 
+              : avgCompletion >= 60 
+              ? "bg-primary/15 border-primary/30 text-primary" 
+              : "bg-secondary border-border/60 text-muted-foreground"
+          }`}>
+            {avgCompletion >= 100 ? "Goal Crushed 🎉" : `${avgCompletion}% Complete`}
+          </span>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
         {/* Radial Chart */}
         <div className="md:col-span-6 h-64 w-full relative flex items-center justify-center">
           <ResponsiveContainer width="100%" height="100%">
             <RadialBarChart
               cx="50%"
               cy="50%"
-              innerRadius="25%"
+              innerRadius="26%"
               outerRadius="95%"
               barSize={12}
               data={chartData}
@@ -137,22 +152,25 @@ export function RadialGoalsChart({ workouts }: RadialGoalsChartProps) {
               />
               <Tooltip content={<CustomTooltip />} />
               <RadialBar
-                background={{ fill: "#141417" }}
+                background={{ fill: "#18181b" }}
                 dataKey="value"
                 cornerRadius={6}
               />
             </RadialBarChart>
           </ResponsiveContainer>
-          {/* Centered Ring Icon */}
-          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-            <Flame className="h-6 w-6 text-primary animate-pulse" />
-            <span className="text-[10px] text-muted-foreground font-medium uppercase mt-0.5">
-              Goals
+          {/* Centered Ring Icon & % */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none select-none">
+            <AnimatedFlame className="h-6 w-6 text-primary mb-0.5" />
+            <span className="text-base font-black text-foreground">
+              {avgCompletion}%
+            </span>
+            <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">
+              Weekly
             </span>
           </div>
         </div>
 
-        {/* Legend Cards */}
+        {/* Legend Cards with Mini Progress Bars */}
         <div className="md:col-span-6 space-y-2.5">
           {chartData
             .slice()
@@ -160,26 +178,39 @@ export function RadialGoalsChart({ workouts }: RadialGoalsChartProps) {
             .map((item) => (
               <div
                 key={item.name}
-                className="flex items-center justify-between p-2.5 rounded-xl border border-border/60 bg-secondary/30 text-xs"
+                className="p-3 rounded-xl border border-border/60 bg-secondary/30 text-xs space-y-2 hover:bg-secondary/40 transition-colors"
               >
-                <div className="flex items-center gap-2.5">
-                  <span
-                    className="h-3 w-3 rounded-full shrink-0 shadow-sm"
-                    style={{ backgroundColor: item.fill }}
-                  />
-                  <div>
-                    <span className="font-semibold text-foreground block">
-                      {item.name}
-                    </span>
-                    <span className="text-[11px] text-muted-foreground">
-                      {item.actual.toLocaleString()} of {item.target.toLocaleString()} target
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2.5">
+                    <span
+                      className="h-2.5 w-2.5 rounded-full shrink-0 shadow-sm"
+                      style={{ backgroundColor: item.fill }}
+                    />
+                    <div>
+                      <span className="font-semibold text-foreground block">
+                        {item.name}
+                      </span>
+                      <span className="text-[11px] text-muted-foreground">
+                        {item.actual.toLocaleString()} / {item.target.toLocaleString()} target
+                      </span>
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <span className="text-sm font-black" style={{ color: item.fill }}>
+                      {item.value}%
                     </span>
                   </div>
                 </div>
-                <div className="text-right">
-                  <span className="text-sm font-bold" style={{ color: item.fill }}>
-                    {item.value}%
-                  </span>
+
+                {/* Progress bar */}
+                <div className="h-1.5 w-full rounded-full bg-secondary overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all duration-500"
+                    style={{
+                      width: `${item.value}%`,
+                      backgroundColor: item.fill,
+                    }}
+                  />
                 </div>
               </div>
             ))}

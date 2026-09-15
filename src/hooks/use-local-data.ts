@@ -1,8 +1,10 @@
 "use client"
 
-import useSWR from "swr"
+import useSWR, { mutate as globalMutate } from "swr"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import type { Exercise, Workout, Profile, WorkoutSession, SessionExercise, Routine, RoutineExercise } from "@/lib/types"
 import { useSession } from "@/lib/auth-client"
+import { toast } from "sonner"
 
 const fetcher = async (url: string) => {
   const token = typeof window !== "undefined" ? localStorage.getItem("bearer_token") : null
@@ -38,31 +40,64 @@ const fetcher = async (url: string) => {
 }
 
 // Automatically sync offline queued workouts when device reconnects to internet
+export async function syncOfflineWorkouts(): Promise<number> {
+  if (typeof window === "undefined" || !navigator.onLine) return 0
+  const queueRaw = localStorage.getItem("ft_pending_offline_workouts")
+  if (!queueRaw) return 0
+  
+  try {
+    const queue: any[] = JSON.parse(queueRaw)
+    if (!Array.isArray(queue) || queue.length === 0) return 0
+
+    const token = localStorage.getItem("bearer_token")
+    let successCount = 0
+    const remaining: any[] = []
+
+    for (const w of queue) {
+      try {
+        // Strip temporary offline id before saving
+        const { id, ...workoutData } = w
+        const res = await fetch("/api/workouts", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` }),
+          },
+          credentials: "include",
+          body: JSON.stringify(workoutData),
+        })
+        if (res.ok) {
+          successCount++
+        } else {
+          remaining.push(w)
+        }
+      } catch {
+        remaining.push(w)
+      }
+    }
+
+    if (remaining.length === 0) {
+      localStorage.removeItem("ft_pending_offline_workouts")
+    } else {
+      localStorage.setItem("ft_pending_offline_workouts", JSON.stringify(remaining))
+    }
+
+    if (successCount > 0) {
+      globalMutate("/api/workouts?limit=10000")
+    }
+
+    return successCount
+  } catch (e) {
+    console.error("[offline-sync] Error during sync:", e)
+    return 0
+  }
+}
+
 if (typeof window !== "undefined") {
   window.addEventListener("online", async () => {
-    try {
-      const queueRaw = localStorage.getItem("ft_pending_offline_workouts")
-      if (queueRaw) {
-        const queue: any[] = JSON.parse(queueRaw)
-        if (Array.isArray(queue) && queue.length > 0) {
-          const token = localStorage.getItem("bearer_token")
-          for (const w of queue) {
-            await fetch("/api/workouts", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                ...(token && { Authorization: `Bearer ${token}` }),
-              },
-              credentials: "include",
-              body: JSON.stringify(w),
-            }).catch(() => {})
-          }
-          localStorage.removeItem("ft_pending_offline_workouts")
-          console.log(`[offline-sync] Successfully synced ${queue.length} workouts!`)
-        }
-      }
-    } catch (e) {
-      console.error("[offline-sync] Error during sync:", e)
+    const count = await syncOfflineWorkouts()
+    if (count > 0) {
+      toast.success(`Online! Synced ${count} offline workout(s) to server.`)
     }
   })
 }
@@ -179,6 +214,22 @@ export function useWorkouts() {
     }
   )
 
+  const workouts = useMemo(() => {
+    const serverWorkouts = data?.workouts ?? []
+    if (typeof window === "undefined") return serverWorkouts
+    try {
+      const pendingRaw = localStorage.getItem("ft_pending_offline_workouts")
+      if (!pendingRaw) return serverWorkouts
+      const pending: Workout[] = JSON.parse(pendingRaw)
+      if (!Array.isArray(pending) || pending.length === 0) return serverWorkouts
+      const existingIds = new Set(serverWorkouts.map((w) => String(w.id)))
+      const pendingUnique = pending.filter((w) => !existingIds.has(String(w.id)))
+      return [...pendingUnique, ...serverWorkouts]
+    } catch {
+      return serverWorkouts
+    }
+  }, [data?.workouts])
+
   const upsert = async (payload: Omit<Workout, "volume"> & { volume?: number }) => {
     const token = localStorage.getItem("bearer_token")
     const volume = payload.volume ?? payload.sets * payload.reps
@@ -197,6 +248,18 @@ export function useWorkouts() {
 
   const remove = async (id: string) => {
     const token = localStorage.getItem("bearer_token")
+    if (typeof window !== "undefined") {
+      try {
+        const pendingRaw = localStorage.getItem("ft_pending_offline_workouts")
+        if (pendingRaw) {
+          const pending = JSON.parse(pendingRaw)
+          localStorage.setItem(
+            "ft_pending_offline_workouts",
+            JSON.stringify(pending.filter((w: any) => String(w.id) !== String(id)))
+          )
+        }
+      } catch {}
+    }
     const res = await fetch(`/api/workouts/${id}`, {
       method: "DELETE",
       credentials: "include",
@@ -226,7 +289,7 @@ export function useWorkouts() {
     await mutate()
   }
 
-  return { workouts: data?.workouts ?? [], upsert, remove, saveWorkouts, refresh: () => mutate(), isLoading }
+  return { workouts, upsert, remove, saveWorkouts, refresh: () => mutate(), isLoading }
 }
 
 export function useProfile() {
@@ -270,16 +333,40 @@ export function useActiveSession() {
   const { data: session } = useSession()
   
   const customFetcher = async (url: string) => {
-    const token = localStorage.getItem("bearer_token")
-    const res = await fetch(`${url}?status=active&limit=1`, {
-      credentials: "include",
-      headers: token ? {
-        Authorization: `Bearer ${token}`,
-      } : {},
-    })
-    if (!res.ok) throw new Error("Failed to fetch")
-    const sessions = await res.json()
-    return { session: sessions.length > 0 ? sessions[0] : null }
+    // Check local storage for offline session first if offline
+    if (typeof window !== "undefined" && !navigator.onLine) {
+      try {
+        const local = localStorage.getItem("ft_active_offline_session")
+        if (local) return { session: JSON.parse(local) }
+      } catch {}
+    }
+
+    const token = typeof window !== "undefined" ? localStorage.getItem("bearer_token") : null
+    try {
+      const res = await fetch(`${url}?status=active&limit=1`, {
+        credentials: "include",
+        headers: token ? {
+          Authorization: `Bearer ${token}`,
+        } : {},
+      })
+      if (res.ok) {
+        const sessions = await res.json()
+        const active = sessions.length > 0 ? sessions[0] : null
+        if (active && typeof window !== "undefined") {
+          localStorage.setItem("ft_active_offline_session", JSON.stringify(active))
+        }
+        return { session: active }
+      }
+    } catch (e) {
+      // Network failure, fallback to offline cached session
+      if (typeof window !== "undefined") {
+        try {
+          const local = localStorage.getItem("ft_active_offline_session")
+          if (local) return { session: JSON.parse(local) }
+        } catch {}
+      }
+    }
+    return { session: null }
   }
 
   const { data, mutate } = useSWR<{ session: WorkoutSession | null }>(
@@ -293,48 +380,64 @@ export function useActiveSession() {
   )
 
   const start = async (routineId?: string) => {
-    const token = localStorage.getItem("bearer_token")
+    const token = typeof window !== "undefined" ? localStorage.getItem("bearer_token") : null
     const now = new Date()
     const localDatetime = `${getLocalDateString(now)}T${getLocalTimeString(now)}:00`
     
-    const res = await fetch("/api/workout-sessions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(token && { Authorization: `Bearer ${token}` }),
-      },
-      credentials: "include",
-      body: JSON.stringify({ 
-        startedAt: localDatetime,
-        items: [],
-        routineId 
-      }),
-    })
-    if (!res.ok) {
-      const errorData = await res.json().catch(() => ({ error: "Unknown error" }))
-      console.error("Failed to start session:", errorData)
-      throw new Error(`Failed to start session: ${errorData.error || errorData.code || res.statusText}`)
+    // Create optimistic local session immediately
+    const optimisticSession: WorkoutSession = {
+      id: `session-local-${Date.now()}`,
+      userId: "local",
+      status: "active",
+      startedAt: localDatetime,
+      items: [],
+      routineId,
+      createdAt: localDatetime,
     }
-    const result = await res.json()
-    await mutate()
-    return result
+
+    // Save locally immediately
+    if (typeof window !== "undefined") {
+      localStorage.setItem("ft_active_offline_session", JSON.stringify(optimisticSession))
+    }
+    mutate({ session: optimisticSession }, { revalidate: false })
+
+    if (typeof window !== "undefined" && !navigator.onLine) {
+      return optimisticSession
+    }
+
+    try {
+      const res = await fetch("/api/workout-sessions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        credentials: "include",
+        body: JSON.stringify({ 
+          startedAt: localDatetime,
+          items: [],
+          routineId 
+        }),
+      })
+      if (res.ok) {
+        const result = await res.json()
+        if (typeof window !== "undefined") {
+          localStorage.setItem("ft_active_offline_session", JSON.stringify(result))
+        }
+        mutate({ session: result }, { revalidate: false })
+        return result
+      }
+    } catch (e) {
+      console.warn("Offline or network issue starting session on server, proceeding locally:", e)
+    }
+    return optimisticSession
   }
 
   const addExercise = async (exercise: Pick<SessionExercise, "id" | "name" | "split" | "level">) => {
-    const token = localStorage.getItem("bearer_token")
     if (!data?.session) {
       console.error("No active session found")
       return
     }
-    
-    const exerciseRes = await fetch(`/api/exercises/${exercise.id}`, {
-      credentials: "include",
-      headers: token ? {
-        Authorization: `Bearer ${token}`,
-      } : {},
-    })
-    const exerciseData = await exerciseRes.json()
-    const isTimerExercise = exerciseData?.type === "timer"
     
     const newItem: SessionExercise = {
       id: `item-${crypto.randomUUID()}`,
@@ -345,34 +448,27 @@ export function useActiveSession() {
       notes: "",
       restEnabled: true,
       restSec: 60,
-      sets: [isTimerExercise ? { timeSeconds: 0, done: false } : { reps: 0, done: false }],
+      sets: [{ reps: 0, done: false }],
     }
     
     const { userId, id, createdAt, ...sessionData } = data.session
     const updatedItems = [...data.session.items, newItem]
     
-    const res = await fetch(`/api/workout-sessions?id=${data.session.id}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        ...(token && { Authorization: `Bearer ${token}` }),
-      },
-      credentials: "include",
-      body: JSON.stringify({ ...sessionData, items: updatedItems }),
-    })
-    
-    if (!res.ok) {
-      const errorData = await res.json().catch(() => ({ error: "Unknown error" }))
-      console.error("Failed to add exercise:", errorData)
-      throw new Error(`Failed to add exercise: ${errorData.error || errorData.code || res.statusText}`)
-    }
-    
-    await mutate()
+    // Optimistic update — instant UI response
+    mutate({ session: { ...data.session, items: updatedItems } }, { revalidate: false })
+    debouncedSave(data.session.id, sessionData, updatedItems)
   }
 
   // Debounced API save — fires 800ms after last call, no re-fetch on success
   const debouncedSave = debounce(async (sessionId: string, sessionData: any, items: SessionExercise[]) => {
-    const token = localStorage.getItem("bearer_token")
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("ft_active_offline_session", JSON.stringify({ ...sessionData, id: sessionId, items }))
+      } catch {}
+    }
+    if (typeof window !== "undefined" && !navigator.onLine) return
+
+    const token = typeof window !== "undefined" ? localStorage.getItem("bearer_token") : null
     try {
       const res = await fetch(`/api/workout-sessions?id=${sessionId}`, {
         method: "PUT",
@@ -387,7 +483,7 @@ export function useActiveSession() {
         console.error("Failed to save exercise update, will retry on next change")
       }
     } catch (e) {
-      console.error("Network error saving exercise update:", e)
+      console.warn("Network error saving exercise update, saved to local cache:", e)
     }
   }, 800)
 
@@ -405,44 +501,44 @@ export function useActiveSession() {
   }
 
   const removeExercise = async (itemId: string) => {
-    const token = localStorage.getItem("bearer_token")
     if (!data?.session) return
     
     const { userId, id, createdAt, ...sessionData } = data.session
     const updatedItems = data.session.items.filter((item) => item.id !== itemId)
     
-    const res = await fetch(`/api/workout-sessions?id=${data.session.id}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        ...(token && { Authorization: `Bearer ${token}` }),
-      },
-      credentials: "include",
-      body: JSON.stringify({ ...sessionData, items: updatedItems }),
-    })
-    if (!res.ok) throw new Error("Failed to remove exercise")
-    await mutate()
+    // Optimistic update — instant UI response
+    mutate({ session: { ...data.session, items: updatedItems } }, { revalidate: false })
+    debouncedSave(data.session.id, sessionData, updatedItems)
   }
 
   const discard = async () => {
-    const token = localStorage.getItem("bearer_token")
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("ft_active_offline_session")
+    }
     if (!data?.session) return
-    const res = await fetch(`/api/workout-sessions?id=${data.session.id}`, {
-      method: "DELETE",
-      credentials: "include",
-      headers: token ? {
-        Authorization: `Bearer ${token}`,
-      } : {},
-    })
-    if (!res.ok) throw new Error("Failed to discard session")
-    await mutate()
+    const token = typeof window !== "undefined" ? localStorage.getItem("bearer_token") : null
+    const sessionId = data.session.id
+    mutate({ session: null }, { revalidate: false })
+    if (typeof window !== "undefined" && navigator.onLine) {
+      try {
+        await fetch(`/api/workout-sessions?id=${sessionId}`, {
+          method: "DELETE",
+          credentials: "include",
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        })
+      } catch {}
+    }
   }
 
   const finish = async (existingWorkouts: Workout[], actualDurationSeconds?: number, editedItems?: SessionExercise[], editedDate?: string, editedTime?: string) => {
-    const token = localStorage.getItem("bearer_token")
+    const token = typeof window !== "undefined" ? localStorage.getItem("bearer_token") : null
     if (!data?.session) {
       console.log("No active session to finish")
       return existingWorkouts
+    }
+
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("ft_active_offline_session")
     }
 
     console.log("Finishing session with items:", data.session.items.length)
@@ -516,61 +612,44 @@ export function useActiveSession() {
         if (actualDurationSeconds) {
           workout.durationSeconds = actualDurationSeconds
         }
-        
-        console.log(`Created workout for set ${setIndex + 1}:`, workout)
         newWorkouts.push(workout)
       })
     })
 
-    console.log(`Saving ${newWorkouts.length} workouts...`)
-    
-    let saveResults: any[] = []
-    try {
-      saveResults = await Promise.all(
-        newWorkouts.map(async (w) => {
-          const res = await fetch("/api/workouts", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              ...(token && { Authorization: `Bearer ${token}` }),
-            },
-            credentials: "include",
-            body: JSON.stringify(w),
-          })
-          if (!res.ok) {
-            const responseData = await res.json().catch(() => ({}))
-            console.error("Failed to save workout:", responseData)
-            throw new Error(`Failed to save workout: ${responseData.error || res.statusText}`)
-          }
-          return res.json()
-        })
-      )
-      console.log("All workouts saved successfully!", saveResults)
-    } catch (error) {
-      console.warn("[offline] Saving to local offline queue:", error)
-      if (typeof window !== "undefined") {
-        try {
-          const prev = JSON.parse(localStorage.getItem("ft_pending_offline_workouts") || "[]")
-          localStorage.setItem("ft_pending_offline_workouts", JSON.stringify([...prev, ...newWorkouts]))
-        } catch {}
-      }
-      saveResults = newWorkouts.map((w, idx) => ({ ...w, id: `offline-${Date.now()}-${idx}` }))
+    const preparedWorkouts: Workout[] = newWorkouts.map((w, idx) => ({
+      ...w,
+      id: `local-${Date.now()}-${idx}`,
+    }))
+
+    // 1. Immediately store in offline queue so user never loses data
+    if (typeof window !== "undefined") {
+      try {
+        const prev = JSON.parse(localStorage.getItem("ft_pending_offline_workouts") || "[]")
+        localStorage.setItem("ft_pending_offline_workouts", JSON.stringify([...preparedWorkouts, ...prev]))
+      } catch {}
     }
 
-    try {
-      await fetch(`/api/workout-sessions?id=${data.session.id}`, {
+    // 2. Immediately clear active session state
+    const sessionId = data.session.id
+    mutate({ session: null }, { revalidate: false })
+
+    // 3. Immediately revalidate/update workouts list so user sees them right away
+    globalMutate("/api/workouts?limit=10000")
+
+    // 4. Background non-blocking sync if online
+    if (typeof window !== "undefined" && navigator.onLine) {
+      syncOfflineWorkouts().then(() => {
+        globalMutate("/api/workouts?limit=10000")
+      }).catch(() => {})
+
+      fetch(`/api/workout-sessions?id=${sessionId}`, {
         method: "DELETE",
         credentials: "include",
-        headers: token ? {
-          Authorization: `Bearer ${token}`,
-        } : {},
-      })
-    } catch {}
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      }).catch(() => {})
+    }
 
-    console.log("Session cleared, refreshing workout list...")
-    await mutate().catch(() => {})
-    
-    return [...saveResults, ...existingWorkouts]
+    return [...preparedWorkouts, ...existingWorkouts]
   }
 
   return {
@@ -582,6 +661,47 @@ export function useActiveSession() {
     discard,
     finish,
   }
+}
+
+export function useOfflineStatus() {
+  const [isOnline, setIsOnline] = useState(true)
+  const [pendingCount, setPendingCount] = useState(0)
+
+  const checkStatus = useCallback(() => {
+    if (typeof window === "undefined") return
+    setIsOnline(navigator.onLine)
+    try {
+      const q = JSON.parse(localStorage.getItem("ft_pending_offline_workouts") || "[]")
+      setPendingCount(Array.isArray(q) ? q.length : 0)
+    } catch {
+      setPendingCount(0)
+    }
+  }, [])
+
+  useEffect(() => {
+    checkStatus()
+    const handleOnline = async () => {
+      setIsOnline(true)
+      const count = await syncOfflineWorkouts()
+      if (count > 0) {
+        toast.success(`Online! Synced ${count} offline workout(s).`)
+        globalMutate("/api/workouts?limit=10000")
+      }
+      checkStatus()
+    }
+    const handleOffline = () => {
+      setIsOnline(false)
+      checkStatus()
+    }
+    window.addEventListener("online", handleOnline)
+    window.addEventListener("offline", handleOffline)
+    return () => {
+      window.removeEventListener("online", handleOnline)
+      window.removeEventListener("offline", handleOffline)
+    }
+  }, [checkStatus])
+
+  return { isOnline, pendingCount, syncNow: syncOfflineWorkouts }
 }
 
 export function useRoutines() {

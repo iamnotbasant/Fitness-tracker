@@ -430,12 +430,9 @@ export default function WorkoutHub() {
       setShowConfirmation(false)
       console.log("Starting finish process with edited data...")
       
-      // Pass edited date and time directly to finish function
-      await finish(workouts || [], editedDuration, editedExercises, editedDate, editedTime)
-      console.log("Finish completed, refreshing workouts...")
-      
-      await refresh()
-      console.log("Workouts refreshed")
+      // Finish immediately with optimistic offline caching and background sync
+      finish(workouts || [], editedDuration, editedExercises, editedDate, editedTime)
+      refresh() // Trigger background SWR refresh without blocking
       
       soundManager.play('complete', 0.7)
       toast.success("Workout completed and saved!")
@@ -444,7 +441,7 @@ export default function WorkoutHub() {
     } catch (error) {
       console.error("Error finishing workout:", error)
       toast.error("Failed to finish workout: " + (error instanceof Error ? error.message : "Unknown error"))
-      setIsSaving(false) // Reset on error so user can retry
+      setIsSaving(false)
     }
   }
 

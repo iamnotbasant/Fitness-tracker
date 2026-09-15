@@ -6,16 +6,19 @@ import Link from "next/link"
 import { useTheme } from "next-themes"
 import { SegmentedNav } from "@/components/nav-segmented"
 import { AuthButton } from "@/components/auth-button"
-import { Flame, Dumbbell, TrendingUp, Download, Menu, Sun, Moon } from "lucide-react"
+import { Download, Menu, Sun, Moon, WifiOff } from "lucide-react"
+import { AnimatedFlame, AnimatedDumbbell, AnimatedActivity } from "@/components/ui/animated-icons"
+import { useOfflineStatus } from "@/hooks/use-local-data"
 
 export function AppNavigation() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const { theme, setTheme } = useTheme()
+  const { isOnline, pendingCount, syncNow } = useOfflineStatus()
   
   const navItems = [
-    { href: "/", label: "Dashboard", icon: <Flame className="h-4 w-4" /> },
-    { href: "/exercises", label: "Exercises", icon: <Dumbbell className="h-4 w-4" /> },
-    { href: "/progress", label: "Progress", icon: <TrendingUp className="h-4 w-4" /> },
+    { href: "/", label: "Dashboard", icon: <AnimatedFlame size={16} className="text-amber-500" /> },
+    { href: "/exercises", label: "Exercises", icon: <AnimatedDumbbell size={16} className="text-primary" /> },
+    { href: "/progress", label: "Progress", icon: <AnimatedActivity size={16} className="text-rose-500" /> },
     { href: "/export", label: "Export", icon: <Download className="h-4 w-4" /> },
   ]
 
@@ -25,7 +28,19 @@ export function AppNavigation() {
       <header className="sticky top-0 z-40 w-full bg-background/80 px-4 lg:px-8 py-4 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
         <div className="flex items-center justify-between gap-4 w-full">
           {/* Title - Far Left */}
-          <h1 className="text-lg font-semibold whitespace-nowrap">Fitness Tracker</h1>
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-lg font-semibold whitespace-nowrap">Fitness Tracker</h1>
+            {!isOnline && (
+              <button
+                onClick={syncNow}
+                className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-500 text-[11px] font-semibold transition-all hover:bg-amber-500/20 cursor-pointer"
+                title="Working offline. Click to sync."
+              >
+                <WifiOff className="h-3 w-3" />
+                <span>Offline {pendingCount > 0 ? `(${pendingCount})` : ""}</span>
+              </button>
+            )}
+          </div>
           
           {/* Desktop Navigation - Center */}
           <div className="hidden md:flex flex-1 justify-center max-w-2xl mx-auto">

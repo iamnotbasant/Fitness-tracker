@@ -110,6 +110,11 @@ export function ExerciseCard({ ex, onDelete }: ExerciseCardProps) {
 
         {/* Pill Badges */}
         <div className="flex flex-wrap items-center gap-1.5 pt-1">
+          {ex.isAdminExercise && (
+            <span className="rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 text-[10px] font-semibold tracking-wider uppercase">
+              Official
+            </span>
+          )}
           {ex.level !== undefined && (
             <span className="rounded-lg bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 text-[11px] font-bold">
               Level {ex.level}

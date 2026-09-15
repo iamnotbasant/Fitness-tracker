@@ -78,6 +78,8 @@ export type WorkoutSession = {
   startedAt: string // ISO
   finishedAt?: string // ISO
   items: SessionExercise[]
+  routineId?: string
+  status?: string
 }
 
 export type RoutineExercise = {
