@@ -1,10 +1,11 @@
 "use client"
 
-import { useEffect, useState, useCallback, useRef, memo } from "react"
-import { MoreVertical, Clock, Weight, X, ChevronDown, Play, Pause, Zap } from "lucide-react"
+import { useEffect, useState, useCallback, useRef, useMemo, memo } from "react"
+import { MoreVertical, Clock, Weight, X, ChevronDown, Play, Pause, Zap, Calculator, Flame } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import soundManager from "@/lib/sounds"
 import type { SessionExercise } from "@/lib/types"
+import PlateCalculatorDialog from "@/components/workout/plate-calculator-dialog"
 
 type Props = {
   item: SessionExercise
@@ -43,6 +44,22 @@ function LiveExerciseCard({
   const [stopwatchStart, setStopwatchStart] = useState<number | null>(null)
   const [displayTime, setDisplayTime] = useState<Record<number, number>>({})
   const [pausedTime, setPausedTime] = useState<Record<number, number>>({})
+  
+  // Plate calculator dialog state
+  const [plateCalcOpen, setPlateCalcOpen] = useState(false)
+  const [plateCalcInitialWeight, setPlateCalcInitialWeight] = useState<number>(60)
+
+  // Calculate estimated 1RM using Epley Formula: 1RM = Weight * (1 + Reps / 30)
+  const top1RM = useMemo(() => {
+    let max = 0
+    item.sets.forEach((s) => {
+      if (s.weight && s.weight > 0 && s.reps && s.reps > 0) {
+        const est = s.reps === 1 ? s.weight : s.weight * (1 + s.reps / 30)
+        if (est > max) max = est
+      }
+    })
+    return max > 0 ? Math.round(max * 10) / 10 : null
+  }, [item.sets])
   
   // Track if we're currently editing to prevent overwriting user input
   const isEditingRef = useRef(false)
@@ -433,12 +450,41 @@ function LiveExerciseCard({
                   </motion.span>
                 </>
               )}
+              {top1RM && (
+                <>
+                  <span>•</span>
+                  <span className="inline-flex items-center gap-1 font-semibold text-amber-500">
+                    <Flame className="h-3 w-3" />
+                    1RM: {top1RM}kg
+                  </span>
+                </>
+              )}
             </div>
           )}
         </div>
 
-        {/* Three-dot menu */}
-        <div className="relative">
+        {/* Action Buttons: Plate Calculator & Options Menu */}
+        <div className="flex items-center gap-1">
+          {isWeightedExercise && (
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={() => {
+                soundManager.play('click', 0.2)
+                const highestWeight = Math.max(...item.sets.map(s => s.weight || 0).filter(Boolean), 60)
+                setPlateCalcInitialWeight(highestWeight || 60)
+                setPlateCalcOpen(true)
+              }}
+              className="rounded-lg p-2 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              title="Barbell Plate Calculator"
+              aria-label="Barbell Plate Calculator"
+            >
+              <Calculator className="h-4 w-4" />
+            </motion.button>
+          )}
+
+          {/* Three-dot menu */}
+          <div className="relative">
           <motion.button
             whileHover={{ scale: 1.1, rotate: 90 }}
             whileTap={{ scale: 0.9 }}
@@ -497,6 +543,7 @@ function LiveExerciseCard({
           </AnimatePresence>
         </div>
       </div>
+    </div>
 
       {/* Collapsible Notes Section */}
       <div className="mt-3">
@@ -622,8 +669,15 @@ function LiveExerciseCard({
                                        "grid-cols-[2rem_1fr_1fr_2.5rem_2rem]"
                 }`}
               >
-                {/* Set number */}
-                <span className="font-medium text-center">{i + 1}</span>
+                {/* Set number with PR indicator */}
+                <div className="flex flex-col items-center justify-center">
+                  <span className="font-medium text-center leading-none">{i + 1}</span>
+                  {s.done && s.weight && top1RM && (s.weight >= (top1RM * 0.95)) ? (
+                    <span className="text-[9px] font-black uppercase text-amber-500 bg-amber-500/15 px-1 py-0.5 rounded leading-tight mt-0.5">
+                      PR
+                    </span>
+                  ) : null}
+                </div>
 
                 {/* Previous */}
                 <span className="text-muted-foreground text-xs truncate">
@@ -678,7 +732,7 @@ function LiveExerciseCard({
                     value={s.reps ?? ""}
                     onChange={(e) => updateReps(i, e.target.value)}
                     className="w-full rounded-lg border bg-background px-2 py-1.5 outline-none focus:ring-2 focus:ring-primary text-sm"
-                    placeholder="reps"
+                    placeholder={prevVal !== undefined && Number(prevVal) > 0 ? String(prevVal) : "reps"}
                   />
                 )}
 
@@ -734,8 +788,14 @@ function LiveExerciseCard({
           + Add Set
         </motion.button>
       </div>
-      </motion.div>
-    )
+
+      <PlateCalculatorDialog
+        open={plateCalcOpen}
+        onClose={() => setPlateCalcOpen(false)}
+        initialWeight={plateCalcInitialWeight}
+      />
+    </motion.div>
+  )
 }
 
 export default memo(LiveExerciseCard)

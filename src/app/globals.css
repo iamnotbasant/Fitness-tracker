@@ -238,11 +238,3 @@ body {
   background: #262628;
   border-radius: 3px;
 }
-.dark ::-webkit-scrollbar-thumb:hover {
-  background: #38383C;
-}
-
-/* Hide Next.js error overlay portal */
-nextjs-portal {
-  display: none !important;
-}

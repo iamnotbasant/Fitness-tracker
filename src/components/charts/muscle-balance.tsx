@@ -30,7 +30,9 @@ export function MuscleBalance({ workouts, exercises }: { workouts: Workout[]; ex
     const exercisePoints = new Map<string, Map<string, number>>()
 
     workouts.forEach((w) => {
-      const exercise = exercises.find((e) => e.id === w.exerciseId)
+      const exercise = exercises.find(
+        (e) => String(e.id) === String(w.exerciseId) || (w.exerciseName && e.name.toLowerCase() === w.exerciseName.toLowerCase())
+      )
       const split = exercise?.split || "other"
       const points = w.points ?? w.total_points ?? 0
 
@@ -94,7 +96,7 @@ export function MuscleBalance({ workouts, exercises }: { workouts: Workout[]; ex
 
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
         {/* Donut Chart */}
-        <div className="md:col-span-7 h-[300px] w-full relative flex items-center justify-center">
+        <div className="md:col-span-7 h-[300px] w-full min-w-0 overflow-hidden relative flex items-center justify-center">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie

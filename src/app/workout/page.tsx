@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation"
 import { useActiveSession, useExercises, useWorkouts, useRoutines } from "@/hooks/use-local-data"
 import { Dumbbell, Plus, Search, ChevronLeft, Clock, Play, Loader2, Pin } from "lucide-react"
 import { useSession } from "@/lib/auth-client"
-import { useEffect, useState, useMemo, useCallback, memo } from "react"
+import { useEffect, useState, useMemo, useCallback, useRef, memo } from "react"
 import { toast } from "sonner"
 import { motion, AnimatePresence } from "framer-motion"
 import soundManager from "@/lib/sounds"
@@ -15,7 +15,7 @@ import type { SessionExercise } from "@/lib/types"
 
 export default function WorkoutHub() {
   const router = useRouter()
-  const { session: activeSession, start, addExercise, updateExercise, removeExercise, discard, finish } = useActiveSession()
+  const { session: activeSession, start, addExercise, updateExercise, removeExercise, reorderExercises, discard, finish } = useActiveSession()
   const { exercises } = useExercises()
   const { workouts, refresh } = useWorkouts()
   const { routines } = useRoutines()
@@ -103,9 +103,11 @@ export default function WorkoutHub() {
   }, [timerStarted, timerStartTime])
 
   // Rest Timer countdown effect with sound & vibration
+  const lastPlayedRemRef = useRef<number | null>(null)
   useEffect(() => {
     if (!activeRest) {
       setRestRemaining(0)
+      lastPlayedRemRef.current = null
       return
     }
 
@@ -113,18 +115,21 @@ export default function WorkoutHub() {
       const rem = Math.max(0, Math.ceil((activeRest.endsAt - Date.now()) / 1000))
       setRestRemaining(rem)
       
-      if (rem === 3) soundManager.play('countdown_3', 0.4)
-      else if (rem === 2) soundManager.play('countdown_2', 0.5)
-      else if (rem === 1) soundManager.play('countdown_1', 0.6)
-      else if (rem <= 0) {
-        soundManager.play('countdown_go', 0.8)
-        if (typeof window !== "undefined" && "vibrate" in navigator) {
-          try { navigator.vibrate([150, 50, 150]) } catch {}
+      if (rem !== lastPlayedRemRef.current) {
+        lastPlayedRemRef.current = rem
+        if (rem === 3) soundManager.play('countdown_3', 0.4)
+        else if (rem === 2) soundManager.play('countdown_2', 0.5)
+        else if (rem === 1) soundManager.play('countdown_1', 0.6)
+        else if (rem <= 0) {
+          soundManager.play('countdown_go', 0.8)
+          if (typeof window !== "undefined" && "vibrate" in navigator) {
+            try { navigator.vibrate([150, 50, 150]) } catch {}
+          }
+          toast.success(`Rest finished for ${activeRest.exerciseName}! Next set ready!`, {
+            duration: 3500,
+          })
+          setActiveRest(null)
         }
-        toast.success(`Rest finished for ${activeRest.exerciseName}! Next set ready!`, {
-          duration: 3500,
-        })
-        setActiveRest(null)
       }
     }
 
@@ -366,25 +371,9 @@ export default function WorkoutHub() {
     const [draggedItem] = items.splice(draggedIndex, 1)
     items.splice(dropIndex, 0, draggedItem)
 
-    // Update session with reordered items
-    const token = localStorage.getItem("bearer_token")
-    const { userId, id, createdAt, ...sessionData } = activeSession
-    
     try {
-      const res = await fetch(`/api/workout-sessions?id=${activeSession.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        credentials: "include",
-        body: JSON.stringify({ ...sessionData, items }),
-      })
-      
-      if (!res.ok) throw new Error("Failed to reorder exercises")
-      
-      // Refresh the session
-      window.location.reload()
+      await reorderExercises(items)
+      soundManager.play('click', 0.2)
     } catch (error) {
       console.error("Error reordering exercises:", error)
       toast.error("Failed to reorder exercises")
@@ -478,7 +467,7 @@ export default function WorkoutHub() {
   // Show workout interface if session exists
   if (activeSession) {
     return (
-      <main className="min-h-screen bg-background pb-24">
+      <main className="min-h-screen bg-background pb-32 md:pb-16">
         <motion.header 
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -736,7 +725,7 @@ export default function WorkoutHub() {
 
   // Show workout hub if no active session
   return (
-    <main className="min-h-screen bg-background pb-16">
+    <main className="min-h-screen bg-background pb-32 md:pb-16">
       {/* Top Header */}
       <header className="sticky top-0 z-20 border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
         <div className="mx-auto max-w-4xl px-4 py-3.5 flex items-center justify-between">

@@ -17,11 +17,22 @@ export default function ProfilePage() {
   const { profile, save } = useProfile()
   const { exercises, update: updateExercise } = useExercises()
 
-  const [name, setName] = useState(profile.name)
+  const [name, setName] = useState(profile.name || "")
   const [heightCm, setHeightCm] = useState<number | "">(profile.heightCm ?? "")
   const [weightKg, setWeightKg] = useState<number | "">(profile.weightKg ?? "")
   const [goalType, setGoalType] = useState(profile.goalType ?? "strength")
-  const [goals, setGoals] = useState(profile.goals)
+  const [goals, setGoals] = useState(profile.goals || [])
+
+  // Populate form fields whenever async profile data finishes loading
+  useEffect(() => {
+    if (profile) {
+      if (profile.name !== undefined) setName(profile.name || "")
+      if (profile.heightCm !== undefined) setHeightCm(profile.heightCm ?? "")
+      if (profile.weightKg !== undefined) setWeightKg(profile.weightKg ?? "")
+      if (profile.goalType !== undefined) setGoalType(profile.goalType ?? "strength")
+      if (profile.goals !== undefined) setGoals(profile.goals || [])
+    }
+  }, [profile])
 
   // Exercise rep goals management
   const [exerciseGoals, setExerciseGoals] = useState<Record<string, number>>({})
@@ -59,7 +70,7 @@ export default function ProfilePage() {
   // Show loading while mounting
   if (!mounted) {
     return (
-      <main className="pb-24">
+      <main className="pb-32 md:pb-12">
         <section className="mx-auto max-w-3xl px-4 pt-6">
           <div className="flex items-center justify-center py-12">
             <div className="text-center">
@@ -73,7 +84,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <main className="pb-24">
+    <main className="pb-32 md:pb-12">
 
       <header className="mx-auto max-w-3xl px-4 pt-6">
         <h1 className="text-2xl font-semibold">Profile</h1>

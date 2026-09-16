@@ -69,18 +69,26 @@ export default function ProgressPage() {
     const totalSets = filtered.reduce((acc, w) => acc + (w.sets || 1), 0)
     const uniqueDays = new Set(filtered.map((w) => w.date)).size
 
-    // Calculate current streak
+    // Helper for timezone-safe local YYYY-MM-DD
+    const toLocalDateStr = (d: Date) => {
+      const year = d.getFullYear()
+      const month = String(d.getMonth() + 1).padStart(2, '0')
+      const day = String(d.getDate()).padStart(2, '0')
+      return `${year}-${month}-${day}`
+    }
+
+    // Calculate current streak with local timezone accuracy
     const dates = new Set(workouts.map((w) => w.date))
     let currentStreak = 0
     const today = new Date()
-    const todayStr = today.toISOString().slice(0, 10)
+    const todayStr = toLocalDateStr(today)
     const yesterday = new Date(today)
     yesterday.setDate(today.getDate() - 1)
-    const yesterdayStr = yesterday.toISOString().slice(0, 10)
+    const yesterdayStr = toLocalDateStr(yesterday)
 
     if (dates.has(todayStr) || dates.has(yesterdayStr)) {
       const check = new Date(dates.has(todayStr) ? today : yesterday)
-      while (dates.has(check.toISOString().slice(0, 10))) {
+      while (dates.has(toLocalDateStr(check))) {
         currentStreak++
         check.setDate(check.getDate() - 1)
       }
@@ -107,7 +115,7 @@ export default function ProgressPage() {
   }
 
   return (
-    <main className="pb-24 md:pb-12">
+    <main className="pb-32 md:pb-16">
       {/* Page Header */}
       <section className="mx-auto max-w-5xl px-4 pt-6 pb-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">

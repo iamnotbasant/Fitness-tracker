@@ -31,10 +31,14 @@ export function MuscleRadarChart({ workouts, exercises }: MuscleRadarChartProps)
     }
 
     const exMap = new Map<string, Exercise>()
-    exercises.forEach((e) => exMap.set(String(e.id), e))
+    const exNameMap = new Map<string, Exercise>()
+    exercises.forEach((e) => {
+      exMap.set(String(e.id), e)
+      if (e.name) exNameMap.set(e.name.toLowerCase(), e)
+    })
 
     workouts.forEach((w) => {
-      const ex = exMap.get(String(w.exerciseId))
+      const ex = exMap.get(String(w.exerciseId)) || (w.exerciseName ? exNameMap.get(w.exerciseName.toLowerCase()) : undefined)
       const split = ex?.split?.toLowerCase() || ""
       const bodyParts = (ex?.bodyParts || []).map((bp) => bp.toLowerCase())
       const points = w.points ?? w.total_points ?? 0
@@ -128,7 +132,7 @@ export function MuscleRadarChart({ workouts, exercises }: MuscleRadarChartProps)
         </div>
       </div>
 
-      <div className="h-72 w-full">
+      <div className="h-72 w-full min-w-0 overflow-hidden">
         <ResponsiveContainer width="100%" height="100%">
           <RadarChart cx="50%" cy="50%" outerRadius="75%" data={radarData}>
             <PolarGrid stroke="#27272a" strokeDasharray="3 3" />

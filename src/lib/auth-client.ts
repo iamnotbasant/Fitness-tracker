@@ -69,6 +69,7 @@ export const useSession = () => {
 export const authClient = {
   signOut: async () => {
     localStorage.removeItem("currentUser")
+    localStorage.removeItem("bearer_token")
     return { error: null }
   }
 }

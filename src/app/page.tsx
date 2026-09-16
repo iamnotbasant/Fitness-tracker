@@ -185,17 +185,20 @@ export default function DashboardPage() {
       })
   }, [filteredWorkouts])
 
-  const totals = filteredWorkouts.reduce(
-    (acc, w) => {
-      acc.workouts += 1
-      acc.sets += w.sets
-      acc.reps += w.sets * w.reps
-      const points = w.points ?? w.total_points ?? 0
-      acc.points += points
-      return acc
-    },
-    { workouts: 0, sets: 0, reps: 0, points: 0 },
-  )
+  const totals = useMemo(() => {
+    // Count distinct workout dates instead of counting each exercise row as a full workout
+    const distinctDates = new Set(filteredWorkouts.map((w) => w.date))
+    return filteredWorkouts.reduce(
+      (acc, w) => {
+        acc.sets += w.sets || 1
+        acc.reps += (w.sets || 1) * (w.reps || 0)
+        const points = w.points ?? w.total_points ?? 0
+        acc.points += points
+        return acc
+      },
+      { workouts: distinctDates.size, sets: 0, reps: 0, points: 0 },
+    )
+  }, [filteredWorkouts])
   
   // Accurate streak calculation with yesterday fallback
   const streak = useMemo(() => {
@@ -438,7 +441,7 @@ export default function DashboardPage() {
 
   if (!mounted) {
     return (
-      <main className="pb-24 md:pb-8">
+      <main className="pb-32 md:pb-12">
         <section className="w-full px-4 lg:px-8 pt-4">
           <div className="mx-auto max-w-7xl flex items-center justify-center py-20">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -449,7 +452,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <main className="pb-24 md:pb-8">
+    <main className="pb-32 md:pb-12">
       <section className="w-full px-4 lg:px-8 pt-4">
         <div className="mx-auto max-w-7xl">
           <div className="flex items-center justify-between mb-4">
@@ -491,12 +494,12 @@ export default function DashboardPage() {
 
       <section className="w-full px-4 lg:px-8 pt-4">
         <div className="mx-auto max-w-7xl grid gap-3">
-          <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <h2 className="text-base font-semibold text-foreground">Workouts</h2>
             
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
               {/* Date Range Navigation */}
-              <div className="flex items-center gap-1 border rounded-lg px-2 py-1.5 bg-card">
+              <div className="flex items-center gap-1 border rounded-lg px-1.5 py-1 bg-card flex-1 sm:flex-none justify-between sm:justify-start">
                 <button
                     onClick={() => navigatePeriod("prev")}
                     disabled={timePeriod === "all"}
@@ -506,7 +509,7 @@ export default function DashboardPage() {
                     <ChevronLeft className="h-4 w-4" />
                   </button>
                 
-                <div className="px-2 text-sm font-medium min-w-[120px] md:min-w-[140px] text-center text-foreground">
+                <div className="px-1 text-xs sm:text-sm font-medium min-w-[100px] sm:min-w-[140px] text-center text-foreground truncate">
                   {formatDateRange(dateRange.start, dateRange.end, timePeriod)}
                 </div>
                 
@@ -526,7 +529,7 @@ export default function DashboardPage() {
                 id="time-period-select"
                 value={timePeriod}
                 onChange={(e) => handlePeriodChange(e.target.value as TimePeriod)}
-                className="px-3 py-1.5 text-sm font-medium rounded-lg border bg-background hover:bg-secondary transition-colors cursor-pointer text-foreground"
+                className="px-2.5 py-1.5 text-xs sm:text-sm font-medium rounded-lg border bg-background hover:bg-secondary transition-colors cursor-pointer text-foreground shrink-0"
               >
                 <option value="weekly">Weekly</option>
                 <option value="monthly">Monthly</option>

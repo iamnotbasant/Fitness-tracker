@@ -104,17 +104,10 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
 
-    if ('userId' in body || 'user_id' in body) {
-      return NextResponse.json({ 
-        error: "User ID cannot be provided in request body",
-        code: "USER_ID_NOT_ALLOWED" 
-      }, { status: 400 });
-    }
-
-    // Remove 'id' from body if accidentally included
-    if ('id' in body) {
-      delete body.id;
-    }
+    // Clean up any client-provided IDs to ensure user cannot spoof or break sync
+    if ('userId' in body) delete body.userId;
+    if ('user_id' in body) delete body.user_id;
+    if ('id' in body) delete body.id;
 
     const { date, time, exerciseId, exerciseName, sets, reps, rest, notes, bonusPoints, timeSeconds, weight, durationSeconds } = body;
 

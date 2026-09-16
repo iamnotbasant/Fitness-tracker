@@ -55,8 +55,8 @@ export async function syncOfflineWorkouts(): Promise<number> {
 
     for (const w of queue) {
       try {
-        // Strip temporary offline id before saving
-        const { id, ...workoutData } = w
+        // Strip temporary offline id and user IDs before saving
+        const { id, userId, user_id, ...workoutData } = w as any
         const res = await fetch("/api/workouts", {
           method: "POST",
           headers: {
@@ -274,17 +274,18 @@ export function useWorkouts() {
   const saveWorkouts = async (list: Workout[]) => {
     const token = localStorage.getItem("bearer_token")
     await Promise.all(
-      list.map((w) =>
-        fetch("/api/workouts", {
+      list.map((w: any) => {
+        const { id, userId, user_id, ...workoutData } = w
+        return fetch("/api/workouts", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             ...(token && { Authorization: `Bearer ${token}` }),
           },
           credentials: "include",
-          body: JSON.stringify(w),
+          body: JSON.stringify(workoutData),
         })
-      )
+      })
     )
     await mutate()
   }
@@ -511,6 +512,18 @@ export function useActiveSession() {
     debouncedSave(data.session.id, sessionData, updatedItems)
   }
 
+  const reorderExercises = async (items: SessionExercise[]) => {
+    if (!data?.session) return
+    const { userId, id, createdAt, ...sessionData } = data.session
+    mutate({ session: { ...data.session, items } }, { revalidate: false })
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("ft_active_offline_session", JSON.stringify({ ...data.session, items }))
+      } catch {}
+    }
+    debouncedSave(data.session.id, sessionData, items)
+  }
+
   const discard = async () => {
     if (typeof window !== "undefined") {
       localStorage.removeItem("ft_active_offline_session")
@@ -658,6 +671,7 @@ export function useActiveSession() {
     addExercise,
     updateExercise,
     removeExercise,
+    reorderExercises,
     discard,
     finish,
   }

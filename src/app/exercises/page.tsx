@@ -64,11 +64,16 @@ export default function ExercisesPage() {
   const [levelFilter, setLevelFilter] = useState<"all" | number>("all")
   const [sortBy, setSortBy] = useState<"level-asc" | "level-desc" | "name" | "popularity">("level-asc")
   const [showForm, setShowForm] = useState(false)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // Debounce search query for better performance
   const debouncedQuery = useDebounce(query, 300)
 
-  const isAdmin = true
+  const isAdmin = Boolean(mounted && session?.user?.role === "admin")
 
   const filtered = useMemo(() => {
     let list = exercises
@@ -105,9 +110,9 @@ export default function ExercisesPage() {
   }, [exercises, debouncedQuery, levelFilter, sortBy])
 
   return (
-    <main className="pb-24 md:pb-8">
+    <main className="pb-32 md:pb-12">
       <section className="mx-auto max-w-5xl px-4 pt-6">
-        {session && !localStorage.getItem("bearer_token") && (
+        {mounted && session && typeof window !== "undefined" && !localStorage.getItem("bearer_token") && (
           <div className="mb-4 rounded-lg border border-destructive bg-destructive/10 p-4 flex items-start gap-3">
             <AlertCircle className="h-5 w-5 text-destructive mt-0.5" />
             <div className="flex-1">

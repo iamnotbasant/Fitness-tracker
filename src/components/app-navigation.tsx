@@ -6,7 +6,7 @@ import Link from "next/link"
 import { useTheme } from "next-themes"
 import { SegmentedNav } from "@/components/nav-segmented"
 import { AuthButton } from "@/components/auth-button"
-import { Download, Menu, Sun, Moon, WifiOff } from "lucide-react"
+import { Download, Menu, Sun, Moon, WifiOff, Play, User } from "lucide-react"
 import { AnimatedFlame, AnimatedDumbbell, AnimatedActivity } from "@/components/ui/animated-icons"
 import { useOfflineStatus } from "@/hooks/use-local-data"
 
@@ -17,8 +17,10 @@ export function AppNavigation() {
   
   const navItems = [
     { href: "/", label: "Dashboard", icon: <AnimatedFlame size={16} className="text-amber-500" /> },
+    { href: "/workout", label: "Workout", icon: <Play size={16} className="text-emerald-500" /> },
     { href: "/exercises", label: "Exercises", icon: <AnimatedDumbbell size={16} className="text-primary" /> },
     { href: "/progress", label: "Progress", icon: <AnimatedActivity size={16} className="text-rose-500" /> },
+    { href: "/profile", label: "Profile", icon: <User size={16} className="text-sky-500" /> },
     { href: "/export", label: "Export", icon: <Download className="h-4 w-4" /> },
   ]
 
