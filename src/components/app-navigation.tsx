@@ -134,12 +134,7 @@ function NavItem({ href, icon, label }: { href: string; icon: React.ReactNode; l
   return (
     <Link
       href={href}
-      onClick={(e) => {
-        if (!e.metaKey && !e.ctrlKey && !e.shiftKey && e.button === 0) {
-          e.preventDefault()
-          router.push(href)
-        }
-      }}
+      prefetch={true}
       className={`flex flex-col items-center gap-1 px-1.5 py-1.5 rounded-xl transition-all min-w-0 flex-1 cursor-pointer select-none ${
         active 
           ? "text-primary font-semibold bg-secondary/80 shadow-xs" 

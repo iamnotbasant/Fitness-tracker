@@ -24,29 +24,38 @@ export default function ProfilePage() {
   const [goalType, setGoalType] = useState(profile.goalType ?? "strength")
   const [goals, setGoals] = useState(profile.goals || [])
 
-  // Populate form fields whenever async profile data finishes loading
+  // Safely populate form fields once profile loads
   useEffect(() => {
     if (profile) {
-      if (profile.name !== undefined) setName(profile.name || "")
-      if (profile.heightCm !== undefined) setHeightCm(profile.heightCm ?? "")
-      if (profile.weightKg !== undefined) setWeightKg(profile.weightKg ?? "")
-      if (profile.goalType !== undefined) setGoalType(profile.goalType ?? "strength")
-      if (profile.goals !== undefined) setGoals(profile.goals || [])
+      if (profile.name) setName(profile.name)
+      if (profile.heightCm) setHeightCm(profile.heightCm)
+      if (profile.weightKg) setWeightKg(profile.weightKg)
+      if (profile.goalType) setGoalType(profile.goalType)
+      if (profile.goals && profile.goals.length > 0) setGoals(profile.goals)
     }
-  }, [profile])
+  }, [profile.name, profile.heightCm, profile.weightKg, profile.goalType, profile.goals?.length])
 
   // Exercise rep goals management
   const [exerciseGoals, setExerciseGoals] = useState<Record<string, number>>({})
 
   useEffect(() => {
-    // Initialize exercise goals from current exercises
+    if (!exercises || exercises.length === 0) return
     const goalsMap: Record<string, number> = {}
     exercises.forEach(ex => {
       if (ex.repGoal) {
         goalsMap[ex.id] = ex.repGoal
       }
     })
-    setExerciseGoals(goalsMap)
+    setExerciseGoals(prev => {
+      // Only update if keys/values differ
+      const prevKeys = Object.keys(prev)
+      const newKeys = Object.keys(goalsMap)
+      if (prevKeys.length === 0 && newKeys.length === 0) return prev
+      if (prevKeys.length === newKeys.length && newKeys.every(k => prev[k] === goalsMap[k])) {
+        return prev
+      }
+      return { ...prev, ...goalsMap }
+    })
   }, [exercises])
 
   const handleSaveExerciseGoals = async () => {

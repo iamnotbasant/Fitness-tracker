@@ -117,6 +117,9 @@ const getLocalTimeString = (date: Date) => {
   return `${hours}:${minutes}`
 }
 
+const EMPTY_EXERCISES: Exercise[] = []
+const DEFAULT_PROFILE: Profile = { name: "", goals: [] }
+
 export function useExercises() {
   const { data, mutate, isLoading } = useSWR<Exercise[]>(
     "/api/exercises?limit=10000",
@@ -200,7 +203,7 @@ export function useExercises() {
     await mutate()
   }
 
-  return { exercises: data ?? [], add, create, update, remove, refresh: () => mutate(), isLoading }
+  return { exercises: data ?? EMPTY_EXERCISES, add, create, update, remove, refresh: () => mutate(), isLoading }
 }
 
 export function useWorkouts() {
@@ -318,7 +321,7 @@ export function useProfile() {
     await mutate()
   }
 
-  return { profile: data?.profile ?? { name: "", goals: [] }, save, refresh: () => mutate() }
+  return { profile: data?.profile ?? DEFAULT_PROFILE, save, refresh: () => mutate() }
 }
 
 // Debounce helper

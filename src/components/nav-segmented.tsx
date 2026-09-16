@@ -44,12 +44,7 @@ export function SegmentedNav({
             <li key={it.href}>
               <Link
                 href={it.href}
-                onClick={(e) => {
-                  if (!e.metaKey && !e.ctrlKey && !e.shiftKey && e.button === 0) {
-                    e.preventDefault()
-                    router.push(it.href)
-                  }
-                }}
+                prefetch={true}
                 className={[
                   "inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-sm font-medium transition-all duration-150 cursor-pointer select-none",
                   active 
