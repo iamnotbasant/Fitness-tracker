@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { useProfile, useExercises } from "@/hooks/use-local-data"
 import { User, Save } from "lucide-react"
 import { toast } from "sonner"
+import { DataBackup } from "@/components/profile/data-backup"
 
 export default function ProfilePage() {
   const router = useRouter()
@@ -293,6 +294,9 @@ export default function ProfilePage() {
             Save Exercise Goals
           </button>
         </div>
+
+        {/* Data Backup & Restore Section */}
+        <DataBackup />
       </section>
     </main>
   )

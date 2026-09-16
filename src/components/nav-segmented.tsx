@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import type React from "react"
 
 type Item = {
@@ -20,38 +20,47 @@ export function SegmentedNav({
   minimal?: boolean
 }) {
   const pathname = usePathname()
+  const router = useRouter()
 
   return (
     <nav
       aria-label="Top navigation"
-      className={`w-full overflow-x-auto overscroll-x-contain scroll-smooth ${className}`}
+      className={`flex items-center justify-center ${className}`}
     >
       <ul
         className={[
-          "mx-auto flex w-max snap-x snap-mandatory items-center gap-2 px-1.5 py-1.5",
+          "flex items-center gap-1 sm:gap-1.5 px-2 py-1.5",
           minimal
             ? "rounded-none border-0 bg-transparent shadow-none md:rounded-full md:border md:bg-muted/50 md:px-2 md:py-1.5 md:shadow-sm"
-            : "rounded-full border bg-muted/50 px-2 py-1.5 shadow-sm",
+            : "rounded-full border border-border/70 bg-muted/40 backdrop-blur-md px-2 py-1.5 shadow-sm",
         ].join(" ")}
       >
         {items.map((it) => {
-          const active = pathname === it.href
+          const active = it.href === "/" 
+            ? pathname === "/" 
+            : (pathname === it.href || pathname.startsWith(`${it.href}/`))
+
           return (
-            <li key={it.href} className="snap-start">
+            <li key={it.href}>
               <Link
                 href={it.href}
-                prefetch={true}
+                onClick={(e) => {
+                  if (!e.metaKey && !e.ctrlKey && !e.shiftKey && e.button === 0) {
+                    e.preventDefault()
+                    router.push(it.href)
+                  }
+                }}
                 className={[
-                  "inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-all duration-200",
+                  "inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-sm font-medium transition-all duration-150 cursor-pointer select-none",
                   active 
-                    ? "bg-foreground text-background shadow-sm" 
+                    ? "bg-foreground text-background shadow-xs font-semibold" 
                     : "text-muted-foreground hover:text-foreground hover:bg-muted/60",
                 ].join(" ")}
                 aria-current={active ? "page" : undefined}
               >
                 <span
                   aria-hidden
-                  className="grid h-4 w-4 place-items-center"
+                  className="grid h-4 w-4 place-items-center shrink-0"
                 >
                   {it.icon}
                 </span>

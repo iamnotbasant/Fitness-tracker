@@ -24,6 +24,8 @@
 - [x] **Task 2.3:** Fix floating rest timer bar overlapping mobile bottom nav (`src/app/workout/page.tsx`)
 - [x] **Task 2.4:** Fix date filter range picker and view selector wrapping on small mobile screens (<375px) (`src/app/page.tsx`)
 - [x] **Task 2.5:** Fix Recharts container sizing (`w-full min-w-0 overflow-hidden`) to stop mobile horizontal jitter
+- [x] **Task 2.6:** Fix navigation bar scrollbar & clipping bug, remove scrollbar, enable instant client tab switching (`src/components/nav-segmented.tsx`, `src/components/app-navigation.tsx`)
+- [x] **Task 2.7:** Move Export / Import functionality into Profile page (`src/app/profile/page.tsx`, `src/components/profile/data-backup.tsx`)
 
 ---
 
