@@ -200,40 +200,37 @@ export default function ExercisesPage() {
             aria-label="Search exercises"
           />
 
-          {/* Quick Filter Chips & Equipment Type */}
-          <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-            <div className="flex flex-wrap items-center gap-1.5 overflow-x-auto py-0.5">
-              {["all", "push", "pull", "legs", "core", "chest", "back", "arms"].map((chip) => (
-                <button
-                  type="button"
-                  key={chip}
-                  onClick={() => setSplitFilter(chip)}
-                  className={`px-3 py-1 rounded-xl text-xs font-semibold capitalize transition-all cursor-pointer ${
-                    splitFilter === chip
-                      ? "bg-primary text-primary-foreground shadow-xs"
-                      : "bg-secondary/80 text-muted-foreground hover:text-foreground hover:bg-secondary"
-                  }`}
-                >
-                  {chip === "all" ? "All Splits" : chip}
-                </button>
-              ))}
-            </div>
+          {/* Filter Dropdowns: Split & Type */}
+          <div className="flex items-center justify-end gap-2 pt-1">
+            <select
+              value={splitFilter}
+              onChange={(e) => setSplitFilter(e.target.value)}
+              className="h-8.5 rounded-xl bg-card border border-border/80 px-3 py-1 text-xs font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer hover:border-primary/50 transition-colors"
+              aria-label="Filter by split"
+            >
+              <option value="all">All Splits</option>
+              <option value="push">Push</option>
+              <option value="pull">Pull</option>
+              <option value="legs">Legs</option>
+              <option value="core">Core</option>
+              <option value="chest">Chest</option>
+              <option value="back">Back</option>
+              <option value="arms">Arms</option>
+            </select>
 
-            <div className="flex items-center gap-2">
-              <select
-                value={typeFilter}
-                onChange={(e) => setTypeFilter(e.target.value)}
-                className="h-8 rounded-xl bg-card border border-border/80 px-2.5 py-1 text-xs font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer hover:border-primary/50 transition-colors"
-                aria-label="Filter by equipment type"
-              >
-                <option value="all">All Types</option>
-                <option value="bodyweight">Bodyweight</option>
-                <option value="weighted">Weighted</option>
-                <option value="timer">Timer</option>
-                <option value="cardio">Cardio</option>
-                <option value="mobility">Mobility</option>
-              </select>
-            </div>
+            <select
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value)}
+              className="h-8.5 rounded-xl bg-card border border-border/80 px-3 py-1 text-xs font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer hover:border-primary/50 transition-colors"
+              aria-label="Filter by exercise type"
+            >
+              <option value="all">All Types</option>
+              <option value="bodyweight">Bodyweight</option>
+              <option value="weighted">Weighted</option>
+              <option value="timer">Timer</option>
+              <option value="cardio">Cardio</option>
+              <option value="mobility">Mobility</option>
+            </select>
           </div>
 
           {query !== debouncedQuery && (

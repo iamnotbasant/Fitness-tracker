@@ -935,12 +935,6 @@ export default function WorkoutHub() {
                 const isPinned = pinnedRoutineIds.includes(String(routine.id))
                 const usageCount = routineUsageMap.get(String(routine.id)) || 0
 
-                const routineSetsCount = (routine.exercises || []).reduce(
-                  (sum: number, ex: any) => sum + (ex.defaultSets || 3),
-                  0
-                ) || (routine.exercises?.length || 0) * 3
-                const estimatedMinutes = Math.max(15, Math.round(routineSetsCount * 2.5))
-
                 return (
                   <div
                     key={routine.id}
@@ -964,31 +958,8 @@ export default function WorkoutHub() {
                           {routine.name}
                         </h3>
                       </div>
-                      <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-muted-foreground">
+                      <div className="mt-1 text-xs text-muted-foreground font-medium">
                         <span>{routine.exercises?.length || 0} exercises</span>
-                        <span>•</span>
-                        <span className="inline-flex items-center gap-1 font-medium text-foreground/80">
-                          <Clock className="h-3 w-3 text-muted-foreground" />
-                          ~{estimatedMinutes} min
-                        </span>
-                        {splitTag && (
-                          <>
-                            <span>•</span>
-                            <span className="font-medium text-foreground/80">{splitTag}</span>
-                          </>
-                        )}
-                        {(isL1 || isL2) && (
-                          <>
-                            <span>•</span>
-                            <span>{isL1 ? "Level 1" : "Level 2"}</span>
-                          </>
-                        )}
-                        {usageCount > 0 && (
-                          <>
-                            <span>•</span>
-                            <span className="text-primary font-medium">{usageCount}x used</span>
-                          </>
-                        )}
                       </div>
                     </div>
 
