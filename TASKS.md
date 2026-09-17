@@ -96,3 +96,24 @@
   - Bound live elapsed tracking directly to active session creation timestamp with a 1-second continuous tick.
   - Captured frozen duration snapshot on finish with smart fallback (~90s per completed set if duration < 60s).
   - Prevented confirmation dialog from re-initializing or overwriting manual edits on each parent tick.
+
+---
+
+## 📊 Phase 10: Heatmap Origin Alignment, Adaptive Span & Weekly Goals Colors
+- [x] **Task 10.1:** Heatmap Start Date Alignment & Origin Positioning (`src/components/charts/workout-heatmap.tsx`, `src/app/progress/page.tsx`).
+  - Aligned heatmap start to user's earliest workout date in "All" view so the first workout block appears right at the start (column 1), rather than 52 empty weeks away.
+  - Auto-defaulted recently started users to "All" view with minimum 4-week starter month grid.
+  - Fixed missing `range` dependency in `useMemo` so Span filter pills (`1 Mo`, `3 Mo`, `6 Mo`, `1 Yr`, `All`) instantly recompute.
+- [x] **Task 10.2:** Dynamic Heatmap Cell Scaling & Layout Adaptation (`src/components/charts/workout-heatmap.tsx`).
+  - Added adaptive cell sizing: large rounded squares (`h-8 w-8`) for 1 Mo, medium (`h-5.5 w-5.5`) for 3 Mo, compact (`h-3 w-3`) for 1 Yr.
+  - Dynamically adjusted column widths, day labels, and month label offsets to match cell size.
+  - Updated legend to display dynamic span days count (e.g. `28 Days`, `84 Days`, `All Time`).
+  - Smart auto-scroll: short grids stay at start, long historical grids scroll to end.
+- [x] **Task 10.3:** Weekly Goals & Targets Color Overhaul (`src/components/charts/radial-goals-chart.tsx`).
+  - Replaced stark plain white `#ffffff` and harsh red/orange repetition with a cohesive 4-tier neon fitness palette:
+    - **Workouts Frequency**: Electric Cyan (`#06b6d4`)
+    - **Total Sets**: Emerald Mint (`#10b981`)
+    - **Reps Volume**: Solar Amber (`#f59e0b`)
+    - **Points Overload**: Neon Rose / Coral (`#f43f5e`)
+  - Added glassmorphic translucent ring tracks (`rgba(255, 255, 255, 0.05)`) with rounded bar caps.
+  - Updated center text and legend progress bars with matching glowing dots and dynamic period label.
