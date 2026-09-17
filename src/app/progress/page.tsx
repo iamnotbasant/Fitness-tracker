@@ -216,7 +216,10 @@ export default function ProgressPage() {
 
             {/* Weekly Goal Completion Rings */}
             <div>
-              <RadialGoalsChart workouts={filtered} />
+              <RadialGoalsChart 
+                workouts={filtered} 
+                period={timeRange === "7days" ? "weekly" : timeRange === "month" ? "monthly" : timeRange === "year" ? "yearly" : timeRange} 
+              />
             </div>
           </TabsContent>
 

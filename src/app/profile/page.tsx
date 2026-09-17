@@ -1,9 +1,9 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { useProfile, useExercises } from "@/hooks/use-local-data"
-import { User, Save } from "lucide-react"
+import { User, Save, Activity } from "lucide-react"
 import { toast } from "sonner"
 import { DataBackup } from "@/components/profile/data-backup"
 
@@ -34,6 +34,42 @@ export default function ProfilePage() {
       if (profile.goals && profile.goals.length > 0) setGoals(profile.goals)
     }
   }, [profile.name, profile.heightCm, profile.weightKg, profile.goalType, profile.goals?.length])
+
+  // BMI and Calorie target calculation
+  const bmiInfo = useMemo(() => {
+    const h = Number(heightCm)
+    const w = Number(weightKg)
+    if (!h || !w || h <= 0 || w <= 0) return null
+
+    const heightM = h / 100
+    const bmi = Math.round((w / (heightM * heightM)) * 10) / 10
+
+    let category = "Normal weight"
+    let badgeClass = "text-emerald-500 bg-emerald-500/15 border-emerald-500/30"
+    if (bmi < 18.5) {
+      category = "Underweight"
+      badgeClass = "text-amber-500 bg-amber-500/15 border-amber-500/30"
+    } else if (bmi >= 25 && bmi < 30) {
+      category = "Overweight"
+      badgeClass = "text-amber-500 bg-amber-500/15 border-amber-500/30"
+    } else if (bmi >= 30) {
+      category = "Obese"
+      badgeClass = "text-rose-500 bg-rose-500/15 border-rose-500/30"
+    }
+
+    // Basal Metabolic Rate (Mifflin-St Jeor formula)
+    const bmr = Math.round(10 * w + 6.25 * h - 5 * 25 + 5)
+    // Estimated Maintenance (TDEE with workout routine ~ 1.45 multiplier)
+    const tdee = Math.round(bmr * 1.45)
+    // Target based on training goal
+    const targetCalories = goalType === "strength" 
+      ? Math.round(tdee * 1.1) 
+      : goalType === "endurance" 
+      ? tdee 
+      : Math.round(tdee * 0.95)
+
+    return { bmi, category, badgeClass, bmr, tdee, targetCalories }
+  }, [heightCm, weightKg, goalType])
 
   // Exercise rep goals management
   const [exerciseGoals, setExerciseGoals] = useState<Record<string, number>>({})
@@ -146,6 +182,38 @@ export default function ProfilePage() {
             </div>
           </div>
 
+          {/* Dynamic BMI & Calorie Target Calculator */}
+          {bmiInfo && (
+            <div className="rounded-xl border border-border/80 bg-muted/20 p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Activity className="h-4 w-4 text-primary" />
+                  <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                    Body Metrics & Calorie Target
+                  </span>
+                </div>
+                <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full border ${bmiInfo.badgeClass}`}>
+                  {bmiInfo.category}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3 text-center">
+                <div className="p-2.5 rounded-lg bg-card border border-border/50">
+                  <div className="text-[11px] text-muted-foreground">BMI</div>
+                  <div className="text-base font-bold text-foreground mt-0.5">{bmiInfo.bmi}</div>
+                </div>
+                <div className="p-2.5 rounded-lg bg-card border border-border/50">
+                  <div className="text-[11px] text-muted-foreground">BMR / Base</div>
+                  <div className="text-base font-bold text-foreground mt-0.5">{bmiInfo.bmr} kcal</div>
+                </div>
+                <div className="p-2.5 rounded-lg bg-primary/10 border border-primary/20">
+                  <div className="text-[11px] text-primary font-medium">Daily Target</div>
+                  <div className="text-base font-bold text-primary mt-0.5">{bmiInfo.targetCalories} kcal</div>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="grid gap-1">
             <label className="text-sm text-muted-foreground">Training Goal</label>
             <select
@@ -153,9 +221,9 @@ export default function ProfilePage() {
               onChange={(e) => setGoalType(e.target.value as "strength" | "endurance" | "skill")}
               className="rounded-lg border bg-card px-3 py-2"
             >
-              <option value="strength">Strength</option>
-              <option value="endurance">Endurance</option>
-              <option value="skill">Skill</option>
+              <option value="strength">Strength (Muscle Building Surplus)</option>
+              <option value="endurance">Endurance (Performance Maintenance)</option>
+              <option value="skill">Skill (Lean Athletic)</option>
             </select>
           </div>
 

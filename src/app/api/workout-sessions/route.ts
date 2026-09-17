@@ -92,10 +92,18 @@ export async function POST(request: NextRequest) {
 
     // If routineId is provided, load exercises from the routine
     if (routineId) {
+      const parsedRoutineId = parseInt(String(routineId), 10);
+      if (isNaN(parsedRoutineId)) {
+        return NextResponse.json({ 
+          error: 'Invalid routine ID',
+          code: 'INVALID_ROUTINE_ID' 
+        }, { status: 400 });
+      }
+
       // Allow any user to use any routine (including admin routines)
       const routine = await db.select()
         .from(routines)
-        .where(eq(routines.id, parseInt(routineId)))
+        .where(eq(routines.id, parsedRoutineId))
         .limit(1);
 
       if (routine.length === 0) {
@@ -135,7 +143,7 @@ export async function POST(request: NextRequest) {
       // Update lastUsed timestamp for the routine
       await db.update(routines)
         .set({ lastUsed: new Date() })
-        .where(eq(routines.id, parseInt(routineId)));
+        .where(eq(routines.id, parsedRoutineId));
     }
 
     if (!items) {

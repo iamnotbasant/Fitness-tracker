@@ -65,3 +65,13 @@
 - [x] **Task 6.9:** Add Routine Full Overview modal and context menu options ("Full Overview", "Edit Routine", "Pin/Unpin", "Start Routine").
 - [x] **Task 6.10:** Clean Exercise cards on `/exercises` (name with Level, Split, and Type badges directly beneath, no muscle subtitle).
 
+---
+
+## ⚡ Phase 7: Deep Audit Fixes & Advanced Fitness Tools
+- [x] **Task 7.1:** Fix Routine Starting NaN Crash Risk with safe integer validation (`src/app/api/workout-sessions/route.ts`).
+- [x] **Task 7.2:** Dynamic Period-Aware Radial Goals Targets & Distinct Days Counting (`src/components/charts/radial-goals-chart.tsx`, `src/app/progress/page.tsx`).
+- [x] **Task 7.3:** Interactive BMI, BMR & Daily Calorie Target Calculator on Profile (`src/app/profile/page.tsx`).
+- [x] **Task 7.4:** Fast Muscle/Split Filter Chips & Equipment Type Dropdown on Exercises (`src/app/exercises/page.tsx`).
+- [x] **Task 7.5:** Native Next.js PWA Web App Manifest for mobile installation (`src/app/manifest.ts`).
+
+

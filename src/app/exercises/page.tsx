@@ -62,6 +62,8 @@ export default function ExercisesPage() {
   const { exercises, create, update, remove, isLoading } = useExercises()
   const [query, setQuery] = useState("")
   const [levelFilter, setLevelFilter] = useState<"all" | number>("all")
+  const [splitFilter, setSplitFilter] = useState<string>("all")
+  const [typeFilter, setTypeFilter] = useState<string>("all")
   const [sortBy, setSortBy] = useState<"level-asc" | "level-desc" | "name" | "popularity">("level-asc")
   const [showForm, setShowForm] = useState(false)
   const [mounted, setMounted] = useState(false)
@@ -91,6 +93,23 @@ export default function ExercisesPage() {
     
     if (levelFilter !== "all") list = list.filter((e) => Number(e.level ?? 0) === levelFilter)
     
+    if (splitFilter !== "all") {
+      const sf = splitFilter.toLowerCase()
+      list = list.filter((e) => {
+        const s = (e.split || "").toLowerCase()
+        const bp = (e.bodyParts || []).map(b => b.toLowerCase())
+        return s.includes(sf) || bp.some(b => b.includes(sf))
+      })
+    }
+
+    if (typeFilter !== "all") {
+      const tf = typeFilter.toLowerCase()
+      list = list.filter((e) => {
+        const t = (e.type || "standard").toLowerCase()
+        return t.includes(tf)
+      })
+    }
+
     // Sort logic
     if (sortBy === "level-asc") {
       list = list.slice().sort((a, b) => Number(a.level ?? 0) - Number(b.level ?? 0) || a.name.localeCompare(b.name))
@@ -107,7 +126,7 @@ export default function ExercisesPage() {
     }
     
     return list
-  }, [exercises, debouncedQuery, levelFilter, sortBy])
+  }, [exercises, debouncedQuery, levelFilter, splitFilter, typeFilter, sortBy])
 
   return (
     <main className="pb-32 md:pb-12">
@@ -172,16 +191,53 @@ export default function ExercisesPage() {
           </div>
         </div>
 
-        <div className="mt-3">
+        <div className="mt-3 flex flex-col gap-2.5">
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="w-full rounded-lg border bg-card px-4 py-2.5 text-base"
-            placeholder="Search exercises..."
+            className="w-full rounded-xl border bg-card px-4 py-2.5 text-sm font-medium focus:ring-1 focus:ring-primary outline-none"
+            placeholder="Search exercises by name, muscle, or tag..."
             aria-label="Search exercises"
           />
+
+          {/* Quick Filter Chips & Equipment Type */}
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+            <div className="flex flex-wrap items-center gap-1.5 overflow-x-auto py-0.5">
+              {["all", "push", "pull", "legs", "core", "chest", "back", "arms"].map((chip) => (
+                <button
+                  type="button"
+                  key={chip}
+                  onClick={() => setSplitFilter(chip)}
+                  className={`px-3 py-1 rounded-xl text-xs font-semibold capitalize transition-all cursor-pointer ${
+                    splitFilter === chip
+                      ? "bg-primary text-primary-foreground shadow-xs"
+                      : "bg-secondary/80 text-muted-foreground hover:text-foreground hover:bg-secondary"
+                  }`}
+                >
+                  {chip === "all" ? "All Splits" : chip}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <select
+                value={typeFilter}
+                onChange={(e) => setTypeFilter(e.target.value)}
+                className="h-8 rounded-xl bg-card border border-border/80 px-2.5 py-1 text-xs font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer hover:border-primary/50 transition-colors"
+                aria-label="Filter by equipment type"
+              >
+                <option value="all">All Types</option>
+                <option value="bodyweight">Bodyweight</option>
+                <option value="weighted">Weighted</option>
+                <option value="timer">Timer</option>
+                <option value="cardio">Cardio</option>
+                <option value="mobility">Mobility</option>
+              </select>
+            </div>
+          </div>
+
           {query !== debouncedQuery && (
-            <p className="mt-1 text-xs text-muted-foreground">Searching...</p>
+            <p className="text-xs text-muted-foreground">Searching...</p>
           )}
         </div>
 

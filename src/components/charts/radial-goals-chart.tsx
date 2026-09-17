@@ -14,12 +14,19 @@ import { AnimatedTarget, AnimatedFlame, AnimatedCheckmark } from "@/components/u
 
 interface RadialGoalsChartProps {
   workouts: Workout[]
+  period?: "weekly" | "monthly" | "yearly" | "all" | string
+  customTargets?: {
+    workouts?: number
+    sets?: number
+    reps?: number
+    points?: number
+  }
 }
 
-export function RadialGoalsChart({ workouts }: RadialGoalsChartProps) {
+export function RadialGoalsChart({ workouts, period = "weekly", customTargets }: RadialGoalsChartProps) {
   const { chartData, totals, avgCompletion } = useMemo(() => {
-    // Calculate stats from workouts
-    const totalWorkouts = workouts.length
+    // Calculate stats from workouts: distinct workout days rather than raw exercise rows
+    const distinctDays = new Set(workouts.map((w) => w.date)).size
     const totalSets = workouts.reduce((acc, w) => acc + (w.sets || 1), 0)
     const totalReps = workouts.reduce((acc, w) => acc + (w.reps || 0), 0)
     const totalPoints = workouts.reduce(
@@ -27,13 +34,39 @@ export function RadialGoalsChart({ workouts }: RadialGoalsChartProps) {
       0
     )
 
-    // Benchmark targets
-    const targetWorkouts = 5
-    const targetSets = 25
-    const targetReps = 300
-    const targetPoints = 1200
+    // Dynamic targets based on selected time period
+    let targetWorkouts = 4
+    let targetSets = 20
+    let targetReps = 250
+    let targetPoints = 1000
 
-    const pctWorkouts = Math.min(Math.round((totalWorkouts / targetWorkouts) * 100), 100)
+    if (period === "monthly") {
+      targetWorkouts = 16
+      targetSets = 80
+      targetReps = 1000
+      targetPoints = 4000
+    } else if (period === "yearly") {
+      targetWorkouts = 180
+      targetSets = 900
+      targetReps = 12000
+      targetPoints = 48000
+    } else if (period === "all") {
+      const dates = workouts.map(w => new Date(w.date).getTime()).filter(t => !isNaN(t))
+      const minDate = dates.length ? Math.min(...dates) : Date.now()
+      const maxDate = dates.length ? Math.max(...dates) : Date.now()
+      const weeks = Math.max(1, Math.ceil((maxDate - minDate) / (7 * 24 * 60 * 60 * 1000)))
+      targetWorkouts = weeks * 4
+      targetSets = weeks * 20
+      targetReps = weeks * 250
+      targetPoints = weeks * 1000
+    }
+
+    if (customTargets?.workouts) targetWorkouts = customTargets.workouts
+    if (customTargets?.sets) targetSets = customTargets.sets
+    if (customTargets?.reps) targetReps = customTargets.reps
+    if (customTargets?.points) targetPoints = customTargets.points
+
+    const pctWorkouts = Math.min(Math.round((distinctDays / targetWorkouts) * 100), 100)
     const pctSets = Math.min(Math.round((totalSets / targetSets) * 100), 100)
     const pctReps = Math.min(Math.round((totalReps / targetReps) * 100), 100)
     const pctPoints = Math.min(Math.round((totalPoints / targetPoints) * 100), 100)
@@ -66,7 +99,7 @@ export function RadialGoalsChart({ workouts }: RadialGoalsChartProps) {
       {
         name: "Workouts Frequency",
         value: pctWorkouts,
-        actual: totalWorkouts,
+        actual: distinctDays,
         target: targetWorkouts,
         fill: "#ffffff", // clean white
       },
@@ -75,14 +108,14 @@ export function RadialGoalsChart({ workouts }: RadialGoalsChartProps) {
     return {
       chartData: data,
       totals: {
-        workouts: totalWorkouts,
+        workouts: distinctDays,
         sets: totalSets,
         reps: totalReps,
         points: totalPoints,
       },
       avgCompletion: avg,
     }
-  }, [workouts])
+  }, [workouts, period, customTargets])
 
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
