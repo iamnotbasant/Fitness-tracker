@@ -51,3 +51,17 @@
 - [x] **Task 5.4:** Update Workout Card (`src/components/today-workout-card.tsx`) and Edit Dialog (`src/components/workout/workout-edit-dialog.tsx`) to format and preserve timer sets without forcing 1 rep fallback.
 - [x] **Task 5.5:** Update Active Session, Routines, and API (`src/hooks/use-local-data.ts`, `src/app/workout/page.tsx`, `src/app/workout/routines`, `src/app/api/workout-sessions/route.ts`) so adding a timer exercise initializes with duration (`timeSeconds: 30`) and saves duration as volume without reps.
 
+---
+
+## 🎨 Phase 6: Modern UI Overhaul & UX Precision
+- [x] **Task 6.1:** Rest Timer dropdown selector (`30s`, `45s`, `60s`, `90s`, `120s`, `180s`, `240s`, `300s`, default `60s`), removing redundant text label and eliminating horizontal pill clutter.
+- [x] **Task 6.2:** Zero Emojis compliance across the application (replaced `⏱️`, `🏋️`, `⏰`, `🎉` with Lucide icons).
+- [x] **Task 6.3:** Fix timer pause-resume reset bug (resumes from paused seconds rather than wiping to 0).
+- [x] **Task 6.4:** Redesign timer exercise play/pause buttons with sleek modern styling and eliminate harsh yellow/orange highlights.
+- [x] **Task 6.5:** Implement dual Stopwatch (Count Up) and Goal Timer (Countdown) modes with automatic elapsed time saving when paused/stopped.
+- [x] **Task 6.6:** Remove permanent cross `×` button from set rows; implement Desktop Right-Click and Mobile Long-Press Set Context Menu ("Remove Set", "Duplicate Set", Set Types).
+- [x] **Task 6.7:** De-clutter `/workout` Routine Cards (bold routine name, clean subtitle, sleek Start button, and 3-dots menu).
+- [x] **Task 6.8:** Modernize `+ New Routine` header button and fix routine creation/edit redirect back to `/workout`.
+- [x] **Task 6.9:** Add Routine Full Overview modal and context menu options ("Full Overview", "Edit Routine", "Pin/Unpin", "Start Routine").
+- [x] **Task 6.10:** Clean Exercise cards on `/exercises` (name with Level, Split, and Type badges directly beneath, no muscle subtitle).
+
