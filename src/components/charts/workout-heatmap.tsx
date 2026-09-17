@@ -11,14 +11,21 @@ interface DayData {
   volume: number
   points: number
   workouts: { name: string; sets: number; reps: number; timeSeconds?: number; points: number }[]
+  isFuture?: boolean
 }
 
 type Palette = "emerald" | "flame" | "monochrome"
 export type HeatmapRange = "4w" | "12w" | "26w" | "52w" | "all"
 
+const toLocalDateStr = (d: Date) => {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, "0")
+  const dt = String(d.getDate()).padStart(2, "0")
+  return `${y}-${m}-${dt}`
+}
+
 export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
   const [palette, setPalette] = useState<Palette>("flame")
-  const [range, setRange] = useState<HeatmapRange>("52w")
   const scrollContainerRef = useRef<HTMLDivElement>(null)
 
   const earliestWorkoutDate = useMemo(() => {
@@ -27,8 +34,34 @@ export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
     return sorted[0]?.date || null
   }, [workouts])
 
+  // Default to "all" for recently started accounts so first workout is right at the start
+  const defaultRange: HeatmapRange = useMemo(() => {
+    if (!earliestWorkoutDate) return "all"
+    const earliest = new Date(earliestWorkoutDate).getTime()
+    const daysSinceStart = (Date.now() - earliest) / (1000 * 60 * 60 * 24)
+    if (daysSinceStart <= 45) return "all"
+    return "52w"
+  }, [earliestWorkoutDate])
+
+  const [range, setRange] = useState<HeatmapRange>("all")
+  const hasInitializedRef = useRef(false)
+
+  useEffect(() => {
+    if (!hasInitializedRef.current && earliestWorkoutDate) {
+      hasInitializedRef.current = true
+      setRange(defaultRange)
+    }
+  }, [defaultRange, earliestWorkoutDate])
+
   const { heatmapData, streakStats } = useMemo(() => {
-    const dataByDate = new Map<string, { volume: number; points: number; workouts: { name: string; sets: number; reps: number; timeSeconds?: number; points: number }[] }>()
+    const dataByDate = new Map<
+      string,
+      {
+        volume: number
+        points: number
+        workouts: { name: string; sets: number; reps: number; timeSeconds?: number; points: number }[]
+      }
+    >()
 
     workouts.forEach((w) => {
       const existing = dataByDate.get(w.date) || { volume: 0, points: 0, workouts: [] }
@@ -39,12 +72,16 @@ export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
       dataByDate.set(w.date, {
         volume: existing.volume + vol,
         points: existing.points + pts,
-        workouts: [...existing.workouts, { name: exName, sets: w.sets || 1, reps: w.reps || 0, timeSeconds: w.timeSeconds, points: pts }]
+        workouts: [
+          ...existing.workouts,
+          { name: exName, sets: w.sets || 1, reps: w.reps || 0, timeSeconds: w.timeSeconds, points: pts },
+        ],
       })
     })
 
     const weeks: DayData[][] = []
     const today = new Date()
+    today.setHours(23, 59, 59, 999)
     const startDate = new Date(today)
 
     if (range === "4w") {
@@ -53,12 +90,16 @@ export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
       startDate.setDate(today.getDate() - 84)
     } else if (range === "26w") {
       startDate.setDate(today.getDate() - 182)
-    } else if (range === "all" && earliestWorkoutDate) {
-      const earliest = new Date(earliestWorkoutDate)
-      if (!isNaN(earliest.getTime())) {
-        startDate.setTime(earliest.getTime())
+    } else if (range === "all") {
+      if (earliestWorkoutDate) {
+        const earliest = new Date(earliestWorkoutDate)
+        if (!isNaN(earliest.getTime())) {
+          startDate.setTime(earliest.getTime())
+        } else {
+          startDate.setDate(today.getDate() - 28)
+        }
       } else {
-        startDate.setDate(today.getDate() - 364)
+        startDate.setDate(today.getDate() - 28)
       }
     } else {
       // 52w default
@@ -68,30 +109,37 @@ export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
     // Start from the first Sunday before or on startDate
     const dayOfWeek = startDate.getDay()
     startDate.setDate(startDate.getDate() - dayOfWeek)
+    startDate.setHours(0, 0, 0, 0)
+
+    // For "all" or "4w", ensure at least 4 weeks to give a full clean monthly habit grid
+    const minWeeks = range === "4w" || range === "all" ? 4 : range === "12w" ? 12 : range === "26w" ? 26 : 52
 
     let currentDate = new Date(startDate)
     const allDays: { dateStr: string; hasWorkout: boolean }[] = []
 
-    while (currentDate <= today) {
+    while (currentDate <= today || weeks.length < minWeeks) {
       const week: DayData[] = []
       for (let dayIdx = 0; dayIdx < 7; dayIdx++) {
-        const dateStr = currentDate.toISOString().slice(0, 10)
+        const dateStr = toLocalDateStr(currentDate)
         const data = dataByDate.get(dateStr)
         const hasWorkout = (data?.workouts.length || 0) > 0
+        const isFuture = currentDate > today
 
         week.push({
           date: dateStr,
           volume: data?.volume || 0,
           points: data?.points || 0,
-          workouts: data?.workouts || []
+          workouts: data?.workouts || [],
+          isFuture,
         })
 
-        if (currentDate <= today) {
+        if (!isFuture) {
           allDays.push({ dateStr, hasWorkout })
         }
         currentDate.setDate(currentDate.getDate() + 1)
       }
       weeks.push(week)
+      if (weeks.length >= 60) break
     }
 
     // Calculate Streaks
@@ -100,22 +148,21 @@ export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
     let tempStreak = 0
     let activeDays = 0
 
-    // Reverse from today backwards to find current streak
-    const todayStr = today.toISOString().slice(0, 10)
+    const todayStr = toLocalDateStr(today)
     let checkDate = new Date(today)
-    
-    // Check if today or yesterday has a workout to maintain streak
+
     const hasToday = dataByDate.has(todayStr)
     const yesterday = new Date(today)
     yesterday.setDate(today.getDate() - 1)
-    const hasYesterday = dataByDate.has(yesterday.toISOString().slice(0, 10))
+    const yesterdayStr = toLocalDateStr(yesterday)
+    const hasYesterday = dataByDate.has(yesterdayStr)
 
     if (hasToday || hasYesterday) {
       if (!hasToday) {
         checkDate.setDate(checkDate.getDate() - 1)
       }
       while (true) {
-        const dStr = checkDate.toISOString().slice(0, 10)
+        const dStr = toLocalDateStr(checkDate)
         if (dataByDate.has(dStr)) {
           currentStreak++
           checkDate.setDate(checkDate.getDate() - 1)
@@ -125,7 +172,6 @@ export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
       }
     }
 
-    // Calculate longest streak & active days across whole year
     allDays.forEach(({ hasWorkout }) => {
       if (hasWorkout) {
         activeDays++
@@ -145,29 +191,85 @@ export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
         longestStreak: Math.max(longestStreak, currentStreak),
         activeDays,
         totalWorkouts: workouts.length,
+      },
+    }
+  }, [workouts, range, earliestWorkoutDate])
+
+  // Dynamic grid configuration based on selected Span
+  const gridConfig = useMemo(() => {
+    const numWeeks = heatmapData.length
+    if (range === "4w" || (range === "all" && numWeeks <= 6)) {
+      return {
+        boxClass: "h-8 w-8 sm:h-9 sm:w-9 rounded-lg",
+        dayLabelClass: "h-8 sm:h-9 leading-8 sm:leading-9 text-xs",
+        gapColClass: "gap-2 sm:gap-2.5",
+        gapRowClass: "gap-2 sm:gap-2.5",
+        minWidthClass: "min-w-0 w-full justify-start",
+        colWidthPx: 38,
+        spanLabel: range === "all" ? `All Time (${numWeeks * 7} Days)` : "28 Days",
       }
     }
-  }, [workouts])
+    if (range === "12w" || (range === "all" && numWeeks <= 14)) {
+      return {
+        boxClass: "h-5.5 w-5.5 sm:h-6 sm:w-6 rounded-md",
+        dayLabelClass: "h-5.5 sm:h-6 leading-5.5 sm:leading-6 text-[11px]",
+        gapColClass: "gap-1.5 sm:gap-2",
+        gapRowClass: "gap-1.5 sm:gap-2",
+        minWidthClass: "min-w-[420px]",
+        colWidthPx: 26,
+        spanLabel: range === "all" ? `All Time (${numWeeks * 7} Days)` : "84 Days",
+      }
+    }
+    if (range === "26w" || (range === "all" && numWeeks <= 28)) {
+      return {
+        boxClass: "h-4 w-4 sm:h-4.5 sm:w-4.5 rounded-[4px]",
+        dayLabelClass: "h-4 sm:h-4.5 leading-4 sm:leading-4.5 text-[10px]",
+        gapColClass: "gap-1.5",
+        gapRowClass: "gap-1.5",
+        minWidthClass: "min-w-[560px]",
+        colWidthPx: 19,
+        spanLabel: range === "all" ? `All Time (${numWeeks * 7} Days)` : "182 Days",
+      }
+    }
+    // 52w or all > 28 weeks
+    return {
+      boxClass: "h-3 w-3 sm:h-3.5 sm:w-3.5 rounded-[3px]",
+      dayLabelClass: "h-3 sm:h-3.5 leading-3 sm:leading-3.5 text-[10px]",
+      gapColClass: "gap-1",
+      gapRowClass: "gap-1",
+      minWidthClass: "min-w-[760px]",
+      colWidthPx: 16,
+      spanLabel: range === "all" ? `All Time (${numWeeks * 7} Days)` : "365 Days",
+    }
+  }, [range, heatmapData.length])
 
-  // Scroll to the latest weeks on load
+  // Scroll to start for short grids or to end for long historical grids
   useEffect(() => {
     if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollLeft = scrollContainerRef.current.scrollWidth
+      if (heatmapData.length > 20) {
+        scrollContainerRef.current.scrollLeft = scrollContainerRef.current.scrollWidth
+      } else {
+        scrollContainerRef.current.scrollLeft = 0
+      }
     }
-  }, [heatmapData])
+  }, [heatmapData.length, range])
 
   // Thresholds for color scale
   const levelThresholds = useMemo(() => {
-    const volumes = heatmapData.flat().map(d => d.volume).filter(v => v > 0)
+    const volumes = heatmapData.flat().map((d) => d.volume).filter((v) => v > 0)
     const avg = volumes.length > 0 ? volumes.reduce((a, b) => a + b, 0) / volumes.length : 100
     return {
       low: Math.max(1, avg * 0.5),
       medium: avg,
-      high: avg * 1.5
+      high: avg * 1.5,
     }
   }, [heatmapData])
 
-  const getCellColor = (volume: number) => {
+  const getCellColor = (volume: number, isFuture = false) => {
+    if (isFuture) {
+      return "bg-secondary/20 border-border/20 border-dashed cursor-default opacity-40"
+    }
+
     if (volume === 0) {
       return "bg-secondary/40 border-border/30 hover:border-primary/50"
     }
@@ -192,23 +294,25 @@ export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
   }
 
   const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr)
-    return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
+    const [y, m, d] = dateStr.split("-").map(Number)
+    const date = new Date(y, m - 1, d)
+    return date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" })
   }
 
-  // Month labels
+  // Month labels aligned with column width
   const monthLabels = useMemo(() => {
     const labels: { month: string; weekIndex: number }[] = []
     let lastMonth = -1
 
     heatmapData.forEach((week, idx) => {
-      const firstDay = new Date(week[0].date)
+      const [y, m, d] = week[0].date.split("-").map(Number)
+      const firstDay = new Date(y, m - 1, d)
       const currentMonth = firstDay.getMonth()
 
-      if (currentMonth !== lastMonth && idx > 0) {
+      if (currentMonth !== lastMonth) {
         labels.push({
-          month: firstDay.toLocaleDateString('en-US', { month: 'short' }),
-          weekIndex: idx
+          month: firstDay.toLocaleDateString("en-US", { month: "short" }),
+          weekIndex: idx,
         })
         lastMonth = currentMonth
       }
@@ -365,14 +469,17 @@ export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
         ref={scrollContainerRef}
         className="overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent rounded-xl"
       >
-        <div className="inline-flex flex-col gap-1.5 min-w-[760px] py-1">
+        <div className={`inline-flex flex-col gap-1.5 ${gridConfig.minWidthClass} py-1`}>
           {/* Month labels at top */}
           <div className="flex gap-1 pl-9 mb-1 text-[11px] text-muted-foreground font-medium select-none">
             {monthLabels.map(({ month, weekIndex }, idx) => (
               <div
                 key={idx}
                 style={{
-                  marginLeft: idx === 0 ? '0' : `${Math.max(0, (weekIndex - (monthLabels[idx - 1]?.weekIndex || 0) - 1) * 15.5)}px`
+                  marginLeft:
+                    idx === 0
+                      ? "0"
+                      : `${Math.max(0, (weekIndex - (monthLabels[idx - 1]?.weekIndex || 0) - 1) * gridConfig.colWidthPx)}px`,
                 }}
               >
                 {month}
@@ -381,30 +488,30 @@ export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
           </div>
 
           {/* Day labels and heatmap grid */}
-          <div className="flex gap-1.5 items-center">
+          <div className={`flex ${gridConfig.gapColClass} items-center`}>
             {/* Day labels on the left */}
-            <div className="flex flex-col gap-1 text-[10px] text-muted-foreground font-medium select-none pr-1.5">
-              <div className="h-3 leading-3 opacity-0">Sun</div>
-              <div className="h-3 leading-3">Mon</div>
-              <div className="h-3 leading-3 opacity-0">Tue</div>
-              <div className="h-3 leading-3">Wed</div>
-              <div className="h-3 leading-3 opacity-0">Thu</div>
-              <div className="h-3 leading-3">Fri</div>
-              <div className="h-3 leading-3 opacity-0">Sat</div>
+            <div className={`flex flex-col ${gridConfig.gapRowClass} text-muted-foreground font-medium select-none pr-1.5`}>
+              <div className={`${gridConfig.dayLabelClass} opacity-0`}>Sun</div>
+              <div className={`${gridConfig.dayLabelClass}`}>Mon</div>
+              <div className={`${gridConfig.dayLabelClass} opacity-0`}>Tue</div>
+              <div className={`${gridConfig.dayLabelClass}`}>Wed</div>
+              <div className={`${gridConfig.dayLabelClass} opacity-0`}>Thu</div>
+              <div className={`${gridConfig.dayLabelClass}`}>Fri</div>
+              <div className={`${gridConfig.dayLabelClass} opacity-0`}>Sat</div>
             </div>
 
             {/* Heatmap squares */}
             {heatmapData.map((week, weekIdx) => (
-              <div key={weekIdx} className="flex flex-col gap-1">
+              <div key={weekIdx} className={`flex flex-col ${gridConfig.gapRowClass}`}>
                 {week.map((day, dayIdx) => {
                   const hasWorkouts = day.workouts.length > 0
                   return (
-                    <div
-                      key={`${weekIdx}-${dayIdx}`}
-                      className="group/day relative"
-                    >
+                    <div key={`${weekIdx}-${dayIdx}`} className="group/day relative">
                       <div
-                        className={`h-3 w-3 rounded-[3px] border transition-all duration-150 cursor-pointer hover:scale-125 hover:z-20 ${getCellColor(day.volume)}`}
+                        className={`${gridConfig.boxClass} border transition-all duration-150 cursor-pointer hover:scale-110 hover:z-20 ${getCellColor(
+                          day.volume,
+                          day.isFuture
+                        )}`}
                       />
 
                       {/* Custom Tooltip */}
@@ -417,14 +524,20 @@ export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
                             </span>
                           )}
                         </div>
-                        {hasWorkouts ? (
+                        {day.isFuture ? (
+                          <span className="text-[11px] text-muted-foreground italic">Upcoming day</span>
+                        ) : hasWorkouts ? (
                           <div className="space-y-1 pt-0.5">
                             <span className="text-[11px] text-muted-foreground font-medium">
-                              Volume: <strong className="text-foreground">{day.volume} reps/load</strong> ({day.workouts.length} exercises)
+                              Volume: <strong className="text-foreground">{day.volume} reps/load</strong> (
+                              {day.workouts.length} exercises)
                             </span>
                             <div className="max-h-24 overflow-y-auto space-y-0.5 pt-1">
                               {day.workouts.map((w, i) => (
-                                <div key={i} className="flex items-center justify-between text-[11px] text-muted-foreground truncate">
+                                <div
+                                  key={i}
+                                  className="flex items-center justify-between text-[11px] text-muted-foreground truncate"
+                                >
                                   <span className="truncate">{w.name}</span>
                                   <span className="font-medium text-foreground ml-1.5 shrink-0">
                                     {w.sets}×{w.timeSeconds ? `${w.timeSeconds}s` : w.reps}
@@ -448,7 +561,7 @@ export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
 
       {/* Legend */}
       <div className="flex items-center justify-between pt-2 border-t border-border/50 text-xs text-muted-foreground flex-wrap gap-2">
-        <span className="font-medium text-foreground">Consistency Grid (365 Days)</span>
+        <span className="font-medium text-foreground">Consistency Grid ({gridConfig.spanLabel})</span>
         <div className="flex items-center gap-2">
           <span>Less</span>
           <div className="flex gap-1 items-center">

@@ -212,7 +212,7 @@ export default function ProgressPage() {
 
             {/* Workout Consistency Activity Heatmap */}
             <div>
-              <WorkoutHeatmap workouts={filtered.length > 0 ? filtered : workouts} />
+              <WorkoutHeatmap workouts={workouts} />
             </div>
 
             {/* Weekly Goal Completion Rings */}

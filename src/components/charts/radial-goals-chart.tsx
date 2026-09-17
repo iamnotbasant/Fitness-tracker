@@ -80,28 +80,28 @@ export function RadialGoalsChart({ workouts, period = "weekly", customTargets }:
         value: pctPoints,
         actual: totalPoints,
         target: targetPoints,
-        fill: "#ea384c", // DockOS coral/crimson
+        fill: "#f43f5e", // Neon Rose / Coral (Intensity & points)
       },
       {
         name: "Reps Volume",
         value: pctReps,
         actual: totalReps,
         target: targetReps,
-        fill: "#f97316", // orange
+        fill: "#f59e0b", // Solar Amber (Endurance & volume)
       },
       {
         name: "Total Sets",
         value: pctSets,
         actual: totalSets,
         target: targetSets,
-        fill: "#eab308", // yellow/amber
+        fill: "#10b981", // Emerald Mint (Strength & sets)
       },
       {
         name: "Workouts Frequency",
         value: pctWorkouts,
         actual: distinctDays,
         target: targetWorkouts,
-        fill: "#ffffff", // clean white
+        fill: "#06b6d4", // Electric Cyan (Frequency & active days)
       },
     ]
 
@@ -185,9 +185,9 @@ export function RadialGoalsChart({ workouts, period = "weekly", customTargets }:
               />
               <Tooltip content={<CustomTooltip />} />
               <RadialBar
-                background={{ fill: "#18181b" }}
+                background={{ fill: "rgba(255, 255, 255, 0.05)" }}
                 dataKey="value"
-                cornerRadius={6}
+                cornerRadius={8}
               />
             </RadialBarChart>
           </ResponsiveContainer>
@@ -198,7 +198,7 @@ export function RadialGoalsChart({ workouts, period = "weekly", customTargets }:
               {avgCompletion}%
             </span>
             <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">
-              Weekly
+              {period || "Weekly"}
             </span>
           </div>
         </div>
