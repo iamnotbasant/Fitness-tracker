@@ -117,3 +117,20 @@
     - **Points Overload**: Neon Rose / Coral (`#f43f5e`)
   - Added glassmorphic translucent ring tracks (`rgba(255, 255, 255, 0.05)`) with rounded bar caps.
   - Updated center text and legend progress bars with matching glowing dots and dynamic period label.
+
+---
+
+## 🎨 Phase 11: Exact Warm Gradient Heatmap Color Scheme
+- [x] **Task 11.1:** Exact 6-Step Warm Gradient Palette Implementation (`src/components/charts/workout-heatmap.tsx`).
+  - Integrated the exact 6 warm gradient hex codes:
+    1. Canary Yellow: `#F2E03F` (Level 1 / light intensity)
+    2. Warm Golden Yellow: `#EFC03A` (Level 2)
+    3. Amber Gold: `#ECA035` (Level 3)
+    4. Warm Tangerine Orange: `#E8812F` (Level 4)
+    5. Fiery Deep Orange: `#E5612A` (Level 5)
+    6. Crimson Flame Red: `#E24125` (Level 6 / peak intensity)
+  - Implemented 6-level quantile/linear threshold calculator (`levelThresholds.l1` through `l5`).
+  - Single-workout sessions automatically center on Level 4 (`#E8812F`) warm tangerine amber.
+  - Multi-workout history uses quantile distribution across all 6 shades with subtle glow shadows.
+  - Updated theme selector with `Warm Gradient` default, and updated legend chips with all 6 gradient swatches plus rest block.
+
