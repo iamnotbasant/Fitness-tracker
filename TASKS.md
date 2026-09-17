@@ -86,5 +86,13 @@
 - [x] **Task 8.7:** Big 3 Lifts (Bench, Squat, Deadlift) 1RM Strength Progression timeline chart with Epley formula and PR summary (`src/components/charts/strength-progression-chart.tsx`, `src/app/progress/page.tsx`).
 - [x] **Task 8.8:** Smooth 3D Flip Animation for Muscle Anatomy Heatmap view switching between Front and Back (`src/components/charts/muscle-anatomy-map.tsx`).
 
+---
 
-
+## ⏱️ Phase 9: Workout Duration & Confirmation Modal Fixes
+- [x] **Task 9.1:** Fix workout duration tracking and confirmation dialog time calculation (`src/hooks/use-local-data.ts`, `src/app/workout/page.tsx`, `src/components/workout/workout-confirmation-dialog.tsx`).
+  - Switched `startedAt` generation from ambiguous local time string to standard UTC ISO format (`new Date().toISOString()`).
+  - Added robust timestamp parsing with automatic fallback handling for timezone-shifted sessions.
+  - Eliminated disconnected `timerStarted` / `timerStartTime` states and redundant secondary "Start" header button.
+  - Bound live elapsed tracking directly to active session creation timestamp with a 1-second continuous tick.
+  - Captured frozen duration snapshot on finish with smart fallback (~90s per completed set if duration < 60s).
+  - Prevented confirmation dialog from re-initializing or overwriting manual edits on each parent tick.
