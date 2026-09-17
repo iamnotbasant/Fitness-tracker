@@ -103,7 +103,7 @@ if (typeof window !== "undefined") {
 }
 
 // Helper to get local date string in YYYY-MM-DD format
-const getLocalDateString = (date: Date) => {
+export const getLocalDateString = (date: Date) => {
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')
   const day = String(date.getDate()).padStart(2, '0')
@@ -111,7 +111,7 @@ const getLocalDateString = (date: Date) => {
 }
 
 // Helper to get local time string in HH:MM format
-const getLocalTimeString = (date: Date) => {
+export const getLocalTimeString = (date: Date) => {
   const hours = String(date.getHours()).padStart(2, '0')
   const minutes = String(date.getMinutes()).padStart(2, '0')
   return `${hours}:${minutes}`
@@ -386,17 +386,17 @@ export function useActiveSession() {
   const start = async (routineId?: string) => {
     const token = typeof window !== "undefined" ? localStorage.getItem("bearer_token") : null
     const now = new Date()
-    const localDatetime = `${getLocalDateString(now)}T${getLocalTimeString(now)}:00`
+    const isoDatetime = now.toISOString()
     
     // Create optimistic local session immediately
     const optimisticSession: WorkoutSession = {
       id: `session-local-${Date.now()}`,
       userId: "local",
       status: "active",
-      startedAt: localDatetime,
+      startedAt: isoDatetime,
       items: [],
       routineId,
-      createdAt: localDatetime,
+      createdAt: isoDatetime,
     }
 
     // Save locally immediately
@@ -418,7 +418,7 @@ export function useActiveSession() {
         },
         credentials: "include",
         body: JSON.stringify({ 
-          startedAt: localDatetime,
+          startedAt: isoDatetime,
           items: [],
           routineId 
         }),
@@ -571,12 +571,10 @@ export function useActiveSession() {
       localDate = editedDate
       localTime = editedTime
     } else {
-      const startedAtStr = data.session.startedAt
-      
-      if (startedAtStr.includes('T')) {
-        const [datePart, timePart] = startedAtStr.split('T')
-        localDate = datePart
-        localTime = timePart.slice(0, 5)
+      const d = data.session.startedAt ? new Date(data.session.startedAt) : new Date()
+      if (!isNaN(d.getTime())) {
+        localDate = getLocalDateString(d)
+        localTime = getLocalTimeString(d)
       } else {
         const now = new Date()
         localDate = getLocalDateString(now)

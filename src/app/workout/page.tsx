@@ -1,7 +1,7 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { useActiveSession, useExercises, useWorkouts, useRoutines } from "@/hooks/use-local-data"
+import { useActiveSession, useExercises, useWorkouts, useRoutines, getLocalDateString, getLocalTimeString } from "@/hooks/use-local-data"
 import { Dumbbell, Plus, Search, ChevronLeft, Clock, Play, Loader2, Pin, MoreVertical, Eye, Edit, X, Check, AlertTriangle, Trash2 } from "lucide-react"
 import { useSession } from "@/lib/auth-client"
 import { useEffect, useState, useMemo, useCallback, useRef, memo } from "react"
@@ -22,10 +22,9 @@ export default function WorkoutHub() {
   const { data: session } = useSession()
   const [mounted, setMounted] = useState(false)
   
-  // Timer control
-  const [timerStarted, setTimerStarted] = useState(false)
-  const [timerStartTime, setTimerStartTime] = useState<number | null>(null)
+  // Timer control & freeze snapshot on finish
   const [tick, setTick] = useState(0)
+  const [finishDuration, setFinishDuration] = useState<number>(0)
 
   // Active Rest Timer state (floating bottom bar)
   const [activeRest, setActiveRest] = useState<{
@@ -101,29 +100,49 @@ export default function WorkoutHub() {
     setMounted(true)
   }, [])
 
-  // Auto-sync timer start time if an active session exists
-  useEffect(() => {
-    if (activeSession && !timerStarted) {
-      setTimerStarted(true)
-      if (activeSession.startedAt) {
-        const startTs = new Date(activeSession.startedAt).getTime()
-        if (!isNaN(startTs) && startTs <= Date.now()) {
-          setTimerStartTime(startTs)
+  // Helper to reliably compute the session start timestamp (handling UTC ISO, timestamps, and legacy offsets)
+  const getSessionStartTime = useCallback((sess: any): number => {
+    if (!sess) return 0
+    let ts = 0
+    if (sess.startedAt) {
+      const parsed = new Date(sess.startedAt).getTime()
+      if (!isNaN(parsed)) {
+        // If parsed is in the future by > 60s (legacy bug where local time was saved as UTC),
+        // fallback to createdAt or adjust with local timezone offset
+        if (parsed > Date.now() + 60000) {
+          if (sess.createdAt) {
+            const createdTs = new Date(sess.createdAt).getTime()
+            if (!isNaN(createdTs) && createdTs <= Date.now()) {
+              ts = createdTs
+            }
+          }
+          if (!ts) {
+            const offsetMs = new Date().getTimezoneOffset() * 60 * 1000
+            const adjusted = parsed + offsetMs
+            if (adjusted <= Date.now()) {
+              ts = adjusted
+            }
+          }
         } else {
-          setTimerStartTime(Date.now())
+          ts = parsed
         }
-      } else {
-        setTimerStartTime(Date.now())
       }
     }
-  }, [activeSession, timerStarted])
+    if (!ts && sess.createdAt) {
+      const createdTs = new Date(sess.createdAt).getTime()
+      if (!isNaN(createdTs) && createdTs <= Date.now()) {
+        ts = createdTs
+      }
+    }
+    return ts || Date.now()
+  }, [])
 
-  // Timer effect - runs when timerStarted is true
+  // Timer effect - runs continuously whenever activeSession is active
   useEffect(() => {
-    if (!timerStarted || !timerStartTime) return
+    if (!activeSession) return
     const id = setInterval(() => setTick((t) => t + 1), 1000)
     return () => clearInterval(id)
-  }, [timerStarted, timerStartTime])
+  }, [activeSession])
 
   // Rest Timer countdown effect with sound & vibration
   const lastPlayedRemRef = useRef<number | null>(null)
@@ -184,7 +203,17 @@ export default function WorkoutHub() {
     setActiveRest(null)
   }
 
-  const elapsed = timerStartTime ? Math.max(0, Math.floor((Date.now() - timerStartTime) / 1000)) : 0
+  const elapsed = useMemo(() => {
+    if (!activeSession) return 0
+    const startTs = getSessionStartTime(activeSession)
+    return Math.max(0, Math.floor((Date.now() - startTs) / 1000))
+  }, [activeSession, tick, getSessionStartTime])
+
+  const sessionStartDate = useMemo(() => {
+    if (!activeSession) return new Date()
+    const ts = getSessionStartTime(activeSession)
+    return new Date(ts)
+  }, [activeSession, getSessionStartTime])
   
   const formatDuration = (seconds: number) => {
     const hh = Math.floor(seconds / 3600)
@@ -308,12 +337,6 @@ export default function WorkoutHub() {
     }
   }
 
-  const handleStartTimer = () => {
-    setTimerStarted(true)
-    setTimerStartTime(Date.now())
-    soundManager.play('start', 0.7)
-    toast.success("Timer started! Let's workout!")
-  }
 
   const onAddExercise = async (exerciseId: string) => {
     try {
@@ -426,10 +449,16 @@ export default function WorkoutHub() {
     
     soundManager.play('click', 0.4)
     
-    // Stop timer immediately when showing confirmation dialog
-    setTimerStarted(false)
+    // Calculate final duration snapshot with smart fallback
+    const totalCompleted = activeSession.items.reduce((acc, item) => 
+      acc + item.sets.filter(s => s.done).length, 0
+    )
+    const currentDuration = elapsed
+    const finalDuration = (currentDuration < 60 && totalCompleted > 0)
+      ? Math.max(currentDuration, totalCompleted * 90)
+      : Math.max(currentDuration, 60)
     
-    // Show confirmation dialog
+    setFinishDuration(finalDuration)
     setShowConfirmation(true)
   }
 
@@ -451,7 +480,7 @@ export default function WorkoutHub() {
       
       soundManager.play('complete', 0.7)
       toast.success("Workout completed and saved!")
-      setTimerStartTime(null)
+      setFinishDuration(0)
       router.push("/")
     } catch (error) {
       console.error("Error finishing workout:", error)
@@ -467,8 +496,7 @@ export default function WorkoutHub() {
   const handleConfirmDiscard = async () => {
     soundManager.play('remove', 0.5)
     await discard()
-    setTimerStarted(false)
-    setTimerStartTime(null)
+    setFinishDuration(0)
     setShowDiscardDialog(false)
     toast.success("Workout discarded")
   }
@@ -520,22 +548,7 @@ export default function WorkoutHub() {
                 <div className="text-lg md:text-xl font-semibold">Log Workout</div>
               </div>
               <div className="flex items-center gap-2">
-                <AnimatePresence>
-                  {!timerStarted && activeSession.items.length > 0 && (
-                    <motion.button
-                      initial={{ scale: 0, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      exit={{ scale: 0, opacity: 0 }}
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={handleStartTimer}
-                      className="rounded-xl bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 flex items-center gap-2"
-                    >
-                      <Play className="h-4 w-4" />
-                      Start
-                    </motion.button>
-                  )}
-                </AnimatePresence>
+
                 {activeSession.items.length > 0 && (
                   <motion.button
                     initial={{ opacity: 0, scale: 0.9 }}
@@ -745,9 +758,9 @@ export default function WorkoutHub() {
           onClose={() => setShowConfirmation(false)}
           onConfirm={handleConfirmFinish}
           exercises={activeSession.items}
-          duration={elapsed}
-          date={activeSession.startedAt}
-          time={activeSession.startedAt?.includes('T') ? activeSession.startedAt.split('T')[1].slice(0, 5) : new Date().toTimeString().slice(0, 5)}
+          duration={finishDuration}
+          date={getLocalDateString(sessionStartDate)}
+          time={getLocalTimeString(sessionStartDate)}
         />
 
         {/* Discard Workout Safety Confirmation Dialog */}

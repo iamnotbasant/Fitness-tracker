@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { X } from "lucide-react"
 import type { SessionExercise } from "@/lib/types"
 import { useExercises } from "@/hooks/use-local-data"
@@ -22,12 +22,21 @@ export default function WorkoutConfirmationDialog({ open, onClose, onConfirm, ex
   const [editableTime, setEditableTime] = useState("")
   const [isSaving, setIsSaving] = useState(false)
   const { exercises: exercisesList } = useExercises()
+  const prevOpenRef = useRef(false)
 
-  // Update state when dialog opens with new data
+  // Initialize state only when dialog transitions to open
   useEffect(() => {
-    if (open) {
+    if (open && !prevOpenRef.current) {
       setEditableExercises(exercises)
-      setEditableDuration(duration)
+      
+      // Smart duration fallback: if duration is < 60s but sets were completed,
+      // provide a realistic default (~90s per completed set)
+      const completedSets = exercises.reduce((acc, ex) => acc + ex.sets.filter(s => s.done).length, 0)
+      const initialDuration = (duration < 60 && completedSets > 0)
+        ? Math.max(duration, completedSets * 90)
+        : Math.max(duration, 60)
+      
+      setEditableDuration(initialDuration)
       setIsSaving(false)
       
       // Get current date and time if not properly set
@@ -36,11 +45,10 @@ export default function WorkoutConfirmationDialog({ open, onClose, onConfirm, ex
       // Handle date
       if (date && date.match(/^\d{4}-\d{2}-\d{2}$/)) {
         setEditableDate(date)
-      } else if (date.includes('T')) {
+      } else if (date && date.includes('T')) {
         const [datePart] = date.split('T')
         setEditableDate(datePart)
       } else {
-        // Fallback to current date
         const year = now.getFullYear()
         const month = String(now.getMonth() + 1).padStart(2, '0')
         const day = String(now.getDate()).padStart(2, '0')
@@ -51,12 +59,12 @@ export default function WorkoutConfirmationDialog({ open, onClose, onConfirm, ex
       if (time && time.match(/^\d{2}:\d{2}/)) {
         setEditableTime(time)
       } else {
-        // Fallback to current time
         const hours = String(now.getHours()).padStart(2, '0')
         const minutes = String(now.getMinutes()).padStart(2, '0')
         setEditableTime(`${hours}:${minutes}`)
       }
     }
+    prevOpenRef.current = open
   }, [open, exercises, duration, date, time])
 
   if (!open) return null
