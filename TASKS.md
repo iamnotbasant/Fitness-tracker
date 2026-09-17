@@ -78,7 +78,7 @@
 
 ## 🔥 Phase 8: Part 4, 5 & 6 Master Plan Implementations
 - [x] **Task 8.1:** Dashboard Today's Plan card with 1-click Start/Resume and 7-day interactive calendar strip (`src/app/page.tsx`).
-- [x] **Task 8.2:** Dashboard Recent Personal Records (PRs) highlights trophy widget (`src/app/page.tsx`).
+- [x] **Task 8.2:** Removed Top Personal Records (PRs) widget from Dashboard (`src/app/page.tsx`) for a clean, minimal layout.
 - [x] **Task 8.3:** Live Workout Ghost Bar input placeholders and 1-Tap Copy previous set values (`src/components/workout/live-exercise-card.tsx`, `src/app/workout/page.tsx`).
 - [x] **Task 8.4:** Live Workout Discard Confirmation safety modal replacing native alert/confirm (`src/app/workout/page.tsx`).
 - [x] **Task 8.5:** Routine Cards Estimated Duration Badge (`~X min`) and Card Click Exercise Preview without auto-starting (`src/app/workout/page.tsx`).
