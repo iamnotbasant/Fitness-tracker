@@ -377,38 +377,91 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Anatomical Models Container */}
         <div className="lg:col-span-7 flex flex-col items-center justify-center p-4 sm:p-6 rounded-2xl bg-[#08080a] border border-border/60">
-          <div className={`w-full flex ${activeView === "both" ? "flex-row justify-center gap-4 sm:gap-8" : "justify-center"} items-center`}>
-            {/* Anterior (Front) View */}
-            {(activeView === "both" || activeView === "front") && (
-              <div className="flex flex-col items-center flex-1 max-w-[280px]">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-1.5">
-                  <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                  Front (Anterior)
-                </span>
-                <svg
-                  viewBox={MALE_FRONT_VIEWBOX}
-                  className="w-full h-auto select-none max-h-[460px]"
+          <div className="w-full [perspective:1000px]">
+            <AnimatePresence mode="wait">
+              {activeView === "both" ? (
+                <motion.div
+                  key="both"
+                  initial={{ opacity: 0, scale: 0.96 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.96 }}
+                  transition={{ duration: 0.25 }}
+                  className="w-full flex flex-row justify-center gap-4 sm:gap-8 items-center"
                 >
-                  {frontParts.map(renderPart)}
-                </svg>
-              </div>
-            )}
+                  {/* Anterior (Front) View */}
+                  <div className="flex flex-col items-center flex-1 max-w-[280px]">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-1.5">
+                      <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                      Front (Anterior)
+                    </span>
+                    <svg
+                      viewBox={MALE_FRONT_VIEWBOX}
+                      className="w-full h-auto select-none max-h-[460px]"
+                    >
+                      {frontParts.map(renderPart)}
+                    </svg>
+                  </div>
 
-            {/* Posterior (Back) View */}
-            {(activeView === "both" || activeView === "back") && (
-              <div className="flex flex-col items-center flex-1 max-w-[280px]">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-1.5">
-                  <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                  Back (Posterior)
-                </span>
-                <svg
-                  viewBox={MALE_BACK_VIEWBOX}
-                  className="w-full h-auto select-none max-h-[460px]"
+                  {/* Posterior (Back) View */}
+                  <div className="flex flex-col items-center flex-1 max-w-[280px]">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-1.5">
+                      <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                      Back (Posterior)
+                    </span>
+                    <svg
+                      viewBox={MALE_BACK_VIEWBOX}
+                      className="w-full h-auto select-none max-h-[460px]"
+                    >
+                      {backParts.map(renderPart)}
+                    </svg>
+                  </div>
+                </motion.div>
+              ) : activeView === "front" ? (
+                <motion.div
+                  key="front"
+                  initial={{ rotateY: 90, opacity: 0 }}
+                  animate={{ rotateY: 0, opacity: 1 }}
+                  exit={{ rotateY: -90, opacity: 0 }}
+                  transition={{ duration: 0.35, ease: "easeInOut" }}
+                  className="w-full flex justify-center items-center"
                 >
-                  {backParts.map(renderPart)}
-                </svg>
-              </div>
-            )}
+                  <div className="flex flex-col items-center flex-1 max-w-[280px]">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-1.5">
+                      <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                      Front (Anterior)
+                    </span>
+                    <svg
+                      viewBox={MALE_FRONT_VIEWBOX}
+                      className="w-full h-auto select-none max-h-[460px]"
+                    >
+                      {frontParts.map(renderPart)}
+                    </svg>
+                  </div>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="back"
+                  initial={{ rotateY: -90, opacity: 0 }}
+                  animate={{ rotateY: 0, opacity: 1 }}
+                  exit={{ rotateY: 90, opacity: 0 }}
+                  transition={{ duration: 0.35, ease: "easeInOut" }}
+                  className="w-full flex justify-center items-center"
+                >
+                  <div className="flex flex-col items-center flex-1 max-w-[280px]">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-1.5">
+                      <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                      Back (Posterior)
+                    </span>
+                    <svg
+                      viewBox={MALE_BACK_VIEWBOX}
+                      className="w-full h-auto select-none max-h-[460px]"
+                    >
+                      {backParts.map(renderPart)}
+                    </svg>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
           {/* Color Intensity Scale Legend */}

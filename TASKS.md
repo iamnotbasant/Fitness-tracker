@@ -74,4 +74,17 @@
 - [x] **Task 7.4:** Fast Muscle/Split Filter Chips & Equipment Type Dropdown on Exercises (`src/app/exercises/page.tsx`).
 - [x] **Task 7.5:** Native Next.js PWA Web App Manifest for mobile installation (`src/app/manifest.ts`).
 
+---
+
+## 🔥 Phase 8: Part 4, 5 & 6 Master Plan Implementations
+- [x] **Task 8.1:** Dashboard Today's Plan card with 1-click Start/Resume and 7-day interactive calendar strip (`src/app/page.tsx`).
+- [x] **Task 8.2:** Dashboard Recent Personal Records (PRs) highlights trophy widget (`src/app/page.tsx`).
+- [x] **Task 8.3:** Live Workout Ghost Bar input placeholders and 1-Tap Copy previous set values (`src/components/workout/live-exercise-card.tsx`, `src/app/workout/page.tsx`).
+- [x] **Task 8.4:** Live Workout Discard Confirmation safety modal replacing native alert/confirm (`src/app/workout/page.tsx`).
+- [x] **Task 8.5:** Routine Cards Estimated Duration Badge (`~X min`) and Card Click Exercise Preview without auto-starting (`src/app/workout/page.tsx`).
+- [x] **Task 8.6:** Profile Weight Unit Preference Toggle (`kg` vs `lbs`) with automatic conversion and persistence (`src/app/profile/page.tsx`).
+- [x] **Task 8.7:** Big 3 Lifts (Bench, Squat, Deadlift) 1RM Strength Progression timeline chart with Epley formula and PR summary (`src/components/charts/strength-progression-chart.tsx`, `src/app/progress/page.tsx`).
+- [x] **Task 8.8:** Smooth 3D Flip Animation for Muscle Anatomy Heatmap view switching between Front and Back (`src/components/charts/muscle-anatomy-map.tsx`).
+
+
 

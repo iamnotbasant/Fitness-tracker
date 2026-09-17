@@ -21,8 +21,24 @@ export default function ProfilePage() {
   const [name, setName] = useState(profile.name || "")
   const [heightCm, setHeightCm] = useState<number | "">(profile.heightCm ?? "")
   const [weightKg, setWeightKg] = useState<number | "">(profile.weightKg ?? "")
+  const [weightUnit, setWeightUnit] = useState<"kg" | "lbs">("kg")
   const [goalType, setGoalType] = useState(profile.goalType ?? "strength")
   const [goals, setGoals] = useState(profile.goals || [])
+
+  // Load preferred weight unit
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("preferred_weight_unit")
+      if (saved === "kg" || saved === "lbs") setWeightUnit(saved)
+    } catch {}
+  }, [])
+
+  const handleToggleUnit = (unit: "kg" | "lbs") => {
+    setWeightUnit(unit)
+    try {
+      localStorage.setItem("preferred_weight_unit", unit)
+    } catch {}
+  }
 
   // Safely populate form fields once profile loads
   useEffect(() => {
@@ -168,16 +184,59 @@ export default function ProfilePage() {
                 type="number"
                 value={heightCm}
                 onChange={(e) => setHeightCm(Number(e.target.value))}
-                className="w-full rounded-lg border bg-card px-3 py-2"
+                className="w-full rounded-lg border bg-card px-3 py-2 mt-1"
+                placeholder="cm"
               />
             </div>
             <div>
-              <label className="text-sm text-muted-foreground">Weight (kg)</label>
+              <div className="flex items-center justify-between">
+                <label className="text-sm text-muted-foreground">Weight</label>
+                <div className="flex items-center gap-1 bg-muted/60 p-0.5 rounded-md text-xs border border-border/50">
+                  <button
+                    type="button"
+                    onClick={() => handleToggleUnit("kg")}
+                    className={`px-1.5 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
+                      weightUnit === "kg"
+                        ? "bg-primary text-primary-foreground shadow-xs"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    kg
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleToggleUnit("lbs")}
+                    className={`px-1.5 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
+                      weightUnit === "lbs"
+                        ? "bg-primary text-primary-foreground shadow-xs"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    lbs
+                  </button>
+                </div>
+              </div>
               <input
                 type="number"
-                value={weightKg}
-                onChange={(e) => setWeightKg(Number(e.target.value))}
-                className="w-full rounded-lg border bg-card px-3 py-2"
+                step="0.1"
+                value={
+                  weightKg === ""
+                    ? ""
+                    : weightUnit === "lbs"
+                    ? Math.round(Number(weightKg) * 2.20462 * 10) / 10
+                    : weightKg
+                }
+                onChange={(e) => {
+                  const val = e.target.value
+                  if (val === "") {
+                    setWeightKg("")
+                  } else {
+                    const num = Number(val)
+                    setWeightKg(weightUnit === "lbs" ? Math.round((num / 2.20462) * 10) / 10 : num)
+                  }
+                }}
+                className="w-full rounded-lg border bg-card px-3 py-2 mt-1"
+                placeholder={weightUnit}
               />
             </div>
           </div>

@@ -14,6 +14,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { RadialGoalsChart } from "@/components/charts/radial-goals-chart"
 import { MuscleRadarChart } from "@/components/charts/muscle-radar-chart"
+import { StrengthProgressionChart } from "@/components/charts/strength-progression-chart"
 import { Dumbbell, Award, Flame, Calendar } from "lucide-react"
 import { AnimatedDumbbell, AnimatedTrophy, AnimatedFlame, AnimatedCalendar } from "@/components/ui/animated-icons"
 
@@ -225,6 +226,11 @@ export default function ProgressPage() {
 
           {/* TAB 2: Strength & Overload */}
           <TabsContent value="strength" className="space-y-8 focus-visible:outline-none">
+            {/* Big 3 1RM Progression Chart */}
+            <div>
+              <StrengthProgressionChart workouts={filtered.length > 0 ? filtered : workouts} />
+            </div>
+
             <div className="rounded-2xl border border-border/70 bg-card p-4 sm:p-6 shadow-sm space-y-4">
               <h3 className="text-sm font-semibold text-foreground">Volume Progression</h3>
               <TotalVolumeChart workouts={filtered} />

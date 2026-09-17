@@ -18,13 +18,21 @@ import {
 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import soundManager from "@/lib/sounds"
+import { toast } from "sonner"
 import type { SessionExercise } from "@/lib/types"
 import PlateCalculatorDialog from "@/components/workout/plate-calculator-dialog"
+
+export type PreviousSetInfo = {
+  reps?: number
+  weight?: number
+  timeSeconds?: number
+}
 
 type Props = {
   item: SessionExercise
   idx: number
   previousReps?: number | number[]
+  previousSets?: PreviousSetInfo[]
   onChange: (updater: (e: SessionExercise) => SessionExercise) => void
   onRemove: () => void
   onReplace?: () => void
@@ -38,6 +46,7 @@ function LiveExerciseCard({
   item, 
   idx, 
   previousReps, 
+  previousSets,
   onChange, 
   onRemove, 
   onReplace, 
@@ -436,6 +445,39 @@ function LiveExerciseCard({
       return previousReps[setIndex]
     }
     return previousReps
+  }
+
+  const getPreviousSet = (setIndex: number): PreviousSetInfo | undefined => {
+    if (previousSets && previousSets[setIndex]) {
+      return previousSets[setIndex]
+    }
+    const val = getPreviousValue(setIndex)
+    if (val !== undefined && val !== null) {
+      return isTimerExercise ? { timeSeconds: Number(val) } : { reps: Number(val) }
+    }
+    return undefined
+  }
+
+  const handleCopyPreviousSet = (setIndex: number) => {
+    const prev = getPreviousSet(setIndex)
+    if (!prev) {
+      toast.info("No previous set record found to copy")
+      return
+    }
+
+    soundManager.play('add', 0.4)
+    onChange((e) => {
+      const next = [...e.sets]
+      const current = next[setIndex] || { setNumber: setIndex + 1 }
+      next[setIndex] = {
+        ...current,
+        reps: prev.reps !== undefined ? prev.reps : current.reps,
+        weight: prev.weight !== undefined ? prev.weight : current.weight,
+        timeSeconds: prev.timeSeconds !== undefined ? prev.timeSeconds : current.timeSeconds,
+      }
+      return { ...e, sets: next }
+    })
+    toast.success(`Copied previous set #${setIndex + 1}!`)
   }
 
   // Desktop right-click context menu
@@ -871,6 +913,7 @@ function LiveExerciseCard({
         <AnimatePresence mode="popLayout">
           {item.sets.map((s, i) => {
             const prevVal = getPreviousValue(i)
+            const prevSet = getPreviousSet(i)
             const isThisSetRunning = stopwatchRunning === i
             const displaySec = displayTime[i] !== undefined 
               ? displayTime[i] 
@@ -923,12 +966,28 @@ function LiveExerciseCard({
                   ) : null}
                 </div>
 
-                {/* Previous */}
-                <span className="text-muted-foreground text-xs truncate">
-                  {isTimerExercise
-                    ? (prevVal ? formatTime(Number(prevVal)) : "-")
-                    : (prevVal !== undefined ? `${prevVal}` : "-")}
-                </span>
+                {/* Previous with 1-Tap Copy */}
+                <button
+                  type="button"
+                  onClick={() => handleCopyPreviousSet(i)}
+                  title="Click to 1-tap copy previous weight & reps"
+                  className="text-left text-xs text-muted-foreground hover:text-primary transition-colors cursor-pointer group/prev flex items-center gap-1 min-w-0"
+                >
+                  <span className="truncate">
+                    {isTimerExercise
+                      ? (prevSet?.timeSeconds ? formatTime(prevSet.timeSeconds) : prevVal ? formatTime(Number(prevVal)) : "-")
+                      : (prevSet?.weight && prevSet?.reps
+                          ? `${prevSet.weight}k×${prevSet.reps}`
+                          : prevSet?.reps !== undefined
+                          ? `${prevSet.reps}`
+                          : prevVal !== undefined
+                          ? `${prevVal}`
+                          : "-")}
+                  </span>
+                  {prevSet && (
+                    <Copy className="h-2.5 w-2.5 opacity-0 group-hover/prev:opacity-100 transition-opacity text-primary shrink-0" />
+                  )}
+                </button>
 
                 {/* Reps or Timer input */}
                 {isTimerExercise ? (
@@ -963,8 +1022,14 @@ function LiveExerciseCard({
                         min={0}
                         value={pausedTime[i] ?? s.timeSeconds ?? targetSecondsMap[i] ?? ""}
                         onChange={(e) => updateTimeSeconds(i, e.target.value)}
-                        className="flex-1 min-w-0 w-full rounded-xl border border-border/80 bg-background px-2.5 py-1.5 outline-none focus:border-primary focus:ring-1 focus:ring-primary text-xs font-medium"
-                        placeholder={timerMode === "countdown" ? `${repGoal || 45}s target` : "sec"}
+                        className="flex-1 min-w-0 w-full rounded-xl border border-border/80 bg-background px-2.5 py-1.5 outline-none focus:border-primary focus:ring-1 focus:ring-primary text-xs font-medium placeholder:text-muted-foreground/50"
+                        placeholder={
+                          prevSet?.timeSeconds !== undefined && prevSet.timeSeconds > 0
+                            ? `${prevSet.timeSeconds}s`
+                            : timerMode === "countdown"
+                            ? `${repGoal || 45}s`
+                            : "sec"
+                        }
                       />
                     )}
                   </div>
@@ -975,8 +1040,14 @@ function LiveExerciseCard({
                     min={0}
                     value={s.reps ?? ""}
                     onChange={(e) => updateReps(i, e.target.value)}
-                    className="w-full rounded-xl border border-border/80 bg-background px-2.5 py-1.5 outline-none focus:border-primary focus:ring-1 focus:ring-primary text-xs font-medium"
-                    placeholder={prevVal !== undefined && Number(prevVal) > 0 ? String(prevVal) : "reps"}
+                    className="w-full rounded-xl border border-border/80 bg-background px-2.5 py-1.5 outline-none focus:border-primary focus:ring-1 focus:ring-primary text-xs font-medium placeholder:text-muted-foreground/50"
+                    placeholder={
+                      prevSet?.reps !== undefined && prevSet.reps > 0
+                        ? String(prevSet.reps)
+                        : prevVal !== undefined && Number(prevVal) > 0
+                        ? String(prevVal)
+                        : "reps"
+                    }
                   />
                 )}
 
@@ -989,8 +1060,12 @@ function LiveExerciseCard({
                     step="0.5"
                     value={s.weight ?? ""}
                     onChange={(e) => updateWeight(i, e.target.value)}
-                    className="w-full rounded-xl border border-border/80 bg-background px-2.5 py-1.5 outline-none focus:border-primary focus:ring-1 focus:ring-primary text-xs font-medium"
-                    placeholder="kg"
+                    className="w-full rounded-xl border border-border/80 bg-background px-2.5 py-1.5 outline-none focus:border-primary focus:ring-1 focus:ring-primary text-xs font-medium placeholder:text-muted-foreground/50"
+                    placeholder={
+                      prevSet?.weight !== undefined && prevSet.weight > 0
+                        ? `${prevSet.weight}kg`
+                        : "kg"
+                    }
                   />
                 )}
 

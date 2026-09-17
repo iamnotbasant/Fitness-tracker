@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation"
 import { useActiveSession, useExercises, useWorkouts, useRoutines } from "@/hooks/use-local-data"
-import { Dumbbell, Plus, Search, ChevronLeft, Clock, Play, Loader2, Pin, MoreVertical, Eye, Edit, X, Check } from "lucide-react"
+import { Dumbbell, Plus, Search, ChevronLeft, Clock, Play, Loader2, Pin, MoreVertical, Eye, Edit, X, Check, AlertTriangle, Trash2 } from "lucide-react"
 import { useSession } from "@/lib/auth-client"
 import { useEffect, useState, useMemo, useCallback, useRef, memo } from "react"
 import { toast } from "sonner"
@@ -35,8 +35,9 @@ export default function WorkoutHub() {
   } | null>(null)
   const [restRemaining, setRestRemaining] = useState<number>(0)
 
-  // Confirmation dialog
+  // Confirmation dialogs
   const [showConfirmation, setShowConfirmation] = useState(false)
+  const [showDiscardDialog, setShowDiscardDialog] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
 
   // Drag and drop state
@@ -330,29 +331,32 @@ export default function WorkoutHub() {
     }
   }
 
-  const previousRepsFor = (exerciseName: string) => {
-    // Get last workout for this exercise and return array of reps for each set
+  const previousSetsFor = (exerciseName: string) => {
     const exerciseWorkouts = [...(workouts || [])]
       .filter((w) => w.exerciseName === exerciseName)
       .sort((a, b) => {
-        // Sort by date desc, then by setNumber
         const dateCompare = b.date.localeCompare(a.date)
         if (dateCompare !== 0) return dateCompare
         return (b.setNumber || 0) - (a.setNumber || 0)
       })
     
     if (exerciseWorkouts.length === 0) return undefined
-    
-    // Get the most recent workout date
     const lastDate = exerciseWorkouts[0].date
-    
-    // Get all sets from that workout
     const lastWorkoutSets = exerciseWorkouts
       .filter(w => w.date === lastDate)
       .sort((a, b) => (a.setNumber || 0) - (b.setNumber || 0))
     
-    // Return array of reps/time for each set
-    return lastWorkoutSets.map(w => w.timeSeconds || w.reps || 0)
+    return lastWorkoutSets.map(w => ({
+      reps: w.reps,
+      weight: w.weight,
+      timeSeconds: w.timeSeconds,
+    }))
+  }
+
+  const previousRepsFor = (exerciseName: string) => {
+    const sets = previousSetsFor(exerciseName)
+    if (!sets) return undefined
+    return sets.map(s => s.timeSeconds || s.reps || 0)
   }
 
   const getExerciseType = (exerciseId: string) => {
@@ -456,14 +460,17 @@ export default function WorkoutHub() {
     }
   }
 
-  const handleDiscard = async () => {
-    if (confirm("Are you sure you want to discard this workout?")) {
-      soundManager.play('remove', 0.5)
-      await discard()
-      setTimerStarted(false)
-      setTimerStartTime(null)
-      toast.success("Workout discarded")
-    }
+  const handleDiscard = () => {
+    setShowDiscardDialog(true)
+  }
+
+  const handleConfirmDiscard = async () => {
+    soundManager.play('remove', 0.5)
+    await discard()
+    setTimerStarted(false)
+    setTimerStartTime(null)
+    setShowDiscardDialog(false)
+    toast.success("Workout discarded")
   }
 
   const handleStartRoutine = async (routineId: string) => {
@@ -644,6 +651,7 @@ export default function WorkoutHub() {
                       it={it}
                       idx={i}
                       previousReps={previousRepsFor(it.name)}
+                      previousSets={previousSetsFor(it.name)}
                       exerciseType={getExerciseType(it.exerciseId)}
                       exerciseImageUrl={getExerciseImageUrl(it.exerciseId)}
                       repGoal={getExerciseRepGoal(it.exerciseId)}
@@ -741,6 +749,60 @@ export default function WorkoutHub() {
           date={activeSession.startedAt}
           time={activeSession.startedAt?.includes('T') ? activeSession.startedAt.split('T')[1].slice(0, 5) : new Date().toTimeString().slice(0, 5)}
         />
+
+        {/* Discard Workout Safety Confirmation Dialog */}
+        <AnimatePresence>
+          {showDiscardDialog && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setShowDiscardDialog(false)}
+                className="absolute inset-0 bg-black/60 backdrop-blur-xs"
+              />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                transition={{ duration: 0.2 }}
+                className="relative w-full max-w-sm rounded-2xl border border-border/80 bg-card p-5 shadow-2xl space-y-4"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-xl bg-destructive/15 text-destructive flex items-center justify-center shrink-0">
+                    <AlertTriangle className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-base text-foreground">Discard Workout?</h3>
+                    <p className="text-xs text-muted-foreground">This action cannot be undone.</p>
+                  </div>
+                </div>
+
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  All exercises, recorded sets, and elapsed progress in this current session will be permanently erased.
+                </p>
+
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-border/40">
+                  <button
+                    type="button"
+                    onClick={() => setShowDiscardDialog(false)}
+                    className="px-4 py-2 rounded-xl text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+                  >
+                    Keep Working Out
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleConfirmDiscard}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-destructive text-destructive-foreground text-xs font-bold hover:bg-destructive/90 shadow-sm transition-all cursor-pointer"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    <span>Discard Session</span>
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
       </main>
     )
   }
@@ -873,6 +935,12 @@ export default function WorkoutHub() {
                 const isPinned = pinnedRoutineIds.includes(String(routine.id))
                 const usageCount = routineUsageMap.get(String(routine.id)) || 0
 
+                const routineSetsCount = (routine.exercises || []).reduce(
+                  (sum: number, ex: any) => sum + (ex.defaultSets || 3),
+                  0
+                ) || (routine.exercises?.length || 0) * 3
+                const estimatedMinutes = Math.max(15, Math.round(routineSetsCount * 2.5))
+
                 return (
                   <div
                     key={routine.id}
@@ -882,7 +950,10 @@ export default function WorkoutHub() {
                         ? "border-primary/50 bg-card ring-1 ring-primary/20"
                         : "border-border/60 bg-card hover:border-primary/40"
                     }`}
-                    onClick={() => handleStartRoutine(routine.id)}
+                    onClick={() => {
+                      soundManager.play('click', 0.2)
+                      setOverviewRoutine(routine)
+                    }}
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
@@ -895,6 +966,11 @@ export default function WorkoutHub() {
                       </div>
                       <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-muted-foreground">
                         <span>{routine.exercises?.length || 0} exercises</span>
+                        <span>•</span>
+                        <span className="inline-flex items-center gap-1 font-medium text-foreground/80">
+                          <Clock className="h-3 w-3 text-muted-foreground" />
+                          ~{estimatedMinutes} min
+                        </span>
                         {splitTag && (
                           <>
                             <span>•</span>
@@ -1165,6 +1241,7 @@ const ExerciseCardItem = memo(function ExerciseCardItem({
   it,
   idx,
   previousReps,
+  previousSets,
   exerciseType,
   exerciseImageUrl,
   repGoal,
@@ -1175,6 +1252,7 @@ const ExerciseCardItem = memo(function ExerciseCardItem({
   it: SessionExercise
   idx: number
   previousReps: number | number[] | undefined
+  previousSets: Array<{ reps?: number; weight?: number; timeSeconds?: number }> | undefined
   exerciseType: string
   exerciseImageUrl: string | undefined
   repGoal: number | undefined
@@ -1196,6 +1274,7 @@ const ExerciseCardItem = memo(function ExerciseCardItem({
       item={it}
       idx={idx}
       previousReps={previousReps}
+      previousSets={previousSets}
       exerciseType={exerciseType as any}
       exerciseImageUrl={exerciseImageUrl}
       repGoal={repGoal}
