@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from "framer-motion"
 import { useRouter } from "next/navigation"
 import { TodayWorkoutCard, type TodayWorkoutData } from "@/components/today-workout-card"
 import { useWorkouts, useRoutines, useActiveSession, useExercises } from "@/hooks/use-local-data"
-import { Plus, ChevronLeft, ChevronRight, Loader2, Play, ListCheck, ArrowRight, ChevronDown, ChevronUp, X, Dumbbell, Flame, Trophy, Layers, Search, Filter } from "lucide-react"
+import { Plus, ChevronLeft, ChevronRight, Loader2, Play, ListCheck, ArrowRight, ChevronDown, ChevronUp, X, Dumbbell, Flame, Trophy, Layers, Search, Filter, Calendar, Sparkles, Zap, Award } from "lucide-react"
 import { useMemo, useEffect, useState } from "react"
 import { toast } from "sonner"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -71,10 +71,11 @@ export default function DashboardPage() {
   const router = useRouter()
   const { workouts, remove, refresh, isLoading: workoutsLoading } = useWorkouts()
   const { routines } = useRoutines()
-  const { start } = useActiveSession()
+  const { session: activeSession, start } = useActiveSession()
   const { exercises } = useExercises()
   const [timePeriod, setTimePeriod] = useState<TimePeriod>("weekly")
   const [currentDate, setCurrentDate] = useState(new Date())
+  const [selectedDayISO, setSelectedDayISO] = useState<string | null>(null)
   const [startingRoutine, setStartingRoutine] = useState<string | null>(null)
   const [mounted, setMounted] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
@@ -114,16 +115,118 @@ export default function DashboardPage() {
     }
   }, [timePeriod, currentDate])
   
-  // Filter workouts based on date range
+  // Filter workouts based on date range or selected calendar day
   const filteredWorkouts = useMemo(() => {
     let list = workouts
+    if (selectedDayISO) {
+      return list.filter((w) => w.date === selectedDayISO)
+    }
     if (timePeriod !== "all") {
       const startISO = toLocalDateString(dateRange.start)
       const endISO = toLocalDateString(dateRange.end)
       list = list.filter((w) => w.date >= startISO && w.date <= endISO)
     }
     return list
-  }, [workouts, dateRange, timePeriod])
+  }, [workouts, dateRange, timePeriod, selectedDayISO])
+
+  // 7-day interactive calendar window
+  const weekDays = useMemo(() => {
+    const today = new Date()
+    const currentDayOfWeek = today.getDay()
+    const offset = currentDayOfWeek === 0 ? -6 : 1 - currentDayOfWeek
+    const monday = new Date(today)
+    monday.setDate(today.getDate() + offset)
+
+    const days = []
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(monday)
+      d.setDate(monday.getDate() + i)
+      const iso = toLocalDateString(d)
+      const hasWorkout = workouts.some((w) => w.date === iso)
+      const isToday = iso === toLocalDateString(today)
+      days.push({
+        date: d,
+        iso,
+        dayName: d.toLocaleDateString("en-US", { weekday: "short" }),
+        dayNum: d.getDate(),
+        hasWorkout,
+        isToday,
+      })
+    }
+    return days
+  }, [workouts])
+
+  // Determine suggested workout / today's plan
+  const todayPlan = useMemo(() => {
+    const todayStr = toLocalDateString(new Date())
+    const todayWorkouts = workouts.filter((w) => w.date === todayStr)
+    const hasWorkedOutToday = todayWorkouts.length > 0
+
+    if (activeSession && activeSession.items.length > 0) {
+      return {
+        type: "active",
+        title: "Workout in Progress",
+        subtitle: `${activeSession.items.length} exercises active`,
+        actionText: "Resume Session",
+        routineId: undefined,
+      }
+    }
+
+    if (hasWorkedOutToday) {
+      const distinctExercises = new Set(todayWorkouts.map((w) => w.exerciseName)).size
+      return {
+        type: "completed",
+        title: "Today's Workout Complete",
+        subtitle: `${distinctExercises} exercises logged today`,
+        actionText: "Log Extra Workout",
+        routineId: undefined,
+      }
+    }
+
+    const sorted = [...workouts].sort((a, b) => b.date.localeCompare(a.date))
+    const lastWorkout = sorted[0]
+    let suggestedSplit = "Push Day"
+    let matchingRoutine = routines.find((r) => r.name?.toLowerCase().includes("push"))
+
+    if (lastWorkout) {
+      const lastSplit = exerciseSplitMap.get(lastWorkout.exerciseName?.toLowerCase() || "") || ""
+      if (lastSplit.includes("push")) {
+        suggestedSplit = "Pull Day"
+        matchingRoutine = routines.find((r) => r.name?.toLowerCase().includes("pull"))
+      } else if (lastSplit.includes("pull")) {
+        suggestedSplit = "Leg Day"
+        matchingRoutine = routines.find((r) => r.name?.toLowerCase().includes("leg"))
+      } else {
+        suggestedSplit = "Push Day"
+        matchingRoutine = routines.find((r) => r.name?.toLowerCase().includes("push"))
+      }
+    }
+
+    return {
+      type: "suggested",
+      title: matchingRoutine?.name || `Today: ${suggestedSplit}`,
+      subtitle: matchingRoutine ? `${matchingRoutine.exercises?.length || 3} exercises scheduled` : "Ready to hit your targets?",
+      actionText: "Start Routine",
+      routineId: matchingRoutine?.id,
+    }
+  }, [activeSession, workouts, routines, exerciseSplitMap])
+
+  // Recent personal records
+  const recentPRs = useMemo(() => {
+    const prMap = new Map<string, { weight: number; reps: number; date: string }>()
+    workouts.forEach((w) => {
+      if (w.weight && w.weight > 0) {
+        const existing = prMap.get(w.exerciseName)
+        if (!existing || w.weight > existing.weight) {
+          prMap.set(w.exerciseName, { weight: w.weight, reps: w.reps || 0, date: w.date })
+        }
+      }
+    })
+    return Array.from(prMap.entries())
+      .map(([name, data]) => ({ name, ...data }))
+      .sort((a, b) => b.weight - a.weight)
+      .slice(0, 3)
+  }, [workouts])
 
   // Group filtered workouts by date AND exercise name
   const groupedWorkouts = useMemo(() => {
@@ -458,29 +561,171 @@ export default function DashboardPage() {
 
   return (
     <main className="pb-32 md:pb-12">
+      {/* 1. Today's Plan Quick-Card & 7-Day Calendar Strip */}
       <section className="w-full px-4 lg:px-8 pt-4">
-        <div className="mx-auto max-w-7xl">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-base font-semibold text-foreground">Overview</h2>
+        <div className="mx-auto max-w-7xl space-y-4">
+          {/* Today's Plan Card */}
+          <div className="rounded-2xl border border-border/80 bg-gradient-to-br from-card via-card to-card/60 p-4 sm:p-5 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3.5">
+                <div className={`h-11 w-11 rounded-2xl flex items-center justify-center shrink-0 ${
+                  todayPlan.type === "active"
+                    ? "bg-amber-500/15 text-amber-500"
+                    : todayPlan.type === "completed"
+                    ? "bg-emerald-500/15 text-emerald-500"
+                    : "bg-primary/15 text-primary"
+                }`}>
+                  {todayPlan.type === "active" ? (
+                    <Zap className="h-5 w-5" />
+                  ) : todayPlan.type === "completed" ? (
+                    <Award className="h-5 w-5" />
+                  ) : (
+                    <Dumbbell className="h-5 w-5" />
+                  )}
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                      {todayPlan.type === "active" ? "In Progress" : todayPlan.type === "completed" ? "Completed" : "Today's Plan"}
+                    </span>
+                    {streak > 0 && (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-full">
+                        <Flame className="h-3 w-3" />
+                        {streak} Day Streak
+                      </span>
+                    )}
+                  </div>
+                  <h2 className="text-base sm:text-lg font-bold text-foreground tracking-tight mt-0.5">
+                    {todayPlan.title}
+                  </h2>
+                  <p className="text-xs text-muted-foreground">{todayPlan.subtitle}</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={async () => {
+                    if (todayPlan.routineId) {
+                      await start(todayPlan.routineId)
+                    }
+                    router.push("/workout")
+                  }}
+                  className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-primary font-semibold text-xs text-primary-foreground hover:bg-primary/90 shadow-sm transition-all cursor-pointer w-full sm:w-auto"
+                >
+                  <Play className="h-3.5 w-3.5 fill-current" />
+                  <span>{todayPlan.actionText}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* 7-Day Interactive Calendar Strip */}
+            <div className="mt-4 pt-3 border-t border-border/50">
+              <div className="flex items-center justify-between gap-1 sm:gap-2">
+                {weekDays.map((day) => {
+                  const isSelected = selectedDayISO === day.iso
+                  return (
+                    <button
+                      key={day.iso}
+                      type="button"
+                      onClick={() => {
+                        setSelectedDayISO(isSelected ? null : day.iso)
+                      }}
+                      className={`flex-1 flex flex-col items-center py-2 px-1 rounded-xl transition-all cursor-pointer ${
+                        isSelected
+                          ? "bg-primary text-primary-foreground shadow-sm font-bold"
+                          : day.isToday
+                          ? "bg-secondary text-foreground font-semibold ring-1 ring-primary/40"
+                          : "hover:bg-muted text-muted-foreground hover:text-foreground"
+                      }`}
+                      title={`${day.dayName}, ${day.iso}`}
+                    >
+                      <span className="text-[10px] uppercase font-bold tracking-wider opacity-80">
+                        {day.dayName}
+                      </span>
+                      <span className="text-xs sm:text-sm font-bold mt-0.5">
+                        {day.dayNum}
+                      </span>
+                      <div className="h-1.5 flex items-center justify-center mt-1">
+                        {day.hasWorkout ? (
+                          <span className={`h-1.5 w-1.5 rounded-full ${isSelected ? "bg-primary-foreground" : "bg-emerald-500"}`} />
+                        ) : (
+                          <span className="h-1.5 w-1.5" />
+                        )}
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+              {selectedDayISO && (
+                <div className="mt-2 flex items-center justify-between text-xs px-1">
+                  <span className="text-muted-foreground font-medium">
+                    Filtered to: <strong className="text-foreground">{selectedDayISO}</strong>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedDayISO(null)}
+                    className="text-primary hover:underline font-semibold"
+                  >
+                    Reset Filter
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-            <SummaryCard 
-              label="Streak" 
-              value={streak} 
-            />
-            <SummaryCard 
-              label="Workouts" 
-              value={totals.workouts} 
-            />
-            <SummaryCard 
-              label="Total Points" 
-              value={totals.points} 
-            />
-            <SummaryCard 
-              label="Sets" 
-              value={totals.sets} 
-            />
+
+          {/* Overview Stat Cards */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Stats Overview</h2>
+            </div>
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+              <SummaryCard 
+                label="Streak" 
+                value={streak} 
+              />
+              <SummaryCard 
+                label="Workouts" 
+                value={totals.workouts} 
+              />
+              <SummaryCard 
+                label="Total Points" 
+                value={totals.points} 
+              />
+              <SummaryCard 
+                label="Sets" 
+                value={totals.sets} 
+              />
+            </div>
           </div>
+
+          {/* Recent PRs Trophy Highlights */}
+          {recentPRs.length > 0 && (
+            <div className="rounded-2xl border border-border/80 bg-card p-4 shadow-xs">
+              <div className="flex items-center gap-2 mb-3">
+                <Trophy className="h-4 w-4 text-amber-500" />
+                <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                  Top Personal Records
+                </h3>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                {recentPRs.map((pr, idx) => (
+                  <div
+                    key={idx}
+                    className="p-3 rounded-xl border border-border/60 bg-muted/20 flex items-center justify-between"
+                  >
+                    <div className="min-w-0">
+                      <div className="font-semibold text-xs text-foreground truncate">{pr.name}</div>
+                      <div className="text-[11px] text-muted-foreground">{pr.date}</div>
+                    </div>
+                    <div className="text-right shrink-0 ml-2">
+                      <div className="text-sm font-bold text-amber-500 font-mono">{pr.weight} kg</div>
+                      {pr.reps > 0 && <div className="text-[10px] text-muted-foreground">{pr.reps} reps</div>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </section>
 
