@@ -12,10 +12,12 @@ export type WorkoutExercise = {
   timeSeconds?: number
   weight?: number
   durationSeconds?: number
+  setType?: string
   setDetails?: Array<{
     reps: number
     timeSeconds?: number
     weight?: number
+    setType?: string
   }>
   allIds?: string[]
 }
@@ -80,6 +82,28 @@ export function TodayWorkoutCard({
     }
   }
 
+  const formatTime = (sec: number) => {
+    if (sec >= 60) {
+      const mins = Math.floor(sec / 60)
+      const rem = sec % 60
+      return rem > 0 ? `${mins}m ${rem}s` : `${mins}m`
+    }
+    return `${sec}s`
+  }
+
+  const renderSetBadge = (setType?: string, setIdx: number = 0) => {
+    if (setType === "warmup") {
+      return <span className="text-[10px] font-black text-amber-500 bg-amber-500/15 px-1 py-0.5 rounded">W</span>
+    }
+    if (setType === "dropset") {
+      return <span className="text-[10px] font-black text-purple-400 bg-purple-500/15 px-1 py-0.5 rounded">D</span>
+    }
+    if (setType === "failure") {
+      return <span className="text-[10px] font-black text-rose-500 bg-rose-500/15 px-1 py-0.5 rounded">F</span>
+    }
+    return setIdx + 1
+  }
+
   return (
     <>
       <article className="group rounded-xl border bg-card shadow-sm overflow-hidden transition-shadow hover:shadow-md">
@@ -133,46 +157,56 @@ export function TodayWorkoutCard({
                 <div className="space-y-1.5">
                   {exercise.setDetails && exercise.setDetails.length > 0 ? (
                     // Display individual set values
-                    exercise.setDetails.map((setDetail, setIdx) => (
-                      <div 
-                        key={setIdx}
-                        className="flex items-center gap-2 text-sm"
-                      >
-                        <span className="inline-flex items-center justify-center w-6 h-6 rounded-md bg-muted text-xs font-medium">
-                          {setIdx + 1}
-                        </span>
-                        <span className="text-muted-foreground">×</span>
-                        {setDetail.timeSeconds ? (
-                          <span className="font-medium">{setDetail.timeSeconds} sec</span>
-                        ) : (
-                          <span className="font-medium">{setDetail.reps} reps</span>
-                        )}
-                        {setDetail.weight && (
-                          <span className="text-muted-foreground ml-1">@ {setDetail.weight} kg</span>
-                        )}
-                      </div>
-                    ))
+                    exercise.setDetails.map((setDetail, setIdx) => {
+                      const isTimer = Boolean(setDetail.timeSeconds && setDetail.timeSeconds > 0) || exercise.exerciseName.toLowerCase().includes("plank")
+                      const timeVal = setDetail.timeSeconds || (isTimer && setDetail.reps ? setDetail.reps : undefined)
+
+                      return (
+                        <div 
+                          key={setIdx}
+                          className="flex items-center gap-2 text-sm"
+                        >
+                          <span className="inline-flex items-center justify-center min-w-6 h-6 px-1 rounded-md bg-muted text-xs font-medium">
+                            {renderSetBadge(setDetail.setType, setIdx)}
+                          </span>
+                          <span className="text-muted-foreground">×</span>
+                          {timeVal ? (
+                            <span className="font-medium">{formatTime(timeVal)}</span>
+                          ) : (
+                            <span className="font-medium">{setDetail.reps ?? 0} reps</span>
+                          )}
+                          {setDetail.weight ? (
+                            <span className="text-muted-foreground ml-1">@ {setDetail.weight} kg</span>
+                          ) : null}
+                        </div>
+                      )
+                    })
                   ) : (
                     // Fallback to old format if setDetails not available
-                    Array.from({ length: exercise.sets }).map((_, setIdx) => (
-                      <div 
-                        key={setIdx}
-                        className="flex items-center gap-2 text-sm"
-                      >
-                        <span className="inline-flex items-center justify-center w-6 h-6 rounded-md bg-muted text-xs font-medium">
-                          {setIdx + 1}
-                        </span>
-                        <span className="text-muted-foreground">×</span>
-                        {exercise.timeSeconds ? (
-                          <span className="font-medium">{exercise.timeSeconds} sec</span>
-                        ) : (
-                          <span className="font-medium">{exercise.reps} reps</span>
-                        )}
-                        {exercise.weight && (
-                          <span className="text-muted-foreground ml-1">@ {exercise.weight} kg</span>
-                        )}
-                      </div>
-                    ))
+                    Array.from({ length: exercise.sets }).map((_, setIdx) => {
+                      const isTimer = Boolean(exercise.timeSeconds && exercise.timeSeconds > 0) || exercise.exerciseName.toLowerCase().includes("plank")
+                      const timeVal = exercise.timeSeconds || (isTimer && exercise.reps ? exercise.reps : undefined)
+
+                      return (
+                        <div 
+                          key={setIdx}
+                          className="flex items-center gap-2 text-sm"
+                        >
+                          <span className="inline-flex items-center justify-center min-w-6 h-6 px-1 rounded-md bg-muted text-xs font-medium">
+                            {renderSetBadge(exercise.setType, setIdx)}
+                          </span>
+                          <span className="text-muted-foreground">×</span>
+                          {timeVal ? (
+                            <span className="font-medium">{formatTime(timeVal)}</span>
+                          ) : (
+                            <span className="font-medium">{exercise.reps ?? 0} reps</span>
+                          )}
+                          {exercise.weight ? (
+                            <span className="text-muted-foreground ml-1">@ {exercise.weight} kg</span>
+                          ) : null}
+                        </div>
+                      )
+                    })
                   )}
                 </div>
                 {idx < workout.exercises.length - 1 && (

@@ -56,13 +56,18 @@ export default function EditRoutinePage() {
   )
 
   const addExercise = (exerciseId: string, exerciseName: string, split?: string, level?: number) => {
+    const exRecord = exercises?.find(e => e.id === exerciseId)
+    const isTimer = exRecord?.type === "timer" || exerciseName.toLowerCase().includes("plank")
+
     const newEx: RoutineExercise = {
       exerciseId,
       exerciseName,
       split: split as any,
       level,
+      type: exRecord?.type,
       defaultSets: 3,
-      defaultReps: 10,
+      defaultReps: isTimer ? undefined : 10,
+      defaultTimeSeconds: isTimer ? 30 : undefined,
       restSec: 60,
       notes: "",
     }
@@ -216,13 +221,22 @@ export default function EditRoutinePage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs text-muted-foreground mb-1">Reps</label>
+                      <label className="block text-xs text-muted-foreground mb-1">
+                        {ex.type === "timer" || ex.defaultTimeSeconds !== undefined ? "Time (sec)" : "Reps"}
+                      </label>
                       <input
                         type="number"
-                        value={ex.defaultReps ?? ""}
-                        onChange={(e) => updateExercise(index, { defaultReps: e.target.value ? parseInt(e.target.value) : undefined })}
+                        value={ex.type === "timer" || ex.defaultTimeSeconds !== undefined ? (ex.defaultTimeSeconds ?? "") : (ex.defaultReps ?? "")}
+                        onChange={(e) => {
+                          const val = e.target.value ? parseInt(e.target.value) : undefined
+                          if (ex.type === "timer" || ex.defaultTimeSeconds !== undefined) {
+                            updateExercise(index, { defaultTimeSeconds: val, defaultReps: undefined })
+                          } else {
+                            updateExercise(index, { defaultReps: val })
+                          }
+                        }}
                         min={1}
-                        placeholder="Optional"
+                        placeholder={ex.type === "timer" || ex.defaultTimeSeconds !== undefined ? "e.g. 30" : "Optional"}
                         className="w-full px-3 py-2 rounded-lg border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                       />
                     </div>

@@ -170,11 +170,12 @@ export default function DashboardPage() {
               exerciseName,
               sets: totalSets,
               setDetails: sortedWorkouts.map(w => ({
-                reps: w.reps,
+                reps: w.timeSeconds ? 0 : w.reps,
                 timeSeconds: w.timeSeconds,
-                weight: w.weight
+                weight: w.weight,
+                setType: w.setType
               })),
-              reps: sortedWorkouts[0].reps,
+              reps: sortedWorkouts[0].timeSeconds ? 0 : sortedWorkouts[0].reps,
               timeSeconds: sortedWorkouts[0].timeSeconds,
               weight: sortedWorkouts[0].weight,
               durationSeconds,
@@ -191,12 +192,16 @@ export default function DashboardPage() {
     return filteredWorkouts.reduce(
       (acc, w) => {
         acc.sets += w.sets || 1
-        acc.reps += (w.sets || 1) * (w.reps || 0)
+        if (!w.timeSeconds) {
+          acc.reps += (w.sets || 1) * (w.reps || 0)
+        } else {
+          acc.totalTimeSec += (w.sets || 1) * (w.timeSeconds || 0)
+        }
         const points = w.points ?? w.total_points ?? 0
         acc.points += points
         return acc
       },
-      { workouts: distinctDates.size, sets: 0, reps: 0, points: 0 },
+      { workouts: distinctDates.size, sets: 0, reps: 0, totalTimeSec: 0, points: 0 },
     )
   }, [filteredWorkouts])
   

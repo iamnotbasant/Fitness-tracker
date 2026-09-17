@@ -437,12 +437,13 @@ export function useActiveSession() {
     return optimisticSession
   }
 
-  const addExercise = async (exercise: Pick<SessionExercise, "id" | "name" | "split" | "level">) => {
+  const addExercise = async (exercise: Pick<SessionExercise, "id" | "name" | "split" | "level"> & { type?: string }) => {
     if (!data?.session) {
       console.error("No active session found")
       return
     }
     
+    const isTimer = exercise.type === "timer" || String(exercise.type || "").toLowerCase().includes("timer") || String(exercise.name || "").toLowerCase().includes("plank")
     const newItem: SessionExercise = {
       id: `item-${crypto.randomUUID()}`,
       exerciseId: exercise.id,
@@ -452,7 +453,7 @@ export function useActiveSession() {
       notes: "",
       restEnabled: true,
       restSec: 60,
-      sets: [{ reps: 0, done: false }],
+      sets: [isTimer ? { timeSeconds: 30, done: false } : { reps: 0, done: false }],
     }
     
     const { userId, id, createdAt, ...sessionData } = data.session
@@ -592,11 +593,12 @@ export function useActiveSession() {
       }
 
       completedSets.forEach((set, setIndex) => {
-        const isTimeBased = set.timeSeconds !== undefined && set.timeSeconds > 0
+        const isTimeBased = (set.timeSeconds !== undefined && set.timeSeconds > 0) || String(item.name || "").toLowerCase().includes("plank")
+        const durationSec = isTimeBased ? (set.timeSeconds || 30) : undefined
         
         let volume: number
         if (isTimeBased) {
-          volume = set.timeSeconds || 0
+          volume = durationSec || 0
         } else {
           const reps = set.reps || 0
           const weight = set.weight || 0
@@ -609,8 +611,9 @@ export function useActiveSession() {
           exerciseId: item.exerciseId,
           exerciseName: item.name,
           sets: 1,
-          reps: isTimeBased ? 1 : (set.reps || 0),
+          reps: isTimeBased ? 0 : (set.reps || 0),
           volume: volume,
+          setType: set.setType || "normal",
         }
         
         if (item.restEnabled && item.restSec) {
@@ -619,8 +622,8 @@ export function useActiveSession() {
         if (item.notes) {
           workout.notes = item.notes
         }
-        if (isTimeBased && set.timeSeconds) {
-          workout.timeSeconds = set.timeSeconds
+        if (isTimeBased && durationSec) {
+          workout.timeSeconds = durationSec
         }
         if (set.weight) {
           workout.weight = set.weight

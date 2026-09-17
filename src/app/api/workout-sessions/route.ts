@@ -107,23 +107,30 @@ export async function POST(request: NextRequest) {
 
       // Transform routine exercises into session items
       const routineExercises = routine[0].exercises as any[];
-      items = routineExercises.map((ex: any) => ({
-        id: `item-${crypto.randomUUID()}`,
-        exerciseId: ex.exerciseId,
-        name: ex.exerciseName,
-        split: ex.split,
-        level: ex.level,
-        notes: ex.notes || "",
-        restEnabled: true,
-        restSec: ex.restSec || 60,
-        // Create correct number of sets even if reps is optional
-        sets: ex.defaultSets 
-          ? Array(ex.defaultSets).fill(null).map(() => ({ 
-              reps: ex.defaultReps, // Can be undefined
-              done: false 
-            }))
-          : [{ reps: undefined, done: false }]
-      }));
+      items = routineExercises.map((ex: any) => {
+        const isTimer = ex.type === 'timer' || ex.defaultTimeSeconds !== undefined || String(ex.exerciseName || "").toLowerCase().includes("plank");
+        return {
+          id: `item-${crypto.randomUUID()}`,
+          exerciseId: ex.exerciseId,
+          name: ex.exerciseName,
+          split: ex.split,
+          level: ex.level,
+          notes: ex.notes || "",
+          restEnabled: true,
+          restSec: ex.restSec || 60,
+          sets: ex.defaultSets 
+            ? Array(ex.defaultSets).fill(null).map(() => ({ 
+                reps: isTimer ? undefined : ex.defaultReps,
+                timeSeconds: isTimer ? (ex.defaultTimeSeconds || 30) : undefined,
+                done: false 
+              }))
+            : [{ 
+                reps: isTimer ? undefined : ex.defaultReps, 
+                timeSeconds: isTimer ? (ex.defaultTimeSeconds || 30) : undefined, 
+                done: false 
+              }]
+        };
+      });
 
       // Update lastUsed timestamp for the routine
       await db.update(routines)

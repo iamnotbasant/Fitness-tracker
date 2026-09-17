@@ -300,7 +300,7 @@ export default function WorkoutHub() {
         return
       }
       soundManager.play('add', 0.5)
-      await addExercise({ id: ex.id, name: ex.name, split: ex.split, level: ex.level })
+      await addExercise({ id: ex.id, name: ex.name, split: ex.split, level: ex.level, type: ex.type })
       toast.success(`${ex.name} added!`)
     } catch (error) {
       console.error("Error adding exercise:", error)

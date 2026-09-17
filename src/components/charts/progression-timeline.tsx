@@ -47,33 +47,53 @@ export function ProgressionTimeline({ workouts }: { workouts: Workout[] }) {
 
   const allMilestones = useMemo(() => {
     const events: MilestoneEvent[] = []
-    const exerciseMaxReps = new Map<string, { maxReps: number; date: string }>()
+    const formatTime = (sec: number) => {
+      if (!sec) return "0s"
+      if (sec >= 60) {
+        const mins = Math.floor(sec / 60)
+        const rem = sec % 60
+        return rem > 0 ? `${mins}m ${rem}s` : `${mins}m`
+      }
+      return `${sec}s`
+    }
+
+    const exerciseMaxMap = new Map<string, { maxReps: number; maxTime: number; date: string }>()
 
     // Sort workouts by date
     const sorted = [...workouts].sort((a, b) => a.date.localeCompare(b.date))
 
     sorted.forEach((w) => {
-      const existing = exerciseMaxReps.get(w.exerciseName)
+      const exName = w.exerciseName || w.name || "Workout"
+      const existing = exerciseMaxMap.get(exName) || { maxReps: 0, maxTime: 0, date: w.date }
+      const isTimer = Boolean(w.timeSeconds && w.timeSeconds > 0)
       
+      const currentVal = isTimer ? (w.timeSeconds || 0) : (w.reps || 0)
+      const prevVal = isTimer ? existing.maxTime : existing.maxReps
+
       // Check for PR
-      if (!existing || w.reps > existing.maxReps) {
-        exerciseMaxReps.set(w.exerciseName, { maxReps: w.reps, date: w.date })
+      if (!exerciseMaxMap.has(exName) || currentVal > prevVal) {
+        exerciseMaxMap.set(exName, {
+          maxReps: isTimer ? existing.maxReps : Math.max(existing.maxReps, currentVal),
+          maxTime: isTimer ? Math.max(existing.maxTime, currentVal) : existing.maxTime,
+          date: w.date
+        })
         
         // Determine category based on exercise name
         let category: "push" | "pull" | "core" | "skill" = "skill"
-        const exerciseLower = w.exerciseName.toLowerCase()
+        const exerciseLower = exName.toLowerCase()
         if (exerciseLower.includes("push") || exerciseLower.includes("dip") || exerciseLower.includes("press")) {
           category = "push"
         } else if (exerciseLower.includes("pull") || exerciseLower.includes("row") || exerciseLower.includes("chin")) {
           category = "pull"
-        } else if (exerciseLower.includes("plank") || exerciseLower.includes("crunch") || exerciseLower.includes("leg raise")) {
+        } else if (exerciseLower.includes("plank") || exerciseLower.includes("crunch") || exerciseLower.includes("leg raise") || exerciseLower.includes("hang") || exerciseLower.includes("sit")) {
           category = "core"
         }
         
+        const metricDisplay = isTimer ? formatTime(currentVal) : `${currentVal} reps`
         events.push({
           date: w.date,
-          title: `Achieved ${w.reps} ${w.exerciseName}`,
-          exercise: w.exerciseName,
+          title: `Achieved ${metricDisplay} ${exName}`,
+          exercise: exName,
           type: "pr",
           category,
         })

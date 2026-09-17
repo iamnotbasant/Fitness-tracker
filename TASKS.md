@@ -41,3 +41,13 @@
 - [x] **Task 4.2:** Add Estimated 1-Rep Max (1RM) display in exercise cards and logs
 - [x] **Task 4.3:** Add Previous Workout Set Auto-Fill (Ghost values) for progressive overload
 - [x] **Task 4.4:** Add Personal Record (PR) celebration visual badge on new records
+
+---
+
+## ⏱️ Phase 5: Timer & Duration-Based Exercise Tracking
+- [x] **Task 5.1:** Update Personal Records chart (`src/components/charts/personal-records.tsx`) to track, sort, and display duration/time (e.g. `60s`, `1m 30s`) instead of reps for timer exercises.
+- [x] **Task 5.2:** Update Progression Timeline (`src/components/charts/progression-timeline.tsx`) so timer milestone cards show `Achieved [time] [exercise]` instead of `Achieved 0 [exercise]`.
+- [x] **Task 5.3:** Update Workout Heatmap hover tooltip (`src/components/charts/workout-heatmap.tsx`) to display `sets × time` (e.g. `3×60s`) for timer exercises.
+- [x] **Task 5.4:** Update Workout Card (`src/components/today-workout-card.tsx`) and Edit Dialog (`src/components/workout/workout-edit-dialog.tsx`) to format and preserve timer sets without forcing 1 rep fallback.
+- [x] **Task 5.5:** Update Active Session, Routines, and API (`src/hooks/use-local-data.ts`, `src/app/workout/page.tsx`, `src/app/workout/routines`, `src/app/api/workout-sessions/route.ts`) so adding a timer exercise initializes with duration (`timeSeconds: 30`) and saves duration as volume without reps.
+

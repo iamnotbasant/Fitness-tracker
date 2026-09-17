@@ -10,7 +10,7 @@ interface DayData {
   date: string
   volume: number
   points: number
-  workouts: { name: string; sets: number; reps: number; points: number }[]
+  workouts: { name: string; sets: number; reps: number; timeSeconds?: number; points: number }[]
 }
 
 type Palette = "emerald" | "flame" | "monochrome"
@@ -28,7 +28,7 @@ export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
   }, [workouts])
 
   const { heatmapData, streakStats } = useMemo(() => {
-    const dataByDate = new Map<string, { volume: number; points: number; workouts: { name: string; sets: number; reps: number; points: number }[] }>()
+    const dataByDate = new Map<string, { volume: number; points: number; workouts: { name: string; sets: number; reps: number; timeSeconds?: number; points: number }[] }>()
 
     workouts.forEach((w) => {
       const existing = dataByDate.get(w.date) || { volume: 0, points: 0, workouts: [] }
@@ -39,7 +39,7 @@ export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
       dataByDate.set(w.date, {
         volume: existing.volume + vol,
         points: existing.points + pts,
-        workouts: [...existing.workouts, { name: exName, sets: w.sets || 1, reps: w.reps || 0, points: pts }]
+        workouts: [...existing.workouts, { name: exName, sets: w.sets || 1, reps: w.reps || 0, timeSeconds: w.timeSeconds, points: pts }]
       })
     })
 
@@ -426,7 +426,9 @@ export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
                               {day.workouts.map((w, i) => (
                                 <div key={i} className="flex items-center justify-between text-[11px] text-muted-foreground truncate">
                                   <span className="truncate">{w.name}</span>
-                                  <span className="font-medium text-foreground ml-1.5 shrink-0">{w.sets}×{w.reps}</span>
+                                  <span className="font-medium text-foreground ml-1.5 shrink-0">
+                                    {w.sets}×{w.timeSeconds ? `${w.timeSeconds}s` : w.reps}
+                                  </span>
                                 </div>
                               ))}
                             </div>

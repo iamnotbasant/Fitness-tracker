@@ -9,50 +9,88 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { AnimatedTrophy } from "@/components/ui/animated-icons"
+import { useExercises } from "@/hooks/use-local-data"
+
+export const formatTime = (sec: number) => {
+  if (!sec) return "0s"
+  if (sec >= 60) {
+    const mins = Math.floor(sec / 60)
+    const rem = sec % 60
+    return rem > 0 ? `${mins}m ${rem}s` : `${mins}m`
+  }
+  return `${sec}s`
+}
 
 export function PersonalRecords({ workouts }: { workouts: Workout[] }) {
   const [expandedExercise, setExpandedExercise] = useState<string | null>(null)
   const [showSettings, setShowSettings] = useState(false)
   const [selectedExercises, setSelectedExercises] = useState<string[]>([])
   const [searchQuery, setSearchQuery] = useState("")
+  const { exercises } = useExercises()
 
   // Get all available exercises with their PRs and history
   const allExercises = useMemo(() => {
+    const timerExerciseNames = new Set(
+      (exercises || [])
+        .filter((e) => e.type === "timer")
+        .map((e) => e.name.toLowerCase())
+    )
+
     const exerciseMap = new Map<
       string,
       {
+        isTimer: boolean
         maxReps: number
+        maxTimeSeconds: number
         maxWeight: number
         estimated1RM: number
         prDate: string
-        history: { date: string; reps: number; weight: number; points: number }[]
+        history: { date: string; reps: number; timeSeconds?: number; weight: number; points: number }[]
       }
     >()
     
     workouts.forEach((w) => {
       const exName = w.exerciseName || w.name || "Unknown Exercise"
+      const lowerName = exName.toLowerCase()
+      const isTimer = timerExerciseNames.has(lowerName) || Boolean(w.timeSeconds && w.timeSeconds > 0)
+
       const existing = exerciseMap.get(exName) || {
+        isTimer,
         maxReps: 0,
+        maxTimeSeconds: 0,
         maxWeight: 0,
         estimated1RM: 0,
         prDate: w.date,
         history: [],
       }
+
+      if (isTimer) {
+        existing.isTimer = true
+      }
       
       const reps = w.reps || 0
+      const timeSeconds = w.timeSeconds || (isTimer && reps > 0 ? reps : 0)
       const weight = w.weight || 0
-      const e1RM = weight > 0 ? Math.round(weight * (1 + reps / 30)) : 0
+      const e1RM = (!isTimer && weight > 0) ? Math.round(weight * (1 + reps / 30)) : 0
 
-      if (reps > existing.maxReps || (reps === existing.maxReps && weight > existing.maxWeight)) {
-        existing.prDate = w.date
+      if (isTimer) {
+        if (timeSeconds > existing.maxTimeSeconds) {
+          existing.prDate = w.date
+        }
+        existing.maxTimeSeconds = Math.max(existing.maxTimeSeconds, timeSeconds)
+      } else {
+        if (reps > existing.maxReps || (reps === existing.maxReps && weight > existing.maxWeight)) {
+          existing.prDate = w.date
+        }
+        existing.maxReps = Math.max(existing.maxReps, reps)
+        existing.maxWeight = Math.max(existing.maxWeight, weight)
+        existing.estimated1RM = Math.max(existing.estimated1RM, e1RM)
       }
 
-      existing.maxReps = Math.max(existing.maxReps, reps)
-      existing.maxWeight = Math.max(existing.maxWeight, weight)
-      existing.estimated1RM = Math.max(existing.estimated1RM, e1RM)
       existing.history.push({
         date: w.date,
         reps,
+        timeSeconds,
         weight,
         points: w.points ?? w.total_points ?? 0,
       })
@@ -63,8 +101,12 @@ export function PersonalRecords({ workouts }: { workouts: Workout[] }) {
     return Array.from(exerciseMap.entries())
       .map(([name, data]) => {
         const sortedHistory = [...data.history].sort((a, b) => a.date.localeCompare(b.date))
-        const firstReps = sortedHistory[0]?.reps || 1
-        const improvement = Math.round(((data.maxReps - firstReps) / Math.max(1, firstReps)) * 100)
+        const firstVal = data.isTimer
+          ? (sortedHistory[0]?.timeSeconds || 1)
+          : (sortedHistory[0]?.reps || 1)
+        const currentVal = data.isTimer ? data.maxTimeSeconds : data.maxReps
+        const improvement = Math.round(((currentVal - firstVal) / Math.max(1, firstVal)) * 100)
+
         return {
           name,
           ...data,
@@ -72,8 +114,12 @@ export function PersonalRecords({ workouts }: { workouts: Workout[] }) {
           improvement: Math.max(0, improvement),
         }
       })
-      .sort((a, b) => b.maxReps - a.maxReps)
-  }, [workouts])
+      .sort((a, b) => {
+        const valA = a.isTimer ? a.maxTimeSeconds : a.maxReps
+        const valB = b.isTimer ? b.maxTimeSeconds : b.maxReps
+        return valB - valA
+      })
+  }, [workouts, exercises])
 
   // Load selected exercises from localStorage
   useEffect(() => {
@@ -185,11 +231,17 @@ export function PersonalRecords({ workouts }: { workouts: Workout[] }) {
                 {/* Middle: PR Metric */}
                 <div className="text-right shrink-0">
                   <div className="flex items-center gap-1.5 justify-end">
-                    <span className="text-lg font-black text-primary">
-                      {pr.maxReps} <span className="text-xs font-bold text-muted-foreground">reps</span>
-                    </span>
+                    {pr.isTimer ? (
+                      <span className="text-lg font-black text-primary">
+                        {formatTime(pr.maxTimeSeconds)}
+                      </span>
+                    ) : (
+                      <span className="text-lg font-black text-primary">
+                        {pr.maxReps} <span className="text-xs font-bold text-muted-foreground">reps</span>
+                      </span>
+                    )}
                   </div>
-                  {pr.estimated1RM > 0 ? (
+                  {!pr.isTimer && pr.estimated1RM > 0 ? (
                     <span className="text-[10px] font-bold text-muted-foreground block">
                       ~{pr.estimated1RM} kg 1RM
                     </span>
@@ -243,6 +295,7 @@ export function PersonalRecords({ workouts }: { workouts: Workout[] }) {
                           tick={{ fontSize: 11, fill: 'currentColor' }}
                           tickLine={false}
                           domain={[0, 'dataMax + 2']}
+                          tickFormatter={pr.isTimer ? (val) => formatTime(val) : undefined}
                         />
                         <Tooltip
                           contentStyle={{
@@ -252,7 +305,10 @@ export function PersonalRecords({ workouts }: { workouts: Workout[] }) {
                             fontSize: '12px',
                             color: '#FFFFFF',
                           }}
-                          formatter={(value: any) => [value, "Reps"]}
+                          formatter={(value: any) => [
+                            pr.isTimer ? formatTime(Number(value)) : `${value} reps`,
+                            pr.isTimer ? "Duration" : "Reps"
+                          ]}
                           labelFormatter={(label: any) => {
                             const date = new Date(label || Date.now())
                             return date.toLocaleDateString()
@@ -260,7 +316,7 @@ export function PersonalRecords({ workouts }: { workouts: Workout[] }) {
                         />
                         <Line
                           type="monotone"
-                          dataKey="reps"
+                          dataKey={pr.isTimer ? "timeSeconds" : "reps"}
                           stroke="hsl(var(--primary))"
                           strokeWidth={2.5}
                           dot={{ fill: "hsl(var(--primary))", r: 4 }}
@@ -301,7 +357,7 @@ export function PersonalRecords({ workouts }: { workouts: Workout[] }) {
                     <div className="flex items-center justify-between">
                       <span>{exercise.name}</span>
                       <span className="text-xs text-muted-foreground ml-2">
-                        PR: {exercise.maxReps} reps
+                        PR: {exercise.isTimer ? formatTime(exercise.maxTimeSeconds) : `${exercise.maxReps} reps`}
                       </span>
                     </div>
                   </Label>

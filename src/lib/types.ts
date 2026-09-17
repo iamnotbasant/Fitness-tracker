@@ -13,6 +13,8 @@ export type Exercise = {
   repGoal?: number
 }
 
+export type SetType = "normal" | "warmup" | "dropset" | "failure"
+
 export type Workout = {
   id: ID
   name?: string
@@ -35,6 +37,7 @@ export type Workout = {
   volume?: number
   setNumber?: number
   durationSeconds?: number // Total workout session duration
+  setType?: SetType
 }
 
 export type Goal = {
@@ -57,6 +60,7 @@ export type SessionSet = {
   weight?: number
   timeSeconds?: number
   done?: boolean
+  setType?: SetType
 }
 
 export type SessionExercise = {
@@ -87,8 +91,10 @@ export type RoutineExercise = {
   exerciseName: string
   split?: Exercise["split"]
   level?: Exercise["level"]
+  type?: Exercise["type"]
   defaultSets: number
-  defaultReps: number
+  defaultReps?: number
+  defaultTimeSeconds?: number
   restSec?: number
   notes?: string
 }

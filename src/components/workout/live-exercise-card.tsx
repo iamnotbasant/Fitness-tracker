@@ -147,11 +147,34 @@ function LiveExerciseCard({
     }))
   }
 
+  const cycleSetType = (setIndex: number) => {
+    soundManager.play('click', 0.2)
+    const types: Array<"normal" | "warmup" | "dropset" | "failure"> = ["normal", "warmup", "dropset", "failure"]
+    onChange((x) => {
+      const sets = [...x.sets]
+      const current = sets[setIndex]?.setType || "normal"
+      const nextIdx = (types.indexOf(current) + 1) % types.length
+      sets[setIndex] = { ...sets[setIndex], setType: types[nextIdx] }
+      return { ...x, sets }
+    })
+  }
+
   const toggleDone = (i: number) => {
     onChange((e) => {
       const next = [...e.sets]
       const wasDone = next[i].done
-      next[i] = { ...next[i], done: !wasDone }
+      const isTimer = String(exerciseType || "").toLowerCase().includes("timer")
+      
+      if (isTimer) {
+        next[i] = { 
+          ...next[i], 
+          reps: undefined,
+          timeSeconds: next[i].timeSeconds || pausedTime[i] || 30,
+          done: !wasDone 
+        }
+      } else {
+        next[i] = { ...next[i], done: !wasDone }
+      }
       
       if (!wasDone) {
         // Check if this is the last set
@@ -610,6 +633,28 @@ function LiveExerciseCard({
           </motion.button>
           <label className="text-sm text-muted-foreground">Rest Timer: {item.restEnabled ? `${item.restSec}s` : "OFF"}</label>
         </div>
+
+        {item.restEnabled && (
+          <div className="flex items-center gap-1">
+            {[30, 60, 90, 120, 180].map((preset) => (
+              <button
+                type="button"
+                key={preset}
+                onClick={() => {
+                  soundManager.play('click', 0.2)
+                  onChange((x) => ({ ...x, restSec: preset }))
+                }}
+                className={`px-2 py-0.5 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${
+                  item.restSec === preset
+                    ? "bg-primary text-primary-foreground shadow-xs font-bold"
+                    : "bg-secondary text-muted-foreground hover:text-foreground hover:bg-secondary/80"
+                }`}
+              >
+                {preset}s
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       <AnimatePresence>
@@ -640,11 +685,11 @@ function LiveExerciseCard({
       <div className="mt-4">
         {/* Column headers */}
         <div className={`grid text-xs font-medium uppercase text-muted-foreground pb-2 border-b gap-2 ${
-          isWeightedExercise ? "grid-cols-[2rem_1fr_1fr_1fr_2.5rem_2rem]" :
-          isTimerExercise    ? "grid-cols-[2rem_1fr_1fr_2.5rem_2rem]" :
-                               "grid-cols-[2rem_1fr_1fr_2.5rem_2rem]"
+          isWeightedExercise ? "grid-cols-[2.2rem_1fr_1fr_1fr_2.5rem_2rem]" :
+          isTimerExercise    ? "grid-cols-[2.2rem_1fr_1fr_2.5rem_2rem]" :
+                               "grid-cols-[2.2rem_1fr_1fr_2.5rem_2rem]"
         }`}>
-          <span>SET</span>
+          <span title="Set number (Click to toggle Warmup / Dropset / Failure)">SET</span>
           <span>PREV</span>
           <span>{isTimerExercise ? "TIME" : "REPS"}</span>
           {isWeightedExercise && <span>KG</span>}
@@ -664,14 +709,29 @@ function LiveExerciseCard({
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 16 }}
                 className={`group grid items-center gap-2 py-2.5 border-b border-border/50 text-sm ${
-                  isWeightedExercise ? "grid-cols-[2rem_1fr_1fr_1fr_2.5rem_2rem]" :
-                  isTimerExercise    ? "grid-cols-[2rem_1fr_1fr_2.5rem_2rem]" :
-                                       "grid-cols-[2rem_1fr_1fr_2.5rem_2rem]"
+                  isWeightedExercise ? "grid-cols-[2.2rem_1fr_1fr_1fr_2.5rem_2rem]" :
+                  isTimerExercise    ? "grid-cols-[2.2rem_1fr_1fr_2.5rem_2rem]" :
+                                       "grid-cols-[2.2rem_1fr_1fr_2.5rem_2rem]"
                 }`}
               >
-                {/* Set number with PR indicator */}
+                {/* Set number with Set Type toggle & PR indicator */}
                 <div className="flex flex-col items-center justify-center">
-                  <span className="font-medium text-center leading-none">{i + 1}</span>
+                  <button
+                    type="button"
+                    onClick={() => cycleSetType(i)}
+                    className="hover:scale-110 active:scale-95 transition-transform cursor-pointer"
+                    title={`Set ${i + 1} (${s.setType || "normal"}). Click to change (W=Warmup, D=Drop, F=Failure)`}
+                  >
+                    {s.setType === "warmup" ? (
+                      <span className="text-[10px] font-black text-amber-500 bg-amber-500/15 px-1.5 py-0.5 rounded leading-none">W</span>
+                    ) : s.setType === "dropset" ? (
+                      <span className="text-[10px] font-black text-purple-400 bg-purple-500/15 px-1.5 py-0.5 rounded leading-none">D</span>
+                    ) : s.setType === "failure" ? (
+                      <span className="text-[10px] font-black text-rose-500 bg-rose-500/15 px-1.5 py-0.5 rounded leading-none">F</span>
+                    ) : (
+                      <span className="font-semibold text-center leading-none text-xs">{i + 1}</span>
+                    )}
+                  </button>
                   {s.done && s.weight && top1RM && (s.weight >= (top1RM * 0.95)) ? (
                     <span className="text-[9px] font-black uppercase text-amber-500 bg-amber-500/15 px-1 py-0.5 rounded leading-tight mt-0.5">
                       PR

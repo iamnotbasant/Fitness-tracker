@@ -31,8 +31,8 @@ export default function WorkoutEditDialog({ open, onClose, onSave, workout }: Pr
 
   // Helper to check if exercise is timer-based
   const isTimerExercise = (exerciseName: string) => {
-    const exercise = exercises?.find(e => e.name === exerciseName)
-    return exercise?.type === "timer"
+    const exercise = exercises?.find(e => e.name.toLowerCase() === exerciseName.toLowerCase())
+    return exercise?.type === "timer" || exerciseName.toLowerCase().includes("plank")
   }
 
   const updateExerciseSet = (exerciseIndex: number, setIndex: number, field: 'reps' | 'timeSeconds' | 'weight', value: number | undefined) => {
@@ -70,17 +70,17 @@ export default function WorkoutEditDialog({ open, onClose, onSave, workout }: Pr
     const exercise = exercises?.find((e) => e.id === exerciseId)
     if (!exercise) return
 
-    const isTimeBased = exercise.type === "timer"
+    const isTimeBased = exercise.type === "timer" || exercise.name.toLowerCase().includes("plank")
     
     const newExercise: WorkoutExercise = {
       id: `new-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       exerciseName: exercise.name,
       sets: 3,
-      reps: isTimeBased ? 1 : 10,
+      reps: isTimeBased ? 0 : 10,
       timeSeconds: isTimeBased ? 30 : undefined,
       weight: isTimeBased ? undefined : 0,
       setDetails: Array.from({ length: 3 }, () => ({
-        reps: isTimeBased ? 1 : 10,
+        reps: isTimeBased ? 0 : 10,
         timeSeconds: isTimeBased ? 30 : undefined,
         weight: isTimeBased ? undefined : 0,
       })),
