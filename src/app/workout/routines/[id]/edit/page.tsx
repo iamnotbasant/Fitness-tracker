@@ -46,7 +46,7 @@ export default function EditRoutinePage() {
         setLoading(false)
       } else {
         // Routine not found, redirect back
-        router.push("/workout/routines")
+        router.push("/workout")
       }
     }
   }, [routines, routineId, router])
@@ -104,7 +104,7 @@ export default function EditRoutinePage() {
       createdAt: new Date().toISOString(),
     })
 
-    router.push("/workout/routines")
+    router.push("/workout")
   }
 
   // Show loading while checking authentication or loading routine

@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation"
 import { useActiveSession, useExercises, useWorkouts, useRoutines } from "@/hooks/use-local-data"
-import { Dumbbell, Plus, Search, ChevronLeft, Clock, Play, Loader2, Pin } from "lucide-react"
+import { Dumbbell, Plus, Search, ChevronLeft, Clock, Play, Loader2, Pin, MoreVertical, Eye, Edit, X, Check } from "lucide-react"
 import { useSession } from "@/lib/auth-client"
 import { useEffect, useState, useMemo, useCallback, useRef, memo } from "react"
 import { toast } from "sonner"
@@ -50,6 +50,10 @@ export default function WorkoutHub() {
   const [splitFilter, setSplitFilter] = useState<"all" | "push" | "pull" | "legs" | "core">("all")
   const [levelFilter, setLevelFilter] = useState<"all" | "1" | "2" | "3" | "4">("all")
 
+  // Routine Full Overview & Context Menu
+  const [overviewRoutine, setOverviewRoutine] = useState<any | null>(null)
+  const [routineContextMenu, setRoutineContextMenu] = useState<{ routine: any; x: number; y: number } | null>(null)
+
   // Load pinned routines from localStorage
   useEffect(() => {
     try {
@@ -60,8 +64,8 @@ export default function WorkoutHub() {
     } catch {}
   }, [])
 
-  const togglePinRoutine = (routineId: string, e: React.MouseEvent) => {
-    e.stopPropagation()
+  const togglePinRoutine = (routineId: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation()
     setPinnedRoutineIds((prev) => {
       const isPinned = prev.includes(routineId)
       const next = isPinned ? prev.filter((id) => id !== routineId) : [routineId, ...prev]
@@ -71,6 +75,24 @@ export default function WorkoutHub() {
       toast.success(isPinned ? "Routine unpinned" : "Routine pinned to top!")
       return next
     })
+    setRoutineContextMenu(null)
+  }
+
+  const handleRoutineContextMenu = (e: React.MouseEvent, routine: any) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const x = Math.min(e.clientX, window.innerWidth - 220)
+    const y = Math.min(e.clientY, window.innerHeight - 250)
+    setRoutineContextMenu({ routine, x, y })
+  }
+
+  const handleRoutineMenuClick = (e: React.MouseEvent, routine: any) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+    const x = Math.min(rect.left, window.innerWidth - 220)
+    const y = Math.min(rect.bottom + 6, window.innerHeight - 250)
+    setRoutineContextMenu({ routine, x, y })
   }
 
   // Client-side mounting check
@@ -781,15 +803,16 @@ export default function WorkoutHub() {
               </span>
               <button
                 onClick={() => router.push("/workout/routines/new")}
-                className="h-7 w-7 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 flex items-center justify-center transition-all shadow-xs"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-semibold shadow-xs hover:shadow transition-all cursor-pointer"
                 title="Create New Routine"
                 aria-label="Create New Routine"
               >
-                <Plus className="h-4 w-4" />
+                <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
+                <span>New Routine</span>
               </button>
             </div>
             
-            {/* Minimal Dropdown Filters ("drop box" for clean aesthetics) */}
+            {/* Minimal Dropdown Filters */}
             <div className="flex items-center gap-2">
               <select
                 value={splitFilter}
@@ -853,97 +876,73 @@ export default function WorkoutHub() {
                 return (
                   <div
                     key={routine.id}
-                    className={`group rounded-2xl border p-4 transition-all flex flex-col justify-between gap-3 shadow-xs hover:shadow-sm ${
+                    onContextMenu={(e) => handleRoutineContextMenu(e, routine)}
+                    className={`group rounded-2xl border p-4 transition-all flex items-center justify-between gap-3 shadow-xs hover:shadow-md cursor-pointer select-none ${
                       isPinned
-                        ? "border-primary/50 bg-card"
+                        ? "border-primary/50 bg-card ring-1 ring-primary/20"
                         : "border-border/60 bg-card hover:border-primary/40"
                     }`}
+                    onClick={() => handleStartRoutine(routine.id)}
                   >
-                    <div>
-                      <div className="flex items-start justify-between gap-2 mb-1.5">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <button
-                            onClick={(e) => togglePinRoutine(String(routine.id), e)}
-                            title={isPinned ? "Unpin routine" : "Pin routine to top"}
-                            className={`p-1 rounded-lg transition-colors shrink-0 ${
-                              isPinned
-                                ? "text-amber-400 bg-amber-400/15"
-                                : "text-muted-foreground/40 hover:text-foreground hover:bg-muted"
-                            }`}
-                          >
-                            <Pin className={`h-3.5 w-3.5 ${isPinned ? "fill-amber-400" : ""}`} />
-                          </button>
-                          <h3 className="font-semibold text-base tracking-tight truncate group-hover:text-primary transition-colors">
-                            {routine.name}
-                          </h3>
-                        </div>
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          {usageCount > 0 && (
-                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-primary/10 text-primary">
-                              {usageCount}x used
-                            </span>
-                          )}
-                          {splitTag && (
-                            <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-md bg-secondary text-secondary-foreground">
-                              {splitTag}
-                            </span>
-                          )}
-                          {(isL1 || isL2) && (
-                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-muted text-muted-foreground">
-                              {isL1 ? "Lvl 1" : "Lvl 2"}
-                            </span>
-                          )}
-                        </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        {isPinned && (
+                          <span className="h-2 w-2 rounded-full bg-amber-400 shrink-0" title="Pinned Routine" />
+                        )}
+                        <h3 className="font-bold text-base tracking-tight truncate group-hover:text-primary transition-colors">
+                          {routine.name}
+                        </h3>
                       </div>
-
-                      {/* Exercise preview tags */}
-                      <div className="flex flex-wrap gap-1.5 mt-2">
-                        {routine.exercises.slice(0, 3).map((ex, i) => (
-                          <span
-                            key={i}
-                            className="text-[11px] px-2 py-0.5 rounded-md bg-muted/80 text-foreground/80 font-medium truncate max-w-[150px]"
-                          >
-                            {ex.exerciseName}
-                          </span>
-                        ))}
-                        {routine.exercises.length > 3 && (
-                          <span className="text-[11px] px-1.5 py-0.5 rounded-md bg-muted/50 text-muted-foreground">
-                            +{routine.exercises.length - 3}
-                          </span>
+                      <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-muted-foreground">
+                        <span>{routine.exercises?.length || 0} exercises</span>
+                        {splitTag && (
+                          <>
+                            <span>•</span>
+                            <span className="font-medium text-foreground/80">{splitTag}</span>
+                          </>
+                        )}
+                        {(isL1 || isL2) && (
+                          <>
+                            <span>•</span>
+                            <span>{isL1 ? "Level 1" : "Level 2"}</span>
+                          </>
+                        )}
+                        {usageCount > 0 && (
+                          <>
+                            <span>•</span>
+                            <span className="text-primary font-medium">{usageCount}x used</span>
+                          </>
                         )}
                       </div>
                     </div>
 
-                    {/* Bottom Actions */}
-                    <div className="pt-2 border-t border-border/40 flex items-center justify-between gap-2 mt-1">
-                      <span className="text-xs text-muted-foreground">
-                        {routine.exercises.length} exercises
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => router.push(`/workout/routines/${routine.id}/edit`)}
-                          className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleStartRoutine(routine.id)}
-                          disabled={isStarting}
-                          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-primary text-xs font-semibold text-primary-foreground hover:bg-primary/90 shadow-sm transition-all disabled:opacity-60"
-                        >
-                          {isStarting ? (
-                            <>
-                              <Loader2 className="h-3 w-3 animate-spin" />
-                              <span>Starting...</span>
-                            </>
-                          ) : (
-                            <>
-                              <Play className="h-3 w-3 fill-current" />
-                              <span>Start</span>
-                            </>
-                          )}
-                        </button>
-                      </div>
+                    <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        onClick={() => handleStartRoutine(routine.id)}
+                        disabled={isStarting}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-primary text-xs font-semibold text-primary-foreground hover:bg-primary/90 shadow-xs transition-all disabled:opacity-60 cursor-pointer"
+                      >
+                        {isStarting ? (
+                          <>
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            <span>Starting...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Play className="h-3.5 w-3.5 fill-current" />
+                            <span>Start</span>
+                          </>
+                        )}
+                      </button>
+
+                      <button
+                        onClick={(e) => handleRoutineMenuClick(e, routine)}
+                        className="p-1.5 rounded-xl hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                        title="Options (Right-click card also works)"
+                        aria-label="Routine Options"
+                      >
+                        <MoreVertical className="h-4 w-4" />
+                      </button>
                     </div>
                   </div>
                 )
@@ -951,6 +950,211 @@ export default function WorkoutHub() {
             </div>
           )}
         </div>
+
+        {/* Routine Right-Click & 3-Dots Context Menu */}
+        <AnimatePresence>
+          {routineContextMenu && (
+            <>
+              <div 
+                className="fixed inset-0 z-50 bg-black/20 backdrop-blur-[1px]" 
+                onClick={() => setRoutineContextMenu(null)}
+                onContextMenu={(e) => { e.preventDefault(); setRoutineContextMenu(null) }}
+              />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.15 }}
+                style={{
+                  top: `${routineContextMenu.y}px`,
+                  left: `${routineContextMenu.x}px`,
+                }}
+                className="fixed z-50 w-52 rounded-2xl border border-border/80 bg-popover/95 backdrop-blur-md p-1.5 shadow-2xl text-xs overflow-hidden select-none"
+              >
+                <div className="px-3 py-1.5 font-bold text-[11px] text-muted-foreground border-b border-border/50 mb-1 truncate">
+                  {routineContextMenu.routine.name}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOverviewRoutine(routineContextMenu.routine)
+                    setRoutineContextMenu(null)
+                  }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-foreground hover:bg-muted font-medium transition-colors cursor-pointer text-left"
+                >
+                  <Eye className="h-3.5 w-3.5 text-primary" />
+                  <span>Full Overview</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const id = routineContextMenu.routine.id
+                    setRoutineContextMenu(null)
+                    router.push(`/workout/routines/${id}/edit`)
+                  }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-foreground hover:bg-muted font-medium transition-colors cursor-pointer text-left"
+                >
+                  <Edit className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span>Edit Routine</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => togglePinRoutine(String(routineContextMenu.routine.id))}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-foreground hover:bg-muted font-medium transition-colors cursor-pointer text-left"
+                >
+                  <Pin className={`h-3.5 w-3.5 ${pinnedRoutineIds.includes(String(routineContextMenu.routine.id)) ? "text-amber-400 fill-amber-400" : "text-muted-foreground"}`} />
+                  <span>{pinnedRoutineIds.includes(String(routineContextMenu.routine.id)) ? "Unpin Routine" : "Pin to Top"}</span>
+                </button>
+
+                <div className="my-1 border-t border-border/50" />
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const id = routineContextMenu.routine.id
+                    setRoutineContextMenu(null)
+                    handleStartRoutine(id)
+                  }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-primary font-semibold hover:bg-primary/10 transition-colors cursor-pointer text-left"
+                >
+                  <Play className="h-3.5 w-3.5 fill-current" />
+                  <span>Start Routine</span>
+                </button>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
+
+        {/* Routine Full Overview Dialog */}
+        <AnimatePresence>
+          {overviewRoutine && (
+            <>
+              <div 
+                className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" 
+                onClick={() => setOverviewRoutine(null)}
+              />
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95, y: 15 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: 15 }}
+                  className="w-full max-w-lg max-h-[85vh] flex flex-col rounded-2xl border border-border/80 bg-card shadow-2xl overflow-hidden"
+                >
+                  {/* Header */}
+                  <div className="flex items-start justify-between p-5 border-b border-border/60 bg-muted/20">
+                    <div>
+                      <h3 className="text-lg md:text-xl font-bold text-foreground">
+                        {overviewRoutine.name}
+                      </h3>
+                      {overviewRoutine.description && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {overviewRoutine.description}
+                        </p>
+                      )}
+                      <div className="flex items-center gap-2 mt-2 text-xs">
+                        <span className="px-2 py-0.5 rounded-md bg-primary/10 text-primary font-semibold">
+                          {overviewRoutine.exercises?.length || 0} exercises
+                        </span>
+                        {pinnedRoutineIds.includes(String(overviewRoutine.id)) && (
+                          <span className="px-2 py-0.5 rounded-md bg-amber-400/10 text-amber-500 font-semibold flex items-center gap-1">
+                            <Pin className="h-3 w-3 fill-amber-500" /> Pinned
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setOverviewRoutine(null)}
+                      className="p-1.5 rounded-xl hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                      aria-label="Close"
+                    >
+                      <X className="h-5 w-5" />
+                    </button>
+                  </div>
+
+                  {/* Exercise List */}
+                  <div className="flex-1 overflow-y-auto p-5 space-y-2.5">
+                    <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">
+                      Routine Exercises
+                    </div>
+                    {overviewRoutine.exercises?.map((ex: any, idx: number) => {
+                      const isTimer = ex.type === "timer" || ex.defaultTimeSeconds !== undefined
+                      return (
+                        <div
+                          key={idx}
+                          className="flex items-center justify-between p-3 rounded-xl border border-border/50 bg-background hover:border-primary/30 transition-colors"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="h-7 w-7 rounded-lg bg-primary/10 text-primary font-bold text-xs flex items-center justify-center">
+                              {idx + 1}
+                            </div>
+                            <div>
+                              <div className="font-semibold text-sm text-foreground">
+                                {ex.exerciseName}
+                              </div>
+                              <div className="text-xs text-muted-foreground flex items-center gap-2">
+                                {ex.split && <span className="capitalize">{ex.split}</span>}
+                                {ex.level !== undefined && <span>• Level {ex.level}</span>}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="text-right">
+                            <div className="text-xs font-semibold text-foreground">
+                              {ex.defaultSets || 3} sets
+                            </div>
+                            <div className="text-[11px] text-muted-foreground font-medium">
+                              {isTimer
+                                ? `${ex.defaultTimeSeconds || 30}s target`
+                                : `${ex.defaultReps || 10} reps`}
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+
+                  {/* Footer Actions */}
+                  <div className="flex items-center justify-between p-4 border-t border-border/60 bg-muted/20">
+                    <button
+                      onClick={() => {
+                        const id = overviewRoutine.id
+                        setOverviewRoutine(null)
+                        router.push(`/workout/routines/${id}/edit`)
+                      }}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+                    >
+                      <Edit className="h-3.5 w-3.5" />
+                      <span>Edit Routine</span>
+                    </button>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setOverviewRoutine(null)}
+                        className="px-4 py-2 rounded-xl border border-border/80 text-xs font-medium hover:bg-muted transition-colors cursor-pointer"
+                      >
+                        Close
+                      </button>
+                      <button
+                        onClick={() => {
+                          const id = overviewRoutine.id
+                          setOverviewRoutine(null)
+                          handleStartRoutine(id)
+                        }}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-xs font-semibold text-primary-foreground hover:bg-primary/90 shadow-sm transition-all cursor-pointer"
+                      >
+                        <Play className="h-3.5 w-3.5 fill-current" />
+                        <span>Start Workout</span>
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              </div>
+            </>
+          )}
+        </AnimatePresence>
       </div>
     </main>
   )

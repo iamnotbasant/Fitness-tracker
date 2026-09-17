@@ -101,27 +101,17 @@ export function ExerciseCard({ ex, onDelete }: ExerciseCardProps) {
           <h3 className="text-base font-bold tracking-tight text-foreground line-clamp-1 group-hover:text-primary transition-colors">
             {ex.name}
           </h3>
-          {ex.bodyParts && ex.bodyParts.length > 0 && (
-            <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
-              {ex.bodyParts.slice(0, 3).join(", ")}
-            </p>
-          )}
         </div>
 
-        {/* Pill Badges */}
-        <div className="flex flex-wrap items-center gap-1.5 pt-1">
-          {ex.isAdminExercise && (
-            <span className="rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 text-[10px] font-semibold tracking-wider uppercase">
-              Official
-            </span>
-          )}
+        {/* Clean Badges: Level, Split, Type */}
+        <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
           {ex.level !== undefined && (
             <span className="rounded-lg bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 text-[11px] font-bold">
               Level {ex.level}
             </span>
           )}
           {ex.split && (
-            <span className="rounded-lg bg-secondary/80 border border-border/60 px-2 py-0.5 text-[11px] font-medium capitalize text-secondary-foreground">
+            <span className="rounded-lg bg-secondary border border-border/60 px-2 py-0.5 text-[11px] font-medium capitalize text-secondary-foreground">
               {ex.split}
             </span>
           )}

@@ -83,7 +83,7 @@ export default function NewRoutinePage() {
       exercises: routineExercises,
     })
 
-    router.push("/workout/routines")
+    router.push("/workout")
   }
 
   // Show loading while checking authentication

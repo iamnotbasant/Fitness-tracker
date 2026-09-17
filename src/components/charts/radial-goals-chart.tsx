@@ -125,7 +125,7 @@ export function RadialGoalsChart({ workouts }: RadialGoalsChartProps) {
               ? "bg-primary/15 border-primary/30 text-primary" 
               : "bg-secondary border-border/60 text-muted-foreground"
           }`}>
-            {avgCompletion >= 100 ? "Goal Crushed 🎉" : `${avgCompletion}% Complete`}
+            {avgCompletion >= 100 ? "Goal Achieved" : `${avgCompletion}% Complete`}
           </span>
         </div>
       </div>
