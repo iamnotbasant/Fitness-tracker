@@ -1,7 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { PieChart, Pie, Cell, ResponsiveContainer, Label } from "recharts"
+import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts"
 import type { Workout, Exercise } from "@/lib/types"
 
 const SPLIT_COLORS: Record<string, string> = {
@@ -120,37 +120,19 @@ export function MuscleBalance({ workouts, exercises }: { workouts: Workout[]; ex
                     strokeWidth={2}
                   />
                 ))}
-                <Label
-                  position="center"
-                  content={({ viewBox }) => {
-                    const { cx, cy } = viewBox as any
-                    return (
-                      <g className="select-none">
-                        <text
-                          x={cx}
-                          y={cy - 6}
-                          textAnchor="middle"
-                          dominantBaseline="central"
-                          className="fill-foreground font-black text-2xl tracking-tight"
-                        >
-                          {hoveredData ? `${hoveredData.percentage}%` : `${totalPoints.toLocaleString()}`}
-                        </text>
-                        <text
-                          x={cx}
-                          y={cy + 16}
-                          textAnchor="middle"
-                          dominantBaseline="central"
-                          className="fill-muted-foreground text-xs font-medium"
-                        >
-                          {hoveredData ? hoveredData.name.split(" ")[0] : "Total Points"}
-                        </text>
-                      </g>
-                    )
-                  }}
-                />
               </Pie>
             </PieChart>
           </ResponsiveContainer>
+
+          {/* Centered Donut Stat Overlay - Clean HTML to prevent SVG coordinate clipping */}
+          <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center select-none text-center">
+            <span className="text-3xl font-black tracking-tight text-foreground font-mono leading-none">
+              {hoveredData ? `${hoveredData.percentage}%` : totalPoints.toLocaleString()}
+            </span>
+            <span className="text-xs font-semibold text-muted-foreground mt-1 tracking-wide">
+              {hoveredData ? hoveredData.name.split(" ")[0] : "Total Points"}
+            </span>
+          </div>
         </div>
 
         {/* Legend & Breakdown List */}
@@ -171,7 +153,7 @@ export function MuscleBalance({ workouts, exercises }: { workouts: Workout[]; ex
                 }`}
               >
                 <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 truncate">
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
                     <span
                       className="h-3 w-3 rounded-full shrink-0 shadow-sm"
                       style={{ backgroundColor: item.color }}

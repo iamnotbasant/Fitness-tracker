@@ -183,4 +183,13 @@
   - Added algorithmic `Total Points` calculation adhering to calibrated exercise multipliers (timer, weighted, and bodyweight levels).
   - Designed clean, high-contrast performance metrics HUD cards with instant live updates whenever set details are edited or modified in the modal.
 
+---
+
+## 🍩 Phase 15: Muscle Distribution Donut Center Label Clipping Fix
+- [x] **Task 15.1:** Fix misplaced and cut-off center label in Muscle Distribution (`src/components/charts/muscle-balance.tsx`):
+  - Replaced buggy Recharts SVG `<Label position="center" />` (which fell back to `(0, -6)` and clipped at top-left) with a responsive, perfectly centered HTML overlay.
+  - Displayed high-contrast font-mono total points or hovered muscle group percentage cleanly in the center hole of the donut ring.
+  - Added `min-w-0 flex-1` on legend breakdown rows to prevent awkward text truncation on mobile screens.
+
+
 
