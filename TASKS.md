@@ -158,3 +158,18 @@
   - **Summary Ribbon & Category Filters:**
     - Top summary ribbon showing total milestones unlocked and latest PR record.
     - 1-click filter pills: `All`, `PR Records`, `Volume & Consistency`, and `Custom Goals`.
+
+---
+
+## 🎯 Phase 13: Clean & Blank Exercise Input Fields (No Pre-filled Numbers)
+- [x] **Task 13.1:** Fix routine-started sessions pre-filling sets with default numbers (`src/app/api/workout-sessions/route.ts`):
+  - Changed routine exercise set generation so `reps: undefined` and `timeSeconds: undefined` are initialized for all uncompleted sets instead of hardcoding template values (`ex.defaultReps` like 8, 10).
+- [x] **Task 13.2:** Active Session Sanitation (`src/hooks/use-local-data.ts`):
+  - Created `sanitizeActiveSession` to strip pre-filled values from any uncompleted sets (`!s.done && !s.userEntered`) loaded from the server or offline cache (`localStorage`), ensuring existing workouts immediately start with clean blank fields.
+  - Updated `addExercise` to initialize new exercise sets with `reps: undefined` and `timeSeconds: undefined`.
+- [x] **Task 13.3:** User-Entered Tracking & Live Exercise Card Blank Field Handling (`src/components/workout/live-exercise-card.tsx`):
+  - In `updateReps`: Inputs start 100% blank (`""`), dynamically recording values and setting `userEntered: true` only when user types.
+  - In `toggleDone`: If the user marks a set done without typing reps, it gracefully falls back to previous performance or goal so saved logs are valid, while uncompleted sets always remain blank.
+  - In `addSet`: Initialized new sets with `reps: undefined` and `timeSeconds: undefined`.
+  - In `src/components/workout/workout-edit-dialog.tsx`: Replaced hardcoded `reps: 10` fallback with `reps: undefined` for newly added sets.
+

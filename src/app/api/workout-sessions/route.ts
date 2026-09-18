@@ -128,13 +128,13 @@ export async function POST(request: NextRequest) {
           restSec: ex.restSec || 60,
           sets: ex.defaultSets 
             ? Array(ex.defaultSets).fill(null).map(() => ({ 
-                reps: isTimer ? undefined : ex.defaultReps,
-                timeSeconds: isTimer ? (ex.defaultTimeSeconds || 30) : undefined,
+                reps: undefined,
+                timeSeconds: undefined,
                 done: false 
               }))
             : [{ 
-                reps: isTimer ? undefined : ex.defaultReps, 
-                timeSeconds: isTimer ? (ex.defaultTimeSeconds || 30) : undefined, 
+                reps: undefined, 
+                timeSeconds: undefined, 
                 done: false 
               }]
         };

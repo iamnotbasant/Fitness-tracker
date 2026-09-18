@@ -183,7 +183,7 @@ function LiveExerciseCard({
     soundManager.play('add', 0.5)
     onChange((e) => ({
       ...e,
-      sets: [...e.sets, isTimerExercise ? { timeSeconds: 0, done: false } : { reps: undefined, done: false }]
+      sets: [...e.sets, isTimerExercise ? { timeSeconds: undefined, done: false } : { reps: undefined, done: false }]
     }))
   }
 
@@ -262,10 +262,22 @@ function LiveExerciseCard({
           ...next[i], 
           reps: undefined,
           timeSeconds: next[i].timeSeconds || pausedTime[i] || targetSecondsMap[i] || 30,
-          done: !wasDone 
+          done: !wasDone,
+          userEntered: true,
         }
       } else {
-        next[i] = { ...next[i], done: !wasDone }
+        const prevSet = getPreviousSet(i)
+        const prevVal = getPreviousValue(i)
+        const fallbackReps = prevSet?.reps ?? (prevVal ? Number(prevVal) : undefined) ?? repGoal ?? 1
+        const resolvedReps = !wasDone && (next[i].reps === undefined || next[i].reps === null)
+          ? fallbackReps
+          : next[i].reps
+        next[i] = { 
+          ...next[i], 
+          reps: resolvedReps, 
+          done: !wasDone,
+          userEntered: !wasDone ? true : next[i].userEntered,
+        }
       }
       
       if (!wasDone) {
@@ -349,11 +361,11 @@ function LiveExerciseCard({
     onChange((e) => {
       const next = [...e.sets]
       if (value === "") {
-        next[i] = { ...next[i], reps: undefined }
+        next[i] = { ...next[i], reps: undefined, userEntered: false }
       } else {
         const numValue = Number(value)
         if (!isNaN(numValue) && numValue >= 0) {
-          next[i] = { ...next[i], reps: numValue }
+          next[i] = { ...next[i], reps: numValue, userEntered: true }
         } else {
           return e
         }
@@ -378,7 +390,7 @@ function LiveExerciseCard({
     onChange((e) => {
       const next = [...e.sets]
       if (value === "") {
-        next[i] = { ...next[i], timeSeconds: undefined }
+        next[i] = { ...next[i], timeSeconds: undefined, userEntered: false }
         setPausedTime(prev => {
           const updated = { ...prev }
           delete updated[i]
@@ -392,7 +404,7 @@ function LiveExerciseCard({
       } else {
         const numValue = Number(value)
         if (!isNaN(numValue) && numValue >= 0) {
-          next[i] = { ...next[i], timeSeconds: numValue }
+          next[i] = { ...next[i], timeSeconds: numValue, userEntered: true }
           setPausedTime(prev => ({ ...prev, [i]: numValue }))
           setInitialElapsedMap(prev => ({ ...prev, [i]: numValue }))
           if (timerMode === "countdown") {
@@ -1020,7 +1032,7 @@ function LiveExerciseCard({
                         type="number"
                         inputMode="numeric"
                         min={0}
-                        value={pausedTime[i] ?? s.timeSeconds ?? targetSecondsMap[i] ?? ""}
+                        value={pausedTime[i] ?? s.timeSeconds ?? ""}
                         onChange={(e) => updateTimeSeconds(i, e.target.value)}
                         className="flex-1 min-w-0 w-full rounded-xl border border-border/80 bg-background px-2.5 py-1.5 outline-none focus:border-primary focus:ring-1 focus:ring-primary text-xs font-medium placeholder:text-muted-foreground/50"
                         placeholder={

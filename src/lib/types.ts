@@ -61,6 +61,7 @@ export type SessionSet = {
   timeSeconds?: number
   done?: boolean
   setType?: SetType
+  userEntered?: boolean
 }
 
 export type SessionExercise = {

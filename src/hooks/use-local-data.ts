@@ -332,6 +332,28 @@ function debounce<T extends (...args: any[]) => any>(fn: T, delay: number): T {
     timer = setTimeout(() => fn(...args), delay)
   }) as T
 }
+// Helper to sanitize active workout session sets: uncompleted sets must start completely blank
+export function sanitizeActiveSession(sess: WorkoutSession | null): WorkoutSession | null {
+  if (!sess || !sess.items) return sess
+  return {
+    ...sess,
+    items: sess.items.map((item) => ({
+      ...item,
+      sets: (item.sets || []).map((s: any) => {
+        // Completed sets remain intact
+        if (s.done) return s
+        // If user explicitly entered this set value during the session, retain it
+        if (s.userEntered) return s
+        // Uncompleted set fields must start completely blank (undefined)
+        return {
+          ...s,
+          reps: undefined,
+          timeSeconds: undefined,
+        }
+      })
+    }))
+  }
+}
 
 export function useActiveSession() {
   const { data: session } = useSession()
@@ -341,8 +363,9 @@ export function useActiveSession() {
     if (typeof window !== "undefined" && !navigator.onLine) {
       try {
         const local = localStorage.getItem("ft_active_offline_session")
-        if (local) return { session: JSON.parse(local) }
+        if (local) return { session: sanitizeActiveSession(JSON.parse(local)) }
       } catch {}
+      return { session: null }
     }
 
     const token = typeof window !== "undefined" ? localStorage.getItem("bearer_token") : null
@@ -356,17 +379,18 @@ export function useActiveSession() {
       if (res.ok) {
         const sessions = await res.json()
         const active = sessions.length > 0 ? sessions[0] : null
-        if (active && typeof window !== "undefined") {
-          localStorage.setItem("ft_active_offline_session", JSON.stringify(active))
+        const cleaned = sanitizeActiveSession(active)
+        if (cleaned && typeof window !== "undefined") {
+          localStorage.setItem("ft_active_offline_session", JSON.stringify(cleaned))
         }
-        return { session: active }
+        return { session: cleaned }
       }
     } catch (e) {
       // Network failure, fallback to offline cached session
       if (typeof window !== "undefined") {
         try {
           const local = localStorage.getItem("ft_active_offline_session")
-          if (local) return { session: JSON.parse(local) }
+          if (local) return { session: sanitizeActiveSession(JSON.parse(local)) }
         } catch {}
       }
     }
@@ -425,11 +449,12 @@ export function useActiveSession() {
       })
       if (res.ok) {
         const result = await res.json()
+        const cleaned = sanitizeActiveSession(result)
         if (typeof window !== "undefined") {
-          localStorage.setItem("ft_active_offline_session", JSON.stringify(result))
+          localStorage.setItem("ft_active_offline_session", JSON.stringify(cleaned))
         }
-        mutate({ session: result }, { revalidate: false })
-        return result
+        mutate({ session: cleaned }, { revalidate: false })
+        return cleaned
       }
     } catch (e) {
       console.warn("Offline or network issue starting session on server, proceeding locally:", e)
@@ -443,7 +468,6 @@ export function useActiveSession() {
       return
     }
     
-    const isTimer = exercise.type === "timer" || String(exercise.type || "").toLowerCase().includes("timer") || String(exercise.name || "").toLowerCase().includes("plank")
     const newItem: SessionExercise = {
       id: `item-${crypto.randomUUID()}`,
       exerciseId: exercise.id,
@@ -453,7 +477,7 @@ export function useActiveSession() {
       notes: "",
       restEnabled: true,
       restSec: 60,
-      sets: [isTimer ? { timeSeconds: 30, done: false } : { reps: 0, done: false }],
+      sets: [{ reps: undefined, timeSeconds: undefined, done: false }],
     }
     
     const { userId, id, createdAt, ...sessionData } = data.session
