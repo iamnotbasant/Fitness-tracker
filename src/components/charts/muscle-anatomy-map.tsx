@@ -39,9 +39,9 @@ export interface MuscleStat {
   intensity: number // 0 to 1
 }
 
-// Exact 5-tier red intensity scale + pure black for No Workout (0%)
+// Exact 5-tier red intensity scale + pure white for No Workout (0%)
 export const RED_HEATMAP_SCALE = [
-  { key: "no-workout", label: "No Workout (0%)", color: "#000000", stroke: "#383842", min: 0, max: 0 },
+  { key: "no-workout", label: "No Workout (0%)", color: "#ffffff", stroke: "#18181b", min: 0, max: 0 },
   { key: "very-low", label: "Very Low (0–10%)", color: "#FCD3D3", stroke: "#FE9997", min: 0, max: 10 },
   { key: "low", label: "Low (10–40%)", color: "#FE9997", stroke: "#FD5F5F", min: 10, max: 40 },
   { key: "moderate", label: "Moderate (40–70%)", color: "#FD5F5F", stroke: "#FE1E26", min: 40, max: 70 },
@@ -51,7 +51,7 @@ export const RED_HEATMAP_SCALE = [
 
 export function getIntensityTier(intensity: number) {
   if (intensity <= 0) {
-    return { key: "no-workout", label: "No Workout", bracket: "0%", color: "#000000", stroke: "#383842", text: "Untrained" }
+    return { key: "no-workout", label: "No Workout", bracket: "0%", color: "#ffffff", stroke: "#18181b", text: "Untrained" }
   }
   if (intensity <= 0.10) {
     return { key: "very-low", label: "Very Low", bracket: "0–10%", color: "#FCD3D3", stroke: "#FE9997", text: "Light" }
@@ -378,9 +378,9 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
     return stats
   }, [workouts, exercises])
 
-  // Intensity color according to user-specified 5-tier red scale + pure black for No Workout
+  // Intensity color according to user-specified 5-tier red scale + pure white for No Workout
   const getIntensityColor = (intensity: number) => {
-    if (intensity <= 0) return "#000000"    // Pure Black for No Workout (0%)
+    if (intensity <= 0) return "#ffffff"    // Pure White for No Workout (0%)
     if (intensity <= 0.10) return "#FCD3D3" // Very Low (0–10%)
     if (intensity <= 0.40) return "#FE9997" // Low (10–40%)
     if (intensity <= 0.70) return "#FD5F5F" // Moderate (40–70%)
@@ -401,10 +401,10 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
     const intensity = stat?.intensity ?? 0
 
     if (isSelected) {
-      return intensity > 0 ? "#FE1E26" : "#22222a"
+      return intensity > 0 ? "#FE1E26" : "#f4f4f5"
     }
     if (isHovered) {
-      return intensity > 0 ? "#FD5F5F" : "#1e1e26"
+      return intensity > 0 ? "#FD5F5F" : "#e4e4e7"
     }
 
     return getIntensityColor(intensity)
@@ -412,15 +412,20 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
 
   // Get contour stroke color for crisp anatomical definition
   const getStrokeColor = (slug: string, isHovered: boolean, isSelected: boolean) => {
-    if (isSelected) return "#ffffff"
-    if (isHovered) return "#FE1E26"
+    if (isSelected) return "#FE1E26"
+    if (isHovered) return "#FD5F5F"
 
     const muscleKey = slugToMuscleKey(slug)
     const intensity = muscleKey ? muscleStats[muscleKey]?.intensity ?? 0 : 0
 
-    // Unworked muscles get clean visible slate outline (#383842) so body contours are distinct
-    if (intensity <= 0 || NEUTRAL_SLUGS.has(slug)) {
+    // Neutral non-muscle anatomical parts (head, hands, feet) keep obsidian slate outline
+    if (NEUTRAL_SLUGS.has(slug)) {
       return "#383842"
+    }
+
+    // Unworked muscles (pure white) get crisp dark seam outline so muscle shapes stand out clearly
+    if (intensity <= 0) {
+      return "#18181b"
     }
 
     // High and very-high active muscles get glowing distinct red borders
@@ -540,7 +545,7 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
           <div>
             <h3 className="text-sm sm:text-base font-bold text-foreground">Muscle Map & Heatmap</h3>
             <p className="text-[11px] text-muted-foreground">
-              Anatomical mannequin with exact 5-tier red intensity & pure black unworked model
+              Anatomical mannequin with 5-tier red intensity & pure white unworked muscles
             </p>
           </div>
         </div>
@@ -583,7 +588,7 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
       {/* Main Grid: Body Map + Muscle Inspector */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Anatomical Models Container */}
-        <div className="lg:col-span-7 flex flex-col items-center justify-center p-4 sm:p-6 rounded-2xl bg-gradient-to-b from-[#14141a] via-[#101015] to-[#0d0d12] border border-border/70 relative overflow-hidden shadow-inner">
+        <div className="lg:col-span-7 flex flex-col items-center justify-center p-5 sm:p-7 min-h-[560px] rounded-2xl bg-gradient-to-b from-[#14141a] via-[#101015] to-[#0d0d12] border border-border/70 relative overflow-hidden shadow-inner">
           {/* Subtle ambient gradient backdrop */}
           <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_center,_rgba(255,255,255,0.03)_0%,_transparent_70%)]" />
 
@@ -644,15 +649,15 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
                     <span className="text-primary font-bold">{activeInspectedStat.sets} sets</span>
                     <span className="text-muted-foreground">({activeInspectedStat.reps} reps)</span>
                     <span
-                      className="px-1.5 py-0.2 rounded text-[10px] font-bold uppercase tracking-wider text-white"
-                      style={{ backgroundColor: activeInspectedTier.color === "#000000" ? "#27272a" : activeInspectedTier.color }}
+                      className="px-1.5 py-0.2 rounded text-[10px] font-bold uppercase tracking-wider text-white shadow-xs"
+                      style={{ backgroundColor: activeInspectedTier.color === "#ffffff" ? "#27272a" : activeInspectedTier.color }}
                     >
                       {activeInspectedTier.label} ({Math.round(activeInspectedStat.intensity * 100)}%)
                     </span>
                   </span>
                 ) : (
-                  <span className="text-muted-foreground font-medium flex items-center gap-1">
-                    <span className="h-1.5 w-1.5 rounded-full bg-zinc-500" />
+                  <span className="text-muted-foreground font-medium flex items-center gap-1.5">
+                    <span className="h-2 w-2 rounded-sm bg-white border border-border/80 shadow-2xs" />
                     0 sets logged (No Workout / Untrained)
                   </span>
                 )}
@@ -678,28 +683,28 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
                   className="w-full flex flex-row justify-center gap-4 sm:gap-8 items-center"
                 >
                   {/* Anterior (Front) View */}
-                  <div className="flex flex-col items-center flex-1 max-w-[280px]">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-1.5">
+                  <div className="flex flex-col items-center flex-1 max-w-[310px]">
+                    <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-1.5">
                       <span className="h-1.5 w-1.5 rounded-full bg-primary" />
                       Front (Anterior)
                     </span>
                     <svg
                       viewBox={MALE_FRONT_VIEWBOX}
-                      className="w-full h-auto select-none max-h-[460px]"
+                      className="w-full h-auto select-none max-h-[520px]"
                     >
                       {frontParts.map(renderPart)}
                     </svg>
                   </div>
 
                   {/* Posterior (Back) View */}
-                  <div className="flex flex-col items-center flex-1 max-w-[280px]">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-1.5">
+                  <div className="flex flex-col items-center flex-1 max-w-[310px]">
+                    <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-1.5">
                       <span className="h-1.5 w-1.5 rounded-full bg-primary" />
                       Back (Posterior)
                     </span>
                     <svg
                       viewBox={MALE_BACK_VIEWBOX}
-                      className="w-full h-auto select-none max-h-[460px]"
+                      className="w-full h-auto select-none max-h-[520px]"
                     >
                       {backParts.map(renderPart)}
                     </svg>
@@ -714,14 +719,14 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
                   transition={{ duration: 0.35, ease: "easeInOut" }}
                   className="w-full flex justify-center items-center"
                 >
-                  <div className="flex flex-col items-center flex-1 max-w-[280px]">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-1.5">
+                  <div className="flex flex-col items-center flex-1 max-w-[350px]">
+                    <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-1.5">
                       <span className="h-1.5 w-1.5 rounded-full bg-primary" />
                       Front (Anterior)
                     </span>
                     <svg
                       viewBox={MALE_FRONT_VIEWBOX}
-                      className="w-full h-auto select-none max-h-[460px]"
+                      className="w-full h-auto select-none max-h-[550px]"
                     >
                       {frontParts.map(renderPart)}
                     </svg>
@@ -736,14 +741,14 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
                   transition={{ duration: 0.35, ease: "easeInOut" }}
                   className="w-full flex justify-center items-center"
                 >
-                  <div className="flex flex-col items-center flex-1 max-w-[280px]">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-1.5">
+                  <div className="flex flex-col items-center flex-1 max-w-[350px]">
+                    <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-1.5">
                       <span className="h-1.5 w-1.5 rounded-full bg-primary" />
                       Back (Posterior)
                     </span>
                     <svg
                       viewBox={MALE_BACK_VIEWBOX}
-                      className="w-full h-auto select-none max-h-[460px]"
+                      className="w-full h-auto select-none max-h-[550px]"
                     >
                       {backParts.map(renderPart)}
                     </svg>
@@ -753,23 +758,23 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
             </AnimatePresence>
           </div>
 
-          {/* Color Intensity Scale Legend */}
-          <div className="flex items-center gap-3 pt-6 text-[11px] text-muted-foreground flex-wrap justify-center border-t border-border/30 w-full mt-4 z-10">
-            <span className="font-semibold text-foreground/80">Activation Legend:</span>
-            {RED_HEATMAP_SCALE.map((item) => (
-              <div key={item.key} className="flex items-center gap-1.5">
-                <span
-                  className="h-3 w-3 rounded-sm border shadow-xs shrink-0"
+          {/* Color Intensity Scale Legend (Clean Heatmap Style matching user reference) */}
+          <div className="flex items-center justify-center gap-2.5 pt-5 border-t border-border/30 w-full mt-4 z-10 text-xs">
+            <span className="text-xs font-semibold text-muted-foreground">Less</span>
+            <div className="flex items-center gap-1.5">
+              {RED_HEATMAP_SCALE.map((item) => (
+                <div
+                  key={item.key}
+                  className="h-3.5 w-3.5 sm:h-4 sm:w-4 rounded-[4px] border shadow-2xs transition-transform hover:scale-120 cursor-pointer"
                   style={{
                     backgroundColor: item.color,
-                    borderColor: item.color === "#000000" ? "#3f3f46" : item.stroke,
+                    borderColor: item.color === "#ffffff" ? "#cbd5e1" : item.stroke,
                   }}
+                  title={item.label}
                 />
-                <span className={item.key === "no-workout" ? "font-semibold text-foreground/80" : ""}>
-                  {item.label}
-                </span>
-              </div>
-            ))}
+              ))}
+            </div>
+            <span className="text-xs font-semibold text-muted-foreground">More Intensity</span>
           </div>
         </div>
 
@@ -795,7 +800,7 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
                         <span
                           className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-md text-white shadow-xs"
                           style={{
-                            backgroundColor: getIntensityTier(muscleStats[selectedMuscle].intensity).color === "#000000"
+                            backgroundColor: getIntensityTier(muscleStats[selectedMuscle].intensity).color === "#ffffff"
                               ? "#27272a"
                               : getIntensityTier(muscleStats[selectedMuscle].intensity).color,
                           }}
@@ -1088,7 +1093,8 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
                     <span
                       className="h-2 w-2 rounded-full shrink-0"
                       style={{
-                        backgroundColor: isTrained ? tier.color : "#383842",
+                        backgroundColor: isTrained ? tier.color : "#ffffff",
+                        border: isTrained ? undefined : "1px solid #71717a",
                       }}
                     />
                     <span>{s.name.split(" ")[0]}</span>

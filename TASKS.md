@@ -191,5 +191,18 @@
   - Displayed high-contrast font-mono total points or hovered muscle group percentage cleanly in the center hole of the donut ring.
   - Added `min-w-0 flex-1` on legend breakdown rows to prevent awkward text truncation on mobile screens.
 
+---
+
+## 🎨 Phase 16: Pure White No-Workout & Minimal Heatmap-Style Legend
+- [x] **Task 16.1:** Pure White Untrained / No Workout Presentation (`src/components/charts/muscle-anatomy-map.tsx`):
+  - Changed No Workout / Untrained muscle fill to pure white (`#ffffff`) with crisp dark contour seams (`#18181b`), providing high contrast against the dark mannequin container while leaving worked muscles in the 5-tier red intensity scale.
+  - Updated live HUD badge, inspect tooltips, and chip selectors to reflect the clean white untrained styling.
+- [x] **Task 16.2:** Minimalist Heatmap-Style Intensity Legend (`src/components/charts/muscle-anatomy-map.tsx`):
+  - Replaced verbose text percentage labels with the clean `Less [box1] [box2] [box3] [box4] [box5] [box6] More Intensity` horizontal bar matching user reference.
+  - Added hover tooltips on each intensity box and interactive scale animations.
+- [x] **Task 16.3:** Enhanced Mannequin Proportions & Spacious Card Canvas (`src/components/charts/muscle-anatomy-map.tsx`):
+  - Increased mannequin max height and width (`max-w-[310px] max-h-[520px]` for dual view, `max-w-[350px] max-h-[550px]` for single view) and expanded container padding (`p-5 sm:p-7 min-h-[560px]`).
+
+
 
 
