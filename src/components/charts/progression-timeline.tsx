@@ -3,26 +3,19 @@
 import { useMemo, useState, useEffect } from "react"
 import type { Workout } from "@/lib/types"
 import {
-  Trophy,
-  Zap,
-  Plus,
-  Dumbbell,
-  Target,
-  Activity,
-  Flame,
-  ArrowUp,
-  Award,
-  Sparkles,
-  Medal,
-  Calendar,
-  TrendingUp,
-  CheckCircle2,
-  Trash2,
   LayoutGrid,
-  ListFilter,
   Clock,
 } from "lucide-react"
-import { AnimatedFlame, AnimatedTrophy, AnimatedDumbbell } from "@/components/ui/animated-icons"
+import {
+  EvilTrophy,
+  EvilStar,
+  EvilChart,
+  EvilCheck,
+  EvilCalendar,
+  EvilArrowUp,
+  EvilPlus,
+  EvilTrash,
+} from "@/components/ui/evil-icons"
 import soundManager from "@/lib/sounds"
 import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
@@ -201,7 +194,7 @@ export function ProgressionTimeline({ workouts }: { workouts: Workout[] }) {
                 })
               }
             } else {
-              // PR Improvement!
+              // PR Improvement
               const tier: MilestoneTier = currentTime >= 90 ? "diamond" : currentTime >= 45 ? "gold" : "silver"
               events.push({
                 id: `pr-${exName}-${w.date}-${index}`,
@@ -242,16 +235,16 @@ export function ProgressionTimeline({ workouts }: { workouts: Workout[] }) {
                 })
               }
             } else {
-              // PR Improvement!
+              // PR Improvement
               let tier: MilestoneTier = "silver"
               if (currentReps >= 25 || currentWeight >= 80) tier = "diamond"
               else if (currentReps >= 15 || currentWeight >= 40) tier = "gold"
 
               let impText = ""
               if (currentWeight > 0 && weightDelta > 0) {
-                impText = `+${weightDelta} kg weight personal record`
+                impText = `+${weightDelta} kg weight record`
               } else if (repDelta > 0) {
-                impText = `+${repDelta} reps over previous record`
+                impText = `+${repDelta} reps over record`
               } else {
                 impText = "New Personal Best"
               }
@@ -293,7 +286,7 @@ export function ProgressionTimeline({ workouts }: { workouts: Workout[] }) {
             type: "volume",
             tier: th >= 1000 ? "diamond" : th >= 500 ? "gold" : "silver",
             metricValue: `${th} Reps`,
-            improvementText: "Cumulative Volume Milestone",
+            improvementText: "Cumulative Volume",
           })
         }
       })
@@ -308,7 +301,7 @@ export function ProgressionTimeline({ workouts }: { workouts: Workout[] }) {
         events.push({
           id: `streak-count-${th}`,
           date: unlockDate,
-          title: `${th} Workout Sessions Completed`,
+          title: `${th} Sessions Completed`,
           exerciseName: "Consistency Club",
           category: "streak",
           type: "streak",
@@ -330,7 +323,7 @@ export function ProgressionTimeline({ workouts }: { workouts: Workout[] }) {
         type: "custom",
         tier: "custom",
         metricValue: m.metric || "Goal Reached",
-        improvementText: "Personal Achievement",
+        improvementText: "Personal Goal",
         isCustom: true,
       })
     })
@@ -391,92 +384,78 @@ export function ProgressionTimeline({ workouts }: { workouts: Workout[] }) {
     localStorage.setItem("progression-milestones", JSON.stringify(updated))
   }
 
-  // Tier styling helpers
-  const getTierStyles = (tier: MilestoneTier, category: string) => {
+  // Clean, high-end monochrome styling & Evil Icons
+  const getTierConfig = (tier: MilestoneTier, type: MilestoneItem["type"]) => {
+    if (type === "benchmark") {
+      return {
+        badgeText: "BENCHMARK",
+        badgeClass: "text-zinc-400 bg-white/[0.03] border-white/[0.06]",
+        icon: <EvilChart className="w-5 h-5 fill-current text-zinc-400 group-hover:text-zinc-200 transition-colors" />,
+      }
+    }
+
     switch (tier) {
       case "diamond":
         return {
-          cardBg: "bg-cyan-950/20 border-cyan-500/40 hover:border-cyan-400/80 shadow-cyan-950/20",
-          iconBg: "bg-cyan-500/15 text-cyan-400 border-cyan-500/30",
-          tierBadge: "bg-cyan-500/20 text-cyan-300 border-cyan-500/30",
-          tierName: "LEGENDARY PR",
-          icon: <Sparkles className="h-4 w-4 text-cyan-400" />,
+          badgeText: "LEGENDARY PR",
+          badgeClass: "text-white bg-white/[0.12] border-white/[0.2] font-semibold",
+          icon: <EvilStar className="w-5 h-5 fill-current text-zinc-100 group-hover:text-white transition-colors" />,
         }
       case "gold":
         return {
-          cardBg: "bg-amber-950/20 border-amber-500/40 hover:border-amber-400/80 shadow-amber-950/20",
-          iconBg: "bg-amber-500/15 text-amber-400 border-amber-500/30",
-          tierBadge: "bg-amber-500/20 text-amber-300 border-amber-500/30",
-          tierName: "GOLD RECORD",
-          icon: <Trophy className="h-4 w-4 text-amber-400" />,
+          badgeText: "GOLD RECORD",
+          badgeClass: "text-zinc-100 bg-white/[0.09] border-white/[0.16] font-semibold",
+          icon: <EvilTrophy className="w-5 h-5 fill-current text-zinc-200 group-hover:text-white transition-colors" />,
         }
       case "silver":
         return {
-          cardBg: "bg-purple-950/20 border-purple-500/40 hover:border-purple-400/80 shadow-purple-950/20",
-          iconBg: "bg-purple-500/15 text-purple-400 border-purple-500/30",
-          tierBadge: "bg-purple-500/20 text-purple-300 border-purple-500/30",
-          tierName: "NEW RECORD",
-          icon: <Medal className="h-4 w-4 text-purple-400" />,
+          badgeText: "NEW RECORD",
+          badgeClass: "text-zinc-200 bg-white/[0.07] border-white/[0.14] font-medium",
+          icon: <EvilTrophy className="w-5 h-5 fill-current text-zinc-300 group-hover:text-white transition-colors" />,
         }
       case "custom":
         return {
-          cardBg: "bg-emerald-950/20 border-emerald-500/40 hover:border-emerald-400/80 shadow-emerald-950/20",
-          iconBg: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
-          tierBadge: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
-          tierName: "GOAL ACHIEVED",
-          icon: <CheckCircle2 className="h-4 w-4 text-emerald-400" />,
+          badgeText: "CUSTOM GOAL",
+          badgeClass: "text-zinc-300 bg-white/[0.05] border-white/[0.1]",
+          icon: <EvilCheck className="w-5 h-5 fill-current text-zinc-300 group-hover:text-zinc-100 transition-colors" />,
         }
       case "bronze":
       default:
-        return {
-          cardBg: "bg-card/70 border-border/70 hover:border-primary/50 shadow-xs",
-          iconBg: "bg-primary/10 text-primary border-primary/20",
-          tierBadge: "bg-secondary text-muted-foreground border-border/50",
-          tierName: "MILESTONE",
-          icon: <Award className="h-4 w-4 text-primary" />,
+        if (type === "volume" || type === "streak") {
+          return {
+            badgeText: type === "streak" ? "STREAK" : "VOLUME",
+            badgeClass: "text-zinc-300 bg-white/[0.06] border-white/[0.12]",
+            icon: <EvilCheck className="w-5 h-5 fill-current text-zinc-300 group-hover:text-white transition-colors" />,
+          }
         }
-    }
-  }
-
-  const getCategoryColor = (cat: string) => {
-    switch (cat) {
-      case "push":
-        return "text-[#FE1E26] bg-[#FE1E26]/10 border-[#FE1E26]/25"
-      case "pull":
-        return "text-purple-400 bg-purple-500/10 border-purple-500/25"
-      case "legs":
-        return "text-emerald-400 bg-emerald-500/10 border-emerald-500/25"
-      case "core":
-        return "text-amber-400 bg-amber-500/10 border-amber-500/25"
-      case "streak":
-        return "text-orange-400 bg-orange-500/10 border-orange-500/25"
-      case "volume":
-        return "text-cyan-400 bg-cyan-500/10 border-cyan-500/25"
-      default:
-        return "text-muted-foreground bg-secondary/80 border-border/50"
+        return {
+          badgeText: "MILESTONE",
+          badgeClass: "text-zinc-400 bg-white/[0.04] border-white/[0.08]",
+          icon: <EvilChart className="w-5 h-5 fill-current text-zinc-400 group-hover:text-zinc-200 transition-colors" />,
+        }
     }
   }
 
   return (
     <div className="space-y-5">
-      {/* Top Banner & Quick Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/40 pb-4">
+      {/* Top Banner & Minimal Quick Controls */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/[0.07] pb-4">
         {/* Metric Summary Ribbon */}
         <div className="flex items-center gap-2 flex-wrap">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-secondary/40 border border-border/60 text-xs">
-            <Trophy className="h-3.5 w-3.5 text-amber-400 shrink-0" />
-            <span className="font-bold text-foreground">{summaryStats.totalCount}</span>
-            <span className="text-muted-foreground">Milestones Unlocked</span>
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/[0.03] border border-white/[0.07] text-xs">
+            <EvilTrophy className="w-3.5 h-3.5 fill-current text-zinc-300 shrink-0" />
+            <span className="font-semibold text-white">{summaryStats.totalCount}</span>
+            <span className="text-zinc-400">Milestones Unlocked</span>
           </div>
 
           {summaryStats.latestPR && (
-            <div className="hidden md:inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-primary/10 border border-primary/25 text-xs">
-              <TrendingUp className="h-3.5 w-3.5 text-primary shrink-0" />
-              <span className="text-muted-foreground">Latest PR:</span>
-              <span className="font-bold text-foreground truncate max-w-[150px]">
+            <div className="hidden md:inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-xs">
+              <EvilStar className="w-3.5 h-3.5 fill-current text-zinc-300 shrink-0" />
+              <span className="text-zinc-400">Latest PR:</span>
+              <span className="font-semibold text-white truncate max-w-[150px]">
                 {summaryStats.latestPR.exerciseName}
               </span>
-              <span className="text-primary font-semibold">({summaryStats.latestPR.metricValue})</span>
+              <span className="text-zinc-300 font-mono">({summaryStats.latestPR.metricValue})</span>
             </div>
           )}
         </div>
@@ -484,7 +463,7 @@ export function ProgressionTimeline({ workouts }: { workouts: Workout[] }) {
         {/* Action Controls: View Switcher & Add Milestone */}
         <div className="flex items-center gap-2 self-end sm:self-auto">
           {/* Layout Toggle: Grid vs Timeline */}
-          <div className="flex items-center gap-1 bg-secondary/50 p-1 rounded-xl border border-border/60">
+          <div className="flex items-center gap-1 bg-[#101014] p-1 rounded-xl border border-white/[0.08]">
             <button
               onClick={() => {
                 soundManager.play("click", 0.25)
@@ -493,8 +472,8 @@ export function ProgressionTimeline({ workouts }: { workouts: Workout[] }) {
               title="Cards Grid View"
               className={`p-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                 viewLayout === "grid"
-                  ? "bg-background text-foreground shadow-xs"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "bg-white text-zinc-950 shadow-xs"
+                  : "text-zinc-400 hover:text-white"
               }`}
             >
               <LayoutGrid className="h-3.5 w-3.5" />
@@ -507,8 +486,8 @@ export function ProgressionTimeline({ workouts }: { workouts: Workout[] }) {
               title="Vertical Timeline View"
               className={`p-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                 viewLayout === "timeline"
-                  ? "bg-background text-foreground shadow-xs"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "bg-white text-zinc-950 shadow-xs"
+                  : "text-zinc-400 hover:text-white"
               }`}
             >
               <Clock className="h-3.5 w-3.5" />
@@ -522,54 +501,54 @@ export function ProgressionTimeline({ workouts }: { workouts: Workout[] }) {
                 variant="outline"
                 size="sm"
                 onClick={() => soundManager.play("click", 0.3)}
-                className="rounded-xl border-primary/40 bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary transition-all text-xs font-semibold h-8 cursor-pointer shadow-xs"
+                className="rounded-xl border-white/[0.12] bg-white/[0.05] hover:bg-white/[0.1] text-zinc-100 hover:text-white transition-all text-xs font-medium h-8 px-3 cursor-pointer shadow-xs inline-flex items-center gap-1.5"
               >
-                <Plus className="h-3.5 w-3.5 mr-1.5" />
+                <EvilPlus className="w-3.5 h-3.5 fill-current" />
                 Add Milestone
               </Button>
             </DialogTrigger>
-            <DialogContent className="rounded-2xl border-border/80 bg-card shadow-2xl">
+            <DialogContent className="rounded-2xl border-white/[0.1] bg-[#101014] shadow-2xl">
               <DialogHeader>
-                <DialogTitle className="text-base font-bold flex items-center gap-2">
-                  <AnimatedTrophy className="h-4.5 w-4.5 text-primary" />
+                <DialogTitle className="text-base font-semibold text-white flex items-center gap-2">
+                  <EvilTrophy className="w-5 h-5 fill-current text-white" />
                   Add Custom Milestone
                 </DialogTitle>
-                <DialogDescription className="text-xs text-muted-foreground">
+                <DialogDescription className="text-xs text-zinc-400">
                   Record a major personal achievement, calisthenics skill unlock, or fitness goal.
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-3.5 mt-3">
                 <div className="space-y-1.5">
-                  <Label htmlFor="milestone-title" className="text-xs">Milestone Title</Label>
+                  <Label htmlFor="milestone-title" className="text-xs text-zinc-300">Milestone Title</Label>
                   <Input
                     id="milestone-title"
                     placeholder="e.g., 20 Clean Pull-ups or First Pistol Squat"
                     value={newMilestone.title}
                     onChange={(e) => setNewMilestone({ ...newMilestone, title: e.target.value })}
-                    className="rounded-xl text-xs"
+                    className="rounded-xl text-xs bg-white/[0.04] border-white/[0.1] text-white"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-2.5">
                   <div className="space-y-1.5">
-                    <Label htmlFor="milestone-metric" className="text-xs">Metric / Result (Optional)</Label>
+                    <Label htmlFor="milestone-metric" className="text-xs text-zinc-300">Metric / Result (Optional)</Label>
                     <Input
                       id="milestone-metric"
                       placeholder="e.g., 20 Reps or 60s"
                       value={newMilestone.metric}
                       onChange={(e) => setNewMilestone({ ...newMilestone, metric: e.target.value })}
-                      className="rounded-xl text-xs"
+                      className="rounded-xl text-xs bg-white/[0.04] border-white/[0.1] text-white"
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor="category" className="text-xs">Category</Label>
+                    <Label htmlFor="category" className="text-xs text-zinc-300">Category</Label>
                     <Select
                       value={newMilestone.category}
                       onValueChange={(val: any) => setNewMilestone({ ...newMilestone, category: val })}
                     >
-                      <SelectTrigger id="category" className="rounded-xl text-xs">
+                      <SelectTrigger id="category" className="rounded-xl text-xs bg-white/[0.04] border-white/[0.1] text-white">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="rounded-xl">
+                      <SelectContent className="rounded-xl bg-[#141418] border-white/[0.1] text-white">
                         <SelectItem value="legs">Legs</SelectItem>
                         <SelectItem value="push">Push</SelectItem>
                         <SelectItem value="pull">Pull</SelectItem>
@@ -580,16 +559,16 @@ export function ProgressionTimeline({ workouts }: { workouts: Workout[] }) {
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="milestone-date" className="text-xs">Date Achieved</Label>
+                  <Label htmlFor="milestone-date" className="text-xs text-zinc-300">Date Achieved</Label>
                   <Input
                     id="milestone-date"
                     type="date"
                     value={newMilestone.date}
                     onChange={(e) => setNewMilestone({ ...newMilestone, date: e.target.value })}
-                    className="rounded-xl text-xs"
+                    className="rounded-xl text-xs bg-white/[0.04] border-white/[0.1] text-white"
                   />
                 </div>
-                <Button onClick={handleAddMilestone} className="w-full rounded-xl font-bold mt-2 text-xs">
+                <Button onClick={handleAddMilestone} className="w-full rounded-xl font-semibold mt-2 text-xs bg-white text-zinc-950 hover:bg-zinc-200">
                   Save Milestone
                 </Button>
               </div>
@@ -598,46 +577,61 @@ export function ProgressionTimeline({ workouts }: { workouts: Workout[] }) {
         </div>
       </div>
 
-      {/* Category Filter Pills */}
+      {/* Modern Segmented Filter Pills */}
       <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
         <button
           onClick={() => {
             soundManager.play("click", 0.2)
             setActiveFilter("all")
           }}
-          className={`px-3 py-1 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+          className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all cursor-pointer whitespace-nowrap inline-flex items-center ${
             activeFilter === "all"
-              ? "bg-primary text-primary-foreground shadow-xs"
-              : "bg-secondary/50 text-muted-foreground hover:bg-secondary hover:text-foreground"
+              ? "bg-white text-zinc-950 font-semibold shadow-xs"
+              : "text-zinc-400 hover:text-white hover:bg-white/[0.05]"
           }`}
         >
-          All ({summaryStats.totalCount})
+          All
+          <span className={`text-[10px] px-1.5 py-0.2 rounded-full ml-1.5 ${
+            activeFilter === "all" ? "bg-zinc-200 text-zinc-950 font-bold" : "bg-zinc-800 text-zinc-400"
+          }`}>
+            {summaryStats.totalCount}
+          </span>
         </button>
         <button
           onClick={() => {
             soundManager.play("click", 0.2)
             setActiveFilter("pr")
           }}
-          className={`px-3 py-1 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+          className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all cursor-pointer whitespace-nowrap inline-flex items-center ${
             activeFilter === "pr"
-              ? "bg-amber-500 text-amber-950 font-bold shadow-xs"
-              : "bg-secondary/50 text-muted-foreground hover:bg-secondary hover:text-foreground"
+              ? "bg-white text-zinc-950 font-semibold shadow-xs"
+              : "text-zinc-400 hover:text-white hover:bg-white/[0.05]"
           }`}
         >
-          PR Records ({summaryStats.prCount})
+          PR Records
+          <span className={`text-[10px] px-1.5 py-0.2 rounded-full ml-1.5 ${
+            activeFilter === "pr" ? "bg-zinc-200 text-zinc-950 font-bold" : "bg-zinc-800 text-zinc-400"
+          }`}>
+            {summaryStats.prCount}
+          </span>
         </button>
         <button
           onClick={() => {
             soundManager.play("click", 0.2)
             setActiveFilter("volume")
           }}
-          className={`px-3 py-1 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+          className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all cursor-pointer whitespace-nowrap inline-flex items-center ${
             activeFilter === "volume"
-              ? "bg-cyan-500 text-cyan-950 font-bold shadow-xs"
-              : "bg-secondary/50 text-muted-foreground hover:bg-secondary hover:text-foreground"
+              ? "bg-white text-zinc-950 font-semibold shadow-xs"
+              : "text-zinc-400 hover:text-white hover:bg-white/[0.05]"
           }`}
         >
-          Volume & Consistency ({summaryStats.volumeCount})
+          Volume & Consistency
+          <span className={`text-[10px] px-1.5 py-0.2 rounded-full ml-1.5 ${
+            activeFilter === "volume" ? "bg-zinc-200 text-zinc-950 font-bold" : "bg-zinc-800 text-zinc-400"
+          }`}>
+            {summaryStats.volumeCount}
+          </span>
         </button>
         {summaryStats.customCount > 0 && (
           <button
@@ -645,69 +639,73 @@ export function ProgressionTimeline({ workouts }: { workouts: Workout[] }) {
               soundManager.play("click", 0.2)
               setActiveFilter("custom")
             }}
-            className={`px-3 py-1 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all cursor-pointer whitespace-nowrap inline-flex items-center ${
               activeFilter === "custom"
-                ? "bg-emerald-500 text-emerald-950 font-bold shadow-xs"
-                : "bg-secondary/50 text-muted-foreground hover:bg-secondary hover:text-foreground"
+                ? "bg-white text-zinc-950 font-semibold shadow-xs"
+                : "text-zinc-400 hover:text-white hover:bg-white/[0.05]"
             }`}
           >
-            Custom Goals ({summaryStats.customCount})
+            Custom Goals
+            <span className={`text-[10px] px-1.5 py-0.2 rounded-full ml-1.5 ${
+              activeFilter === "custom" ? "bg-zinc-200 text-zinc-950 font-bold" : "bg-zinc-800 text-zinc-400"
+            }`}>
+              {summaryStats.customCount}
+            </span>
           </button>
         )}
       </div>
 
       {/* Empty State */}
       {filteredMilestones.length === 0 ? (
-        <div className="flex flex-col items-center justify-center gap-3 py-12 text-center rounded-2xl border border-dashed border-border/70 bg-secondary/10 p-6">
-          <div className="h-12 w-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center">
-            <Trophy className="h-6 w-6" />
+        <div className="flex flex-col items-center justify-center gap-3 py-12 text-center rounded-2xl border border-dashed border-white/[0.1] bg-white/[0.02] p-6">
+          <div className="h-12 w-12 rounded-2xl bg-white/[0.05] border border-white/[0.1] text-zinc-300 flex items-center justify-center">
+            <EvilTrophy className="w-6 h-6 fill-current" />
           </div>
           <div>
-            <h4 className="text-sm font-bold text-foreground">No Milestones in this category</h4>
-            <p className="text-xs text-muted-foreground mt-1 max-w-sm">
-              Log higher sets and progressive reps in your workouts, or create your first milestone goal!
+            <h4 className="text-sm font-semibold text-white">No Milestones in this category</h4>
+            <p className="text-xs text-zinc-400 mt-1 max-w-sm">
+              Log higher sets and progressive reps in your workouts, or create your first milestone goal.
             </p>
           </div>
           <Button
             variant="outline"
             size="sm"
             onClick={() => setIsDialogOpen(true)}
-            className="rounded-xl mt-2 text-xs"
+            className="rounded-xl mt-2 text-xs border-white/[0.12] bg-white/[0.05] text-zinc-200 hover:text-white"
           >
-            <Plus className="h-3.5 w-3.5 mr-1" />
+            <EvilPlus className="w-3.5 h-3.5 fill-current mr-1" />
             Add First Milestone
           </Button>
         </div>
       ) : viewLayout === "grid" ? (
-        /* Modern 2-Column Responsive Cards Grid (Zero wasted space) */
+        /* High-Definition 2-Column Monochrome Cards Grid */
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
           <AnimatePresence mode="popLayout">
             {filteredMilestones.map((milestone, idx) => {
-              const styles = getTierStyles(milestone.tier, milestone.category)
-              const categoryColor = getCategoryColor(milestone.category)
+              const tierConfig = getTierConfig(milestone.tier, milestone.type)
 
               return (
                 <motion.div
                   key={milestone.id}
-                  initial={{ opacity: 0, y: 10 }}
+                  initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ duration: 0.2, delay: idx * 0.03 }}
-                  className={`rounded-2xl border p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg relative group ${styles.cardBg}`}
+                  exit={{ opacity: 0, scale: 0.96 }}
+                  transition={{ duration: 0.2, delay: idx * 0.02 }}
+                  className="rounded-2xl border border-white/[0.07] bg-[#0e0e11] hover:bg-[#131317] hover:border-white/[0.15] p-4 sm:p-4.5 transition-all duration-200 relative group shadow-sm"
                 >
                   {/* Card Header: Category Tag + Tier Pill + Date */}
-                  <div className="flex items-center justify-between gap-2 mb-2.5">
+                  <div className="flex items-center justify-between gap-2 mb-3">
                     <div className="flex items-center gap-1.5">
-                      <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider border ${categoryColor}`}>
+                      <span className="px-2 py-0.5 rounded text-[10px] font-mono font-semibold uppercase tracking-wider text-zinc-400 bg-white/[0.04] border border-white/[0.07]">
                         {milestone.category}
                       </span>
-                      <span className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wider border ${styles.tierBadge}`}>
-                        {styles.tierName}
+                      <span className={`px-2 py-0.5 rounded text-[10px] uppercase tracking-wider border ${tierConfig.badgeClass}`}>
+                        {tierConfig.badgeText}
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
-                      <Calendar className="h-3 w-3 opacity-60" />
+                    <div className="flex items-center gap-1.5 text-[11px] text-zinc-500 font-medium">
+                      <EvilCalendar className="w-3.5 h-3.5 fill-current text-zinc-500 shrink-0" />
                       <span>
                         {new Date(milestone.date).toLocaleDateString("en-US", {
                           month: "short",
@@ -719,26 +717,26 @@ export function ProgressionTimeline({ workouts }: { workouts: Workout[] }) {
                   </div>
 
                   {/* Main Card Content */}
-                  <div className="flex items-start gap-3.5 mt-1">
-                    {/* Glowing Tier Badge Icon */}
-                    <div className={`h-11 w-11 rounded-2xl flex items-center justify-center shrink-0 border shadow-xs transition-transform group-hover:scale-105 ${styles.iconBg}`}>
-                      {styles.icon}
+                  <div className="flex items-start gap-3.5">
+                    {/* Minimalist Icon Squircle with Evil Icons */}
+                    <div className="h-10 w-10 rounded-xl bg-white/[0.03] border border-white/[0.07] flex items-center justify-center shrink-0 group-hover:bg-white/[0.07] group-hover:border-white/[0.14] transition-all">
+                      {tierConfig.icon}
                     </div>
 
                     {/* Milestone Details */}
                     <div className="flex-1 min-w-0">
-                      <h4 className="text-base font-black text-foreground tracking-tight truncate group-hover:text-primary transition-colors">
+                      <h4 className="text-sm sm:text-base font-semibold text-zinc-100 group-hover:text-white tracking-tight truncate transition-colors">
                         {milestone.title}
                       </h4>
 
-                      <div className="flex items-baseline gap-2 mt-1 flex-wrap">
-                        <span className="text-lg font-black text-foreground tracking-tight">
+                      <div className="flex items-baseline gap-2 mt-1.5 flex-wrap">
+                        <span className="text-lg sm:text-xl font-bold text-white tracking-tight">
                           {milestone.metricValue}
                         </span>
 
                         {milestone.improvementText && (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
-                            <ArrowUp className="h-2.5 w-2.5" />
+                          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-zinc-300 bg-white/[0.04] px-2 py-0.5 rounded border border-white/[0.08]">
+                            <EvilArrowUp className="w-3 h-3 fill-current text-zinc-400 shrink-0" />
                             {milestone.improvementText}
                           </span>
                         )}
@@ -753,9 +751,9 @@ export function ProgressionTimeline({ workouts }: { workouts: Workout[] }) {
                           handleDeleteCustom(milestone.id)
                         }}
                         title="Delete Milestone"
-                        className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-muted-foreground hover:text-red-400 hover:bg-red-500/10 transition-all cursor-pointer"
+                        className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-zinc-500 hover:text-white hover:bg-white/[0.08] transition-all cursor-pointer"
                       >
-                        <Trash2 className="h-3.5 w-3.5" />
+                        <EvilTrash className="w-3.5 h-3.5 fill-current" />
                       </button>
                     )}
                   </div>
@@ -765,12 +763,11 @@ export function ProgressionTimeline({ workouts }: { workouts: Workout[] }) {
           </AnimatePresence>
         </div>
       ) : (
-        /* Polished Chronological Timeline View */
-        <div className="relative pl-6 space-y-4 before:absolute before:left-3 before:top-2 before:bottom-2 before:w-0.5 before:bg-border/60">
+        /* Minimalist Chronological Timeline View */
+        <div className="relative pl-6 space-y-4 before:absolute before:left-3 before:top-2 before:bottom-2 before:w-px before:bg-white/[0.08]">
           <AnimatePresence mode="popLayout">
             {filteredMilestones.map((milestone, idx) => {
-              const styles = getTierStyles(milestone.tier, milestone.category)
-              const categoryColor = getCategoryColor(milestone.category)
+              const tierConfig = getTierConfig(milestone.tier, milestone.type)
 
               return (
                 <motion.div
@@ -778,26 +775,26 @@ export function ProgressionTimeline({ workouts }: { workouts: Workout[] }) {
                   initial={{ opacity: 0, x: -8 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0 }}
-                  transition={{ duration: 0.2, delay: idx * 0.03 }}
+                  transition={{ duration: 0.2, delay: idx * 0.02 }}
                   className="relative group"
                 >
-                  {/* Glowing Timeline Node */}
-                  <div className={`absolute -left-[30px] top-4 h-6 w-6 rounded-full border-2 border-background flex items-center justify-center shadow-xs transition-transform group-hover:scale-125 ${styles.iconBg}`}>
-                    <div className="h-2 w-2 rounded-full bg-current" />
+                  {/* Minimalist Timeline Node */}
+                  <div className="absolute -left-[30px] top-4 h-6 w-6 rounded-full border border-white/[0.12] bg-[#0e0e11] flex items-center justify-center shadow-xs transition-transform group-hover:scale-110">
+                    <div className="h-1.5 w-1.5 rounded-full bg-zinc-300" />
                   </div>
 
                   {/* Card Content */}
-                  <div className={`rounded-2xl border p-4 transition-all duration-200 hover:shadow-md ${styles.cardBg}`}>
-                    <div className="flex items-center justify-between gap-2 mb-1.5">
+                  <div className="rounded-2xl border border-white/[0.07] bg-[#0e0e11] hover:bg-[#131317] hover:border-white/[0.15] p-4 transition-all duration-200">
+                    <div className="flex items-center justify-between gap-2 mb-2">
                       <div className="flex items-center gap-1.5">
-                        <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider border ${categoryColor}`}>
+                        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-semibold uppercase tracking-wider text-zinc-400 bg-white/[0.04] border border-white/[0.07]">
                           {milestone.category}
                         </span>
-                        <span className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wider border ${styles.tierBadge}`}>
-                          {styles.tierName}
+                        <span className={`px-2 py-0.5 rounded text-[10px] uppercase tracking-wider border ${tierConfig.badgeClass}`}>
+                          {tierConfig.badgeText}
                         </span>
                       </div>
-                      <span className="text-[11px] text-muted-foreground">
+                      <span className="text-[11px] text-zinc-500 font-medium">
                         {new Date(milestone.date).toLocaleDateString("en-US", {
                           month: "short",
                           day: "numeric",
@@ -808,15 +805,15 @@ export function ProgressionTimeline({ workouts }: { workouts: Workout[] }) {
 
                     <div className="flex items-center justify-between gap-3">
                       <div>
-                        <h4 className="text-sm font-bold text-foreground">{milestone.title}</h4>
+                        <h4 className="text-sm font-semibold text-zinc-100">{milestone.title}</h4>
                         {milestone.improvementText && (
-                          <span className="text-xs text-muted-foreground block mt-0.5">
+                          <span className="text-xs text-zinc-400 block mt-0.5">
                             {milestone.improvementText}
                           </span>
                         )}
                       </div>
                       <div className="text-right shrink-0">
-                        <span className="text-base font-black text-foreground">{milestone.metricValue}</span>
+                        <span className="text-base font-bold text-white tracking-tight">{milestone.metricValue}</span>
                       </div>
                     </div>
                   </div>
