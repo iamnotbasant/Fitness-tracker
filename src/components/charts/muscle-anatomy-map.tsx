@@ -223,14 +223,15 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
     return stats
   }, [workouts, exercises])
 
-  // Exact 5-level Red Heatmap Scale from user specification:
+  // Exact 5-level Red Heatmap Scale + Black for No Workout:
+  // No Workout: #000000 (Pure Black)
   // Very Low (0–10%): #FCD3D3
   // Low (10–40%): #FE9997
   // Moderate (40–70%): #FD5F5F
   // High (70–90%): #FE1E26
   // Very High (90–100%): #840004
   const getIntensityColor = (intensity: number) => {
-    if (intensity <= 0) return "#18181b"
+    if (intensity <= 0) return "#000000"    // Black for No Workout
     if (intensity <= 0.10) return "#FCD3D3" // Very Low (0–10%)
     if (intensity <= 0.40) return "#FE9997" // Low (10–40%)
     if (intensity <= 0.70) return "#FD5F5F" // Moderate (40–70%)
@@ -241,13 +242,11 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
   // Get fill color for a muscle based on its intensity
   const getFillColor = (slug: string, isHovered: boolean, isSelected: boolean) => {
     if (NEUTRAL_SLUGS.has(slug)) {
-      if (slug === "hair") return "#121214"
-      if (slug === "head") return "#1c1c1f"
-      return "#18181b"
+      return "#000000"
     }
 
     const muscleKey = slugToMuscleKey(slug)
-    if (!muscleKey) return "#18181b"
+    if (!muscleKey) return "#000000"
 
     const stat = muscleStats[muscleKey]
     const intensity = stat?.intensity ?? 0
@@ -256,7 +255,7 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
       return intensity > 0 ? "#FE1E26" : "#ffffff"
     }
     if (isHovered) {
-      return intensity > 0 ? "#FD5F5F" : "#3f3f46"
+      return intensity > 0 ? "#FD5F5F" : "#222226"
     }
 
     return getIntensityColor(intensity)
@@ -265,8 +264,7 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
   const getStrokeColor = (slug: string, isHovered: boolean, isSelected: boolean) => {
     if (isSelected) return "#ffffff"
     if (isHovered) return "#FE1E26"
-    if (NEUTRAL_SLUGS.has(slug)) return "#27272a"
-    return "#222226"
+    return "#28282e"
   }
 
   const selectedStat = selectedMuscle ? muscleStats[selectedMuscle] : null
@@ -389,7 +387,7 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
       {/* Main Grid: Body Map + Muscle Inspector */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Anatomical Models Container */}
-        <div className="lg:col-span-7 flex flex-col items-center justify-center p-4 sm:p-6 rounded-2xl bg-[#08080a] border border-border/60">
+        <div className="lg:col-span-7 flex flex-col items-center justify-center p-4 sm:p-6 rounded-2xl bg-[#0e0e12] border border-border/60">
           <div className="w-full [perspective:1000px]">
             <AnimatePresence mode="wait">
               {activeView === "both" ? (
@@ -481,8 +479,8 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
           <div className="flex items-center gap-3.5 pt-6 text-[11px] text-muted-foreground flex-wrap justify-center border-t border-border/30 w-full mt-4">
             <span className="font-semibold text-foreground/80">Activation Legend:</span>
             <div className="flex items-center gap-1.5">
-              <span className="h-3 w-3 rounded-sm bg-[#18181b] border border-[#27272a]" />
-              <span>Unworked</span>
+              <span className="h-3 w-3 rounded-sm bg-[#000000] border border-[#3f3f46]" />
+              <span>No Workout</span>
             </div>
             {RED_HEATMAP_SCALE.map((item) => (
               <div key={item.key} className="flex items-center gap-1.5">

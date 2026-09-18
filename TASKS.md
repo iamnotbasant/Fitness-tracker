@@ -122,22 +122,20 @@
 
 ## 🎨 Phase 11: Exact 5-Tier Red Intensity Scale on Muscle Map & Heatmap
 - [x] **Task 11.1:** Revert `WorkoutHeatmap` (`src/components/charts/workout-heatmap.tsx`) back to original consistency grid themes (`flame`, `emerald`, `monochrome`).
-- [x] **Task 11.2:** Implement exact 5-Tier Red Heatmap Scale in `MuscleAnatomyMap` (`src/components/charts/muscle-anatomy-map.tsx`) per user reference:
+- [x] **Task 11.2:** Implement exact 5-Tier Red Heatmap Scale + Pure Black No Workout in `MuscleAnatomyMap` (`src/components/charts/muscle-anatomy-map.tsx`) per user reference:
   - **Color Palette & Intensity Brackets:**
-    1. **Very Low (0–10%):** `#FCD3D3` (Light Blush Pink)
-    2. **Low (10–40%):** `#FE9997` (Soft Rose Coral)
-    3. **Moderate (40–70%):** `#FD5F5F` (Vibrant Coral Red)
-    4. **High (70–90%):** `#FE1E26` (Bright Flame Red / Scarlet)
-    5. **Very High (90–100%):** `#840004` (Deep Crimson / Dark Burgundy Red)
-    - **Unworked (0%):** `#18181b` (Dark Slate / Charcoal)
-  - **Dynamic SVG Fills & Borders:**
+    1. **No Workout (0%):** Pure Black (`#000000`) with `#28282e` anatomical stroke contours
+    2. **Very Low (0–10%):** `#FCD3D3` (Light Blush Pink)
+    3. **Low (10–40%):** `#FE9997` (Soft Rose Coral)
+    4. **Moderate (40–70%):** `#FD5F5F` (Vibrant Coral Red)
+    5. **High (70–90%):** `#FE1E26` (Bright Flame Red / Scarlet)
+    6. **Very High (90–100%):** `#840004` (Deep Crimson / Dark Burgundy Red)
+  - **Dynamic SVG Fills & Mannequin Contrast:**
     - Active muscles filled with exact gradient colors based on volume percentage (`sets / maxSets`).
-    - Muscle borders delineated with dark `#222226` strokes, hovered with `#FE1E26`, and selected with `#ffffff`.
+    - Unworked muscles and neutral anatomical elements set to pure black (`#000000`).
+    - Container background styled with elevated dark graphite (`#0e0e12`) so the black mannequin silhouette and `#28282e` anatomical divider strokes are distinct and sharp.
+    - Muscle borders delineated with dark `#28282e` strokes, hovered with `#FE1E26`, and selected with `#ffffff`.
   - **Clean UI & Activation Legend:**
     - Kept header focused with clean View Mode switcher (`Both Views`, `Front (Anterior)`, `Back (Posterior)`).
-    - Rendered Activation Legend with the 5 exact percentage tiers and swatches matching reference image.
+    - Activation Legend displays the pure black chip (`#000000` with `#3f3f46` border) labeled "No Workout" alongside the 5 percentage tiers.
     - Synchronized Heat Intensity Gauge in muscle inspector and Top Worked Muscle Groups bars with the exact 5 red shades.
-
-
-
-
