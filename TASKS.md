@@ -173,3 +173,14 @@
   - In `addSet`: Initialized new sets with `reps: undefined` and `timeSeconds: undefined`.
   - In `src/components/workout/workout-edit-dialog.tsx`: Replaced hardcoded `reps: 10` fallback with `reps: undefined` for newly added sets.
 
+---
+
+## 📊 Phase 14: Workout Confirmation Dialog Performance & Timing UX
+- [x] **Task 14.1:** Start Time Label & Clarity (`src/components/workout/workout-confirmation-dialog.tsx`, `src/components/workout/workout-edit-dialog.tsx`):
+  - Renamed vague "Time" label to explicit "Start Time" reflecting the session's actual starting timestamp.
+- [x] **Task 14.2:** Total Reps & Total Points Real-time Metrics (`src/components/workout/workout-confirmation-dialog.tsx`):
+  - Added real-time calculation and presentation for `Total Reps` across all completed sets.
+  - Added algorithmic `Total Points` calculation adhering to calibrated exercise multipliers (timer, weighted, and bodyweight levels).
+  - Designed clean, high-contrast performance metrics HUD cards with instant live updates whenever set details are edited or modified in the modal.
+
+

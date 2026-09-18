@@ -136,7 +136,7 @@ export default function WorkoutEditDialog({ open, onClose, onSave, workout }: Pr
               />
             </div>
             <div>
-              <div className="text-xs text-muted-foreground mb-1">Time</div>
+              <div className="text-xs text-muted-foreground mb-1">Start Time</div>
               <input
                 type="time"
                 value={editableTime}

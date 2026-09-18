@@ -96,6 +96,33 @@ export default function WorkoutConfirmationDialog({ open, onClose, onConfirm, ex
 
   const totalSets = editableExercises.reduce((acc, ex) => acc + ex.sets.filter(s => s.done).length, 0)
 
+  const totalReps = editableExercises.reduce((acc, ex) => {
+    return acc + ex.sets.filter(s => s.done).reduce((setAcc, s) => setAcc + (s.reps || 0), 0)
+  }, 0)
+
+  const totalPoints = editableExercises.reduce((acc, ex) => {
+    const exRecord = exercisesList?.find(e => e.id === ex.exerciseId)
+    const isTimer = exRecord?.type === "timer"
+    const isWeighted = exRecord?.type === "weighted"
+    const level = exRecord?.level || ex.level || 1
+    
+    const exPoints = ex.sets.filter(s => s.done).reduce((setAcc, s) => {
+      if (isTimer) {
+        const sec = s.timeSeconds || 0
+        return setAcc + Math.round((sec / 5) * level)
+      } else if (isWeighted || (s.weight && s.weight > 0)) {
+        const w = s.weight || 0
+        const r = s.reps || 0
+        return setAcc + Math.round(w * r * level)
+      } else {
+        const r = s.reps || 0
+        return setAcc + Math.round(r * level)
+      }
+    }, 0)
+    
+    return acc + exPoints
+  }, 0)
+
   const handleSave = () => {
     if (isSaving) return
     setIsSaving(true)
@@ -140,30 +167,30 @@ export default function WorkoutConfirmationDialog({ open, onClose, onConfirm, ex
 
         <div className="p-6 space-y-6">
           {/* Workout Summary */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 rounded-xl border bg-muted/30 p-4">
-            <div>
-              <div className="text-xs text-muted-foreground mb-1">Date</div>
-              <input
-                type="date"
-                value={editableDate}
-                onChange={(e) => setEditableDate(e.target.value)}
-                disabled={isSaving}
-                className="w-full rounded-lg border bg-background px-2 py-1 text-sm font-medium outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
-              />
-            </div>
-            <div>
-              <div className="text-xs text-muted-foreground mb-1">Time</div>
-              <input
-                type="time"
-                value={editableTime}
-                onChange={(e) => setEditableTime(e.target.value)}
-                disabled={isSaving}
-                className="w-full rounded-lg border bg-background px-2 py-1 text-sm font-medium outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
-              />
-            </div>
-            <div>
-              <div className="text-xs text-muted-foreground mb-1">Duration (MM:SS)</div>
-              <div className="flex items-center gap-1">
+          <div className="rounded-xl border bg-muted/30 p-4 space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <div className="text-xs font-medium text-muted-foreground mb-1">Date</div>
+                <input
+                  type="date"
+                  value={editableDate}
+                  onChange={(e) => setEditableDate(e.target.value)}
+                  disabled={isSaving}
+                  className="w-full rounded-lg border bg-background px-2.5 py-1.5 text-sm font-medium outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                />
+              </div>
+              <div>
+                <div className="text-xs font-medium text-muted-foreground mb-1">Start Time</div>
+                <input
+                  type="time"
+                  value={editableTime}
+                  onChange={(e) => setEditableTime(e.target.value)}
+                  disabled={isSaving}
+                  className="w-full rounded-lg border bg-background px-2.5 py-1.5 text-sm font-medium outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                />
+              </div>
+              <div>
+                <div className="text-xs font-medium text-muted-foreground mb-1">Duration (MM:SS)</div>
                 <input
                   type="text"
                   value={formatDuration(editableDuration)}
@@ -172,14 +199,26 @@ export default function WorkoutConfirmationDialog({ open, onClose, onConfirm, ex
                     setEditableDuration(newDuration)
                   }}
                   disabled={isSaving}
-                  className="w-20 rounded-lg border bg-background px-2 py-1 text-sm font-medium outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full rounded-lg border bg-background px-2.5 py-1.5 text-sm font-medium outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
                   placeholder="0:00"
                 />
               </div>
             </div>
-            <div>
-              <div className="text-xs text-muted-foreground mb-1">Total Sets</div>
-              <div className="font-medium">{totalSets}</div>
+
+            {/* Live Performance Metrics */}
+            <div className="grid grid-cols-3 gap-3 pt-3 border-t border-border/50">
+              <div className="rounded-xl border border-border/60 bg-background/50 p-2.5 text-center shadow-2xs">
+                <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Total Sets</div>
+                <div className="text-lg font-bold font-mono text-foreground mt-0.5">{totalSets}</div>
+              </div>
+              <div className="rounded-xl border border-border/60 bg-background/50 p-2.5 text-center shadow-2xs">
+                <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Total Reps</div>
+                <div className="text-lg font-bold font-mono text-foreground mt-0.5">{totalReps}</div>
+              </div>
+              <div className="rounded-xl border border-primary/30 bg-primary/10 p-2.5 text-center shadow-2xs">
+                <div className="text-[11px] font-semibold uppercase tracking-wider text-primary">Total Points</div>
+                <div className="text-lg font-bold font-mono text-primary mt-0.5">+{totalPoints}</div>
+              </div>
             </div>
           </div>
 
