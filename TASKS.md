@@ -120,22 +120,24 @@
 
 ---
 
-## 🎨 Phase 11: High-Contrast Multi-Palette Shading on Muscle Map & Heatmap
+## 🎨 Phase 11: Exact 5-Tier Red Intensity Scale on Muscle Map & Heatmap
 - [x] **Task 11.1:** Revert `WorkoutHeatmap` (`src/components/charts/workout-heatmap.tsx`) back to original consistency grid themes (`flame`, `emerald`, `monochrome`).
-- [x] **Task 11.2:** Add Multi-Palette Switcher (`Thermal`, `Fire`, `Neon`) in `MuscleAnatomyMap` (`src/components/charts/muscle-anatomy-map.tsx`):
-  - **Thermal Spectrum (Default - Max Contrast):**
-    - Level 1: `#06b6d4` (Electric Cyan - 1-2 sets)
-    - Level 2: `#10b981` (Emerald Mint - 3-4 sets)
-    - Level 3: `#facc15` (Radiant Solar Yellow - 5-6 sets)
-    - Level 4: `#f97316` (Vivid Fiery Orange - 7-8 sets)
-    - Level 5: `#ef4444` (Crimson Red - 9-11 sets)
-    - Level 6: `#a855f7` (Electric Violet - 12+ sets / Overload)
-  - **High-Contrast Fire (Pure Warm Gradient):**
-    - Level 1: `#fef08a` (Pale Lemon Cream) ➔ Level 2: `#f59e0b` (Golden Amber) ➔ Level 3: `#ea580c` (Burning Orange) ➔ Level 4: `#dc2626` (Blood Red) ➔ Level 5: `#991b1b` (Deep Burgundy) ➔ Level 6: `#581c87` (Obsidian Plum)
-  - **Cyberpunk Neon (Modern High-Tech):**
-    - Level 1: `#38bdf8` (Ice Sky Blue) ➔ Level 2: `#4ade80` (Neon Lime) ➔ Level 3: `#fde047` (Electric Yellow) ➔ Level 4: `#f43f5e` (Neon Coral) ➔ Level 5: `#d946ef` (Hot Fuchsia) ➔ Level 6: `#8b5cf6` (Ultraviolet)
-  - Added real-time palette toggle buttons (`Thermal`, `Fire`, `Neon`) in the header next to View mode buttons.
-  - Dynamically synchronized the Anatomical SVG body model, Activation Legend, Heat Intensity Gauge, and Top Worked Muscle Groups bars with the selected palette.
+- [x] **Task 11.2:** Implement exact 5-Tier Red Heatmap Scale in `MuscleAnatomyMap` (`src/components/charts/muscle-anatomy-map.tsx`) per user reference:
+  - **Color Palette & Intensity Brackets:**
+    1. **Very Low (0–10%):** `#FCD3D3` (Light Blush Pink)
+    2. **Low (10–40%):** `#FE9997` (Soft Rose Coral)
+    3. **Moderate (40–70%):** `#FD5F5F` (Vibrant Coral Red)
+    4. **High (70–90%):** `#FE1E26` (Bright Flame Red / Scarlet)
+    5. **Very High (90–100%):** `#840004` (Deep Crimson / Dark Burgundy Red)
+    - **Unworked (0%):** `#18181b` (Dark Slate / Charcoal)
+  - **Dynamic SVG Fills & Borders:**
+    - Active muscles filled with exact gradient colors based on volume percentage (`sets / maxSets`).
+    - Muscle borders delineated with dark `#222226` strokes, hovered with `#FE1E26`, and selected with `#ffffff`.
+  - **Clean UI & Activation Legend:**
+    - Kept header focused with clean View Mode switcher (`Both Views`, `Front (Anterior)`, `Back (Posterior)`).
+    - Rendered Activation Legend with the 5 exact percentage tiers and swatches matching reference image.
+    - Synchronized Heat Intensity Gauge in muscle inspector and Top Worked Muscle Groups bars with the exact 5 red shades.
+
 
 
 
