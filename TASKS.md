@@ -140,8 +140,21 @@
     - Active muscles filled with the exact 5 red tiers with dynamic glow drop-shadow filters (`drop-shadow(0 0 5px rgba(254, 30, 38, 0.45))`).
     - Ambient backdrop styling with radial illumination gradient (`#14141a` to `#0d0d12`) making obsidian body plates visually distinct.
   - **Interactive Trained vs Untrained HUD & Quick Filters:**
-    - Added top training status badge (`Trained: X/16 (Y%) · Untrained: Z/16`).
-    - Added 1-click filter buttons: `All`, `Trained`, and `Untrained` to instantly dim or highlight muscles.
-    - Added dynamic Live Hover Bar directly above the mannequin showing muscle name, logged sets, reps, and tier.
-    - Enhanced inspector with recommended exercise suggestions for unworked muscles to help users balance their routine.
+---
 
+## 🏆 Phase 12: Milestones & Athletic Achievements Overhaul
+- [x] **Task 12.1:** Eliminate Clutter & Monotony in Milestones Showcase (`src/components/charts/progression-timeline.tsx`):
+  - **Zero Redundant Clutter:** Removed repetitive title/subtitle duplication (e.g. no more duplicate "Walking Lunges" printed directly under "Achieved 12 reps Walking Lunges").
+  - **Intelligent Benchmark & PR Engine:** Filtered out trivial single-digit spam (e.g. 2 casual bicep curls); now recognizes real Personal Records with improvement deltas (e.g. `+4 reps over previous best`) and initial benchmarks ($\ge 5$ reps or weighted).
+  - **Tiered Glowing Achievement Badges:** Added distinct visual tiers:
+    - **Legendary / Diamond:** `bg-cyan-950/20 border-cyan-500/40 text-cyan-400` with Sparkles
+    - **Gold Record:** `bg-amber-950/20 border-amber-500/40 text-amber-400` with Trophy
+    - **New Record / Silver:** `bg-purple-950/20 border-purple-500/40 text-purple-400` with Medal
+    - **Milestone / Bronze:** `bg-card/70 border-border/70 text-primary` with Award
+    - **Custom Goals:** `bg-emerald-950/20 border-emerald-500/40 text-emerald-400` with CheckCircle
+  - **Dynamic Card Grid & Timeline Layout Switcher:**
+    - Responsive 2-column card grid on desktop/tablets, eliminating the vast empty black void and filling the screen with purposeful glassmorphic cards.
+    - Added 1-click toggle between **Showcase Grid** and **Vertical Timeline**.
+  - **Summary Ribbon & Category Filters:**
+    - Top summary ribbon showing total milestones unlocked and latest PR record.
+    - 1-click filter pills: `All`, `PR Records`, `Volume & Consistency`, and `Custom Goals`.
