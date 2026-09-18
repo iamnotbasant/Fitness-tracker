@@ -205,7 +205,9 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
     const maxSets = Math.max(1, ...Object.values(stats).map((s) => s.sets))
     Object.values(stats).forEach((s) => {
       if (s.sets > 0) {
-        s.intensity = Math.min(1, Math.max(0.2, s.sets / maxSets))
+        const relativeIntensity = s.sets / maxSets
+        const absoluteIntensity = Math.min(1, s.sets / 12)
+        s.intensity = maxSets >= 8 ? relativeIntensity : Math.max(relativeIntensity * 0.75, absoluteIntensity)
       } else {
         s.intensity = 0
       }
@@ -214,7 +216,24 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
     return stats
   }, [workouts, exercises])
 
-  // Get color for a muscle based on its intensity (Animated Workout Heatmap: Gray -> Yellow -> Orange -> Red)
+  // Exact 6-step Warm Gradient Color Scheme from Schemecolor.com:
+  // 1: #F2E03F (Canary Yellow)
+  // 2: #EFC03A (Warm Golden Yellow)
+  // 3: #ECA035 (Amber Gold)
+  // 4: #E8812F (Warm Tangerine Orange)
+  // 5: #E5612A (Fiery Deep Orange)
+  // 6: #E24125 (Crimson Flame Red)
+  const getIntensityColor = (intensity: number) => {
+    if (intensity <= 0) return "#18181b"
+    if (intensity <= 0.20) return "#F2E03F" // Level 1 (Canary Yellow)
+    if (intensity <= 0.40) return "#EFC03A" // Level 2 (Warm Golden Yellow)
+    if (intensity <= 0.60) return "#ECA035" // Level 3 (Amber Gold)
+    if (intensity <= 0.80) return "#E8812F" // Level 4 (Warm Tangerine Orange)
+    if (intensity <= 0.95) return "#E5612A" // Level 5 (Fiery Deep Orange)
+    return "#E24125"                         // Level 6 (Crimson Flame Red - Peak)
+  }
+
+  // Get color for a muscle based on its intensity (Warm Gradient: #F2E03F -> #E24125)
   const getFillColor = (slug: string, isHovered: boolean, isSelected: boolean) => {
     if (NEUTRAL_SLUGS.has(slug)) {
       if (slug === "hair") return "#121214"
@@ -229,24 +248,13 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
     const intensity = stat?.intensity ?? 0
 
     if (isSelected) {
-      return intensity > 0 ? "#ef4444" : "#ffffff"
+      return intensity > 0 ? "#E24125" : "#ffffff"
     }
     if (isHovered) {
-      return intensity > 0 ? "#fb923c" : "#3f3f46"
+      return intensity > 0 ? "#E8812F" : "#3f3f46"
     }
 
-    if (intensity === 0) {
-      return "#18181b" // Neutral dark body fill
-    }
-
-    // Smooth workout color scale (no glow, crisp fills)
-    if (intensity < 0.35) {
-      return "#eab308" // Yellow (Light activation)
-    } else if (intensity < 0.7) {
-      return "#f97316" // Orange (Moderate activation)
-    } else {
-      return "#ef4444" // Red (High activation)
-    }
+    return getIntensityColor(intensity)
   }
 
   const getStrokeColor = (slug: string, isHovered: boolean, isSelected: boolean) => {
@@ -465,23 +473,35 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
           </div>
 
           {/* Color Intensity Scale Legend */}
-          <div className="flex items-center gap-4 pt-6 text-[11px] text-muted-foreground flex-wrap justify-center border-t border-border/30 w-full mt-4">
+          <div className="flex items-center gap-3.5 pt-6 text-[11px] text-muted-foreground flex-wrap justify-center border-t border-border/30 w-full mt-4">
             <span className="font-semibold text-foreground/80">Activation Legend:</span>
             <div className="flex items-center gap-1.5">
               <span className="h-3 w-3 rounded-sm bg-[#18181b] border border-[#27272a]" />
               <span>Unworked</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="h-3 w-3 rounded-sm bg-[#eab308]" />
-              <span>Light (1-4 sets)</span>
+              <span className="h-3 w-3 rounded-sm bg-[#F2E03F] border border-[#EFC03A]/60" />
+              <span>Low (1-2 sets)</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="h-3 w-3 rounded-sm bg-[#f97316]" />
-              <span>Moderate (5-9 sets)</span>
+              <span className="h-3 w-3 rounded-sm bg-[#EFC03A] border border-[#ECA035]/60" />
+              <span>Light (3-4 sets)</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="h-3 w-3 rounded-sm bg-[#ef4444]" />
-              <span>High (10+ sets)</span>
+              <span className="h-3 w-3 rounded-sm bg-[#ECA035] border border-[#E8812F]/60" />
+              <span>Moderate (5-6 sets)</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="h-3 w-3 rounded-sm bg-[#E8812F] border border-[#E5612A]/60" />
+              <span>Solid (7-8 sets)</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="h-3 w-3 rounded-sm bg-[#E5612A] border border-[#E24125]/60" />
+              <span>High (9-11 sets)</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="h-3 w-3 rounded-sm bg-[#E24125] border border-[#c53018]" />
+              <span>Peak (12+ sets)</span>
             </div>
           </div>
         </div>
@@ -542,14 +562,7 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
                       className="h-full rounded-full transition-all duration-500"
                       style={{
                         width: `${Math.max(4, Math.round(selectedStat.intensity * 100))}%`,
-                        backgroundColor:
-                          selectedStat.intensity === 0
-                            ? "#27272a"
-                            : selectedStat.intensity < 0.35
-                            ? "#eab308"
-                            : selectedStat.intensity < 0.7
-                            ? "#f97316"
-                            : "#ef4444",
+                        backgroundColor: getIntensityColor(selectedStat.intensity),
                       }}
                     />
                   </div>
@@ -665,8 +678,11 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
                             </div>
                             <div className="h-1.5 w-full rounded-full bg-secondary overflow-hidden">
                               <div
-                                className="h-full rounded-full bg-primary transition-all duration-500"
-                                style={{ width: `${pct}%` }}
+                                className="h-full rounded-full transition-all duration-500"
+                                style={{
+                                  width: `${pct}%`,
+                                  backgroundColor: getIntensityColor(m.intensity),
+                                }}
                               />
                             </div>
                           </div>

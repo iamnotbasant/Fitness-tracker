@@ -14,7 +14,7 @@ interface DayData {
   isFuture?: boolean
 }
 
-type Palette = "warm" | "emerald" | "monochrome"
+type Palette = "emerald" | "flame" | "monochrome"
 export type HeatmapRange = "4w" | "12w" | "26w" | "52w" | "all"
 
 const toLocalDateStr = (d: Date) => {
@@ -25,7 +25,7 @@ const toLocalDateStr = (d: Date) => {
 }
 
 export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
-  const [palette, setPalette] = useState<Palette>("warm")
+  const [palette, setPalette] = useState<Palette>("flame")
   const scrollContainerRef = useRef<HTMLDivElement>(null)
 
   const earliestWorkoutDate = useMemo(() => {
@@ -254,103 +254,16 @@ export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
     }
   }, [heatmapData.length, range])
 
-  // 6-Level Thresholds for color scale
+  // Thresholds for color scale
   const levelThresholds = useMemo(() => {
-    const volumes = heatmapData
-      .flat()
-      .map((d) => d.volume)
-      .filter((v) => v > 0)
-      .sort((a, b) => a - b)
-
-    if (volumes.length === 0) {
-      return { l1: 20, l2: 40, l3: 60, l4: 80, l5: 100 }
-    }
-
-    const min = volumes[0]
-    const max = volumes[volumes.length - 1]
-
-    if (max === min) {
-      return {
-        l1: max * 0.3,
-        l2: max * 0.6,
-        l3: max * 0.85,
-        l4: max * 1.05,
-        l5: max * 1.25,
-      }
-    }
-
-    if (volumes.length >= 6) {
-      const q = (p: number) => volumes[Math.min(volumes.length - 1, Math.floor(volumes.length * p))]
-      return {
-        l1: Math.max(min, q(0.17)),
-        l2: Math.max(min, q(0.34)),
-        l3: Math.max(min, q(0.51)),
-        l4: Math.max(min, q(0.68)),
-        l5: Math.max(min, q(0.85)),
-      }
-    }
-
-    const step = (max - min) / 6
+    const volumes = heatmapData.flat().map((d) => d.volume).filter((v) => v > 0)
+    const avg = volumes.length > 0 ? volumes.reduce((a, b) => a + b, 0) / volumes.length : 100
     return {
-      l1: min + step * 1,
-      l2: min + step * 2,
-      l3: min + step * 3,
-      l4: min + step * 4,
-      l5: min + step * 5,
+      low: Math.max(1, avg * 0.5),
+      medium: avg,
+      high: avg * 1.5,
     }
   }, [heatmapData])
-
-  const getLevelColorClass = (level: 1 | 2 | 3 | 4 | 5 | 6) => {
-    if (palette === "warm") {
-      switch (level) {
-        case 1:
-          return "bg-[#F2E03F] border-[#EFC03A]/70 shadow-xs shadow-[#F2E03F]/20"
-        case 2:
-          return "bg-[#EFC03A] border-[#ECA035]/70 shadow-xs shadow-[#EFC03A]/20"
-        case 3:
-          return "bg-[#ECA035] border-[#E8812F]/70 shadow-xs shadow-[#ECA035]/25"
-        case 4:
-          return "bg-[#E8812F] border-[#E5612A]/80 shadow-xs shadow-[#E8812F]/30"
-        case 5:
-          return "bg-[#E5612A] border-[#E24125]/80 shadow-xs shadow-[#E5612A]/30"
-        case 6:
-          return "bg-[#E24125] border-[#b91c1c] shadow-xs shadow-[#E24125]/40"
-      }
-    }
-
-    if (palette === "emerald") {
-      switch (level) {
-        case 1:
-          return "bg-[#064e3b] border-[#065f46]/70"
-        case 2:
-          return "bg-[#065f46] border-[#047857]/70"
-        case 3:
-          return "bg-[#059669] border-[#10b981]/70"
-        case 4:
-          return "bg-[#10b981] border-[#34d399]/80"
-        case 5:
-          return "bg-[#34d399] border-[#6ee7b7]/80"
-        case 6:
-          return "bg-[#6ee7b7] border-[#a7f3d0] shadow-xs shadow-[#10b981]/30"
-      }
-    }
-
-    // monochrome
-    switch (level) {
-      case 1:
-        return "bg-[#27272a] border-[#3f3f46]/70"
-      case 2:
-        return "bg-[#3f3f46] border-[#52525b]/70"
-      case 3:
-        return "bg-[#52525b] border-[#71717a]/70"
-      case 4:
-        return "bg-[#71717a] border-[#a1a1aa]/80"
-      case 5:
-        return "bg-[#d4d4d8] border-[#e4e4e7]/80"
-      case 6:
-        return "bg-[#ffffff] border-[#ffffff] shadow-xs shadow-white/30"
-    }
-  }
 
   const getCellColor = (volume: number, isFuture = false) => {
     if (isFuture) {
@@ -361,12 +274,23 @@ export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
       return "bg-secondary/40 border-border/30 hover:border-primary/50"
     }
 
-    if (volume <= levelThresholds.l1) return getLevelColorClass(1)
-    if (volume <= levelThresholds.l2) return getLevelColorClass(2)
-    if (volume <= levelThresholds.l3) return getLevelColorClass(3)
-    if (volume <= levelThresholds.l4) return getLevelColorClass(4)
-    if (volume <= levelThresholds.l5) return getLevelColorClass(5)
-    return getLevelColorClass(6)
+    if (palette === "emerald") {
+      if (volume <= levelThresholds.low) return "bg-[#065f46] border-[#047857]/50"
+      if (volume <= levelThresholds.medium) return "bg-[#059669] border-[#10b981]/60"
+      if (volume <= levelThresholds.high) return "bg-[#10b981] border-[#34d399]/70"
+      return "bg-[#34d399] border-[#6ee7b7]"
+    } else if (palette === "flame") {
+      if (volume <= levelThresholds.low) return "bg-[#9a3412] border-[#c2410c]/50"
+      if (volume <= levelThresholds.medium) return "bg-[#ea580c] border-[#f97316]/60"
+      if (volume <= levelThresholds.high) return "bg-[#f97316] border-[#fb923c]/70"
+      return "bg-[#fb923c] border-[#fdba74]"
+    } else {
+      // monochrome (clean white & neutral zinc)
+      if (volume <= levelThresholds.low) return "bg-[#3f3f46] border-[#52525b]/50"
+      if (volume <= levelThresholds.medium) return "bg-[#71717a] border-[#a1a1aa]/60"
+      if (volume <= levelThresholds.high) return "bg-[#d4d4d8] border-[#e4e4e7]/70"
+      return "bg-[#ffffff] border-[#ffffff]"
+    }
   }
 
   const formatDate = (dateStr: string) => {
@@ -516,8 +440,8 @@ export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
           <div className="flex items-center bg-secondary/70 p-0.5 rounded-lg border border-border/50">
             {(
               [
-                { id: "warm", label: "Warm Gradient" },
                 { id: "emerald", label: "Emerald" },
+                { id: "flame", label: "Flame" },
                 { id: "monochrome", label: "Monochrome" },
               ] as const
             ).map((p) => (
@@ -641,13 +565,11 @@ export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
         <div className="flex items-center gap-2">
           <span>Less</span>
           <div className="flex gap-1 items-center">
-            <div className="h-3 w-3 rounded-[3px] bg-secondary/40 border border-border/30" title="Rest / No workout" />
-            <div className={`h-3 w-3 rounded-[3px] border ${getLevelColorClass(1)}`} title="Level 1" />
-            <div className={`h-3 w-3 rounded-[3px] border ${getLevelColorClass(2)}`} title="Level 2" />
-            <div className={`h-3 w-3 rounded-[3px] border ${getLevelColorClass(3)}`} title="Level 3" />
-            <div className={`h-3 w-3 rounded-[3px] border ${getLevelColorClass(4)}`} title="Level 4" />
-            <div className={`h-3 w-3 rounded-[3px] border ${getLevelColorClass(5)}`} title="Level 5" />
-            <div className={`h-3 w-3 rounded-[3px] border ${getLevelColorClass(6)}`} title="Level 6 (Max)" />
+            <div className="h-3 w-3 rounded-[3px] bg-secondary/40 border border-border/30" />
+            <div className={`h-3 w-3 rounded-[3px] ${getCellColor(levelThresholds.low * 0.8)}`} />
+            <div className={`h-3 w-3 rounded-[3px] ${getCellColor(levelThresholds.medium * 0.9)}`} />
+            <div className={`h-3 w-3 rounded-[3px] ${getCellColor(levelThresholds.high * 0.9)}`} />
+            <div className={`h-3 w-3 rounded-[3px] ${getCellColor(levelThresholds.high * 1.5)}`} />
           </div>
           <span>More Intensity</span>
         </div>

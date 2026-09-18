@@ -120,17 +120,20 @@
 
 ---
 
-## 🎨 Phase 11: Exact Warm Gradient Heatmap Color Scheme
-- [x] **Task 11.1:** Exact 6-Step Warm Gradient Palette Implementation (`src/components/charts/workout-heatmap.tsx`).
+## 🎨 Phase 11: Exact Warm Gradient Palette on Muscle Map & Heatmap
+- [x] **Task 11.1:** Revert `WorkoutHeatmap` (`src/components/charts/workout-heatmap.tsx`) back to original consistency grid themes (`flame`, `emerald`, `monochrome`).
+- [x] **Task 11.2:** Implement exact 6-Step Warm Gradient Palette in `MuscleAnatomyMap` ("Muscle Map & Heatmap" anatomical body model, `src/components/charts/muscle-anatomy-map.tsx`).
   - Integrated the exact 6 warm gradient hex codes:
-    1. Canary Yellow: `#F2E03F` (Level 1 / light intensity)
-    2. Warm Golden Yellow: `#EFC03A` (Level 2)
-    3. Amber Gold: `#ECA035` (Level 3)
-    4. Warm Tangerine Orange: `#E8812F` (Level 4)
-    5. Fiery Deep Orange: `#E5612A` (Level 5)
-    6. Crimson Flame Red: `#E24125` (Level 6 / peak intensity)
-  - Implemented 6-level quantile/linear threshold calculator (`levelThresholds.l1` through `l5`).
-  - Single-workout sessions automatically center on Level 4 (`#E8812F`) warm tangerine amber.
-  - Multi-workout history uses quantile distribution across all 6 shades with subtle glow shadows.
-  - Updated theme selector with `Warm Gradient` default, and updated legend chips with all 6 gradient swatches plus rest block.
+    1. Canary Yellow: `#F2E03F` (Level 1: 1-2 sets / minimal activation)
+    2. Warm Golden Yellow: `#EFC03A` (Level 2: 3-4 sets / light activation)
+    3. Amber Gold: `#ECA035` (Level 3: 5-6 sets / moderate activation)
+    4. Warm Tangerine Orange: `#E8812F` (Level 4: 7-8 sets / solid activation)
+    5. Fiery Deep Orange: `#E5612A` (Level 5: 9-11 sets / high activation)
+    6. Crimson Flame Red: `#E24125` (Level 6: 12+ sets / peak activation)
+  - Updated SVG body model paths fill logic (`getFillColor`, `getIntensityColor`).
+  - Updated selected muscle hover & active highlight colors (`#E24125` & `#E8812F`).
+  - Updated Activation Legend under anatomical body models with all 6 gradient chips + unworked tile.
+  - Updated muscle detail inspector Heat Intensity Gauge to dynamically reflect exact activation shade.
+  - Updated Top Worked Muscle Groups bars to color-code each muscle according to its activation tier.
+
 
