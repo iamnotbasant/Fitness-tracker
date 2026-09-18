@@ -26,6 +26,90 @@ export interface MuscleStat {
   intensity: number // 0 to 1
 }
 
+export type MusclePalette = "thermal" | "flame" | "neon"
+
+export interface PaletteConfig {
+  id: MusclePalette
+  name: string
+  unworked: string
+  levels: [string, string, string, string, string, string]
+  labels: [string, string, string, string, string, string]
+  selectedColor: string
+  hoverColor: string
+}
+
+export const MUSCLE_PALETTES: Record<MusclePalette, PaletteConfig> = {
+  thermal: {
+    id: "thermal",
+    name: "Thermal Spectrum",
+    unworked: "#18181b",
+    levels: [
+      "#06b6d4", // Level 1 (1-2 sets): Electric Cyan
+      "#10b981", // Level 2 (3-4 sets): Emerald Mint
+      "#facc15", // Level 3 (5-6 sets): Radiant Yellow
+      "#f97316", // Level 4 (7-8 sets): Vivid Tangerine
+      "#ef4444", // Level 5 (9-11 sets): Crimson Red
+      "#a855f7", // Level 6 (12+ sets): Electric Violet
+    ],
+    labels: [
+      "Low (1-2 sets)",
+      "Light (3-4 sets)",
+      "Moderate (5-6 sets)",
+      "Solid (7-8 sets)",
+      "High (9-11 sets)",
+      "Peak (12+ sets)",
+    ],
+    selectedColor: "#ffffff",
+    hoverColor: "#38bdf8",
+  },
+  flame: {
+    id: "flame",
+    name: "High-Contrast Fire",
+    unworked: "#18181b",
+    levels: [
+      "#fef08a", // Level 1 (1-2 sets): Pale Lemon Cream
+      "#f59e0b", // Level 2 (3-4 sets): Golden Amber
+      "#ea580c", // Level 3 (5-6 sets): Hot Flame Orange
+      "#dc2626", // Level 4 (7-8 sets): Blood Crimson Red
+      "#991b1b", // Level 5 (9-11 sets): Deep Dark Burgundy
+      "#581c87", // Level 6 (12+ sets): Obsidian Dark Plum
+    ],
+    labels: [
+      "Low (1-2 sets)",
+      "Light (3-4 sets)",
+      "Moderate (5-6 sets)",
+      "Solid (7-8 sets)",
+      "High (9-11 sets)",
+      "Peak (12+ sets)",
+    ],
+    selectedColor: "#ffffff",
+    hoverColor: "#fb923c",
+  },
+  neon: {
+    id: "neon",
+    name: "Cyberpunk Neon",
+    unworked: "#18181b",
+    levels: [
+      "#38bdf8", // Level 1 (1-2 sets): Ice Sky Blue
+      "#4ade80", // Level 2 (3-4 sets): Neon Lime Mint
+      "#fde047", // Level 3 (5-6 sets): Electric Yellow
+      "#f43f5e", // Level 4 (7-8 sets): Neon Coral Rose
+      "#d946ef", // Level 5 (9-11 sets): Hot Pink Fuchsia
+      "#8b5cf6", // Level 6 (12+ sets): Ultraviolet
+    ],
+    labels: [
+      "Low (1-2 sets)",
+      "Light (3-4 sets)",
+      "Moderate (5-6 sets)",
+      "Solid (7-8 sets)",
+      "High (9-11 sets)",
+      "Peak (12+ sets)",
+    ],
+    selectedColor: "#ffffff",
+    hoverColor: "#ec4899",
+  },
+}
+
 interface MuscleAnatomyMapProps {
   workouts: Workout[]
   exercises: Exercise[]
@@ -128,6 +212,7 @@ function normalizeBodyPart(part: string): string {
 
 export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps) {
   const [activeView, setActiveView] = useState<"both" | "front" | "back">("both")
+  const [palette, setPalette] = useState<MusclePalette>("thermal")
   const [selectedMuscle, setSelectedMuscle] = useState<string | null>(null)
   const [hoveredMuscle, setHoveredMuscle] = useState<string | null>(null)
   const [activeCategory, setActiveCategory] = useState<string>("all")
@@ -216,24 +301,19 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
     return stats
   }, [workouts, exercises])
 
-  // Exact 6-step Warm Gradient Color Scheme from Schemecolor.com:
-  // 1: #F2E03F (Canary Yellow)
-  // 2: #EFC03A (Warm Golden Yellow)
-  // 3: #ECA035 (Amber Gold)
-  // 4: #E8812F (Warm Tangerine Orange)
-  // 5: #E5612A (Fiery Deep Orange)
-  // 6: #E24125 (Crimson Flame Red)
+  // Dynamic intensity color mapped from active palette
   const getIntensityColor = (intensity: number) => {
-    if (intensity <= 0) return "#18181b"
-    if (intensity <= 0.20) return "#F2E03F" // Level 1 (Canary Yellow)
-    if (intensity <= 0.40) return "#EFC03A" // Level 2 (Warm Golden Yellow)
-    if (intensity <= 0.60) return "#ECA035" // Level 3 (Amber Gold)
-    if (intensity <= 0.80) return "#E8812F" // Level 4 (Warm Tangerine Orange)
-    if (intensity <= 0.95) return "#E5612A" // Level 5 (Fiery Deep Orange)
-    return "#E24125"                         // Level 6 (Crimson Flame Red - Peak)
+    const p = MUSCLE_PALETTES[palette]
+    if (intensity <= 0) return p.unworked
+    if (intensity <= 0.20) return p.levels[0] // Level 1 (Low / 1-2 sets)
+    if (intensity <= 0.40) return p.levels[1] // Level 2 (Light / 3-4 sets)
+    if (intensity <= 0.60) return p.levels[2] // Level 3 (Moderate / 5-6 sets)
+    if (intensity <= 0.80) return p.levels[3] // Level 4 (Solid / 7-8 sets)
+    if (intensity <= 0.95) return p.levels[4] // Level 5 (High / 9-11 sets)
+    return p.levels[5]                         // Level 6 (Peak / 12+ sets)
   }
 
-  // Get color for a muscle based on its intensity (Warm Gradient: #F2E03F -> #E24125)
+  // Get color for a muscle based on its intensity in the active palette
   const getFillColor = (slug: string, isHovered: boolean, isSelected: boolean) => {
     if (NEUTRAL_SLUGS.has(slug)) {
       if (slug === "hair") return "#121214"
@@ -246,12 +326,13 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
 
     const stat = muscleStats[muscleKey]
     const intensity = stat?.intensity ?? 0
+    const p = MUSCLE_PALETTES[palette]
 
     if (isSelected) {
-      return intensity > 0 ? "#E24125" : "#ffffff"
+      return intensity > 0 ? p.levels[4] : "#ffffff"
     }
     if (isHovered) {
-      return intensity > 0 ? "#E8812F" : "#3f3f46"
+      return intensity > 0 ? p.hoverColor : "#3f3f46"
     }
 
     return getIntensityColor(intensity)
@@ -339,45 +420,76 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
 
   return (
     <div className="rounded-2xl border border-border/70 bg-card p-4 sm:p-6 shadow-sm space-y-5">
-      {/* Header & View Controls */}
-      <div className="flex items-center justify-between gap-4 border-b border-border/40 pb-3">
+      {/* Header & Controls: Title, Theme Selector & View Mode */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/40 pb-3">
         <div className="flex items-center gap-2">
           <AnimatedFlame className="h-4.5 w-4.5 text-primary" />
           <h3 className="text-sm font-semibold text-foreground">Muscle Map & Heatmap</h3>
         </div>
 
-        {/* View Switcher: Both, Front, Back */}
-        <div className="flex items-center gap-1 bg-secondary/50 p-1 rounded-xl border border-border/60">
-          <button
-            onClick={() => setActiveView("both")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-              activeView === "both"
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            Both Views
-          </button>
-          <button
-            onClick={() => setActiveView("front")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-              activeView === "front"
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            Front (Anterior)
-          </button>
-          <button
-            onClick={() => setActiveView("back")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-              activeView === "back"
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            Back (Posterior)
-          </button>
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Theme Palette Switcher */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-[11px] font-semibold text-muted-foreground hidden sm:inline">Theme:</span>
+            <div className="flex items-center bg-secondary/50 p-0.5 rounded-xl border border-border/60">
+              {(
+                [
+                  { id: "thermal", label: "Thermal" },
+                  { id: "flame", label: "Fire" },
+                  { id: "neon", label: "Neon" },
+                ] as const
+              ).map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => {
+                    soundManager.play("click", 0.3)
+                    setPalette(p.id)
+                  }}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                    palette === p.id
+                      ? "bg-background text-foreground shadow-xs"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* View Switcher: Both, Front, Back */}
+          <div className="flex items-center gap-1 bg-secondary/50 p-0.5 rounded-xl border border-border/60">
+            <button
+              onClick={() => setActiveView("both")}
+              className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                activeView === "both"
+                  ? "bg-background text-foreground shadow-xs"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Both
+            </button>
+            <button
+              onClick={() => setActiveView("front")}
+              className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                activeView === "front"
+                  ? "bg-background text-foreground shadow-xs"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Front
+            </button>
+            <button
+              onClick={() => setActiveView("back")}
+              className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                activeView === "back"
+                  ? "bg-background text-foreground shadow-xs"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Back
+            </button>
+          </div>
         </div>
       </div>
 
@@ -473,36 +585,21 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
           </div>
 
           {/* Color Intensity Scale Legend */}
-          <div className="flex items-center gap-3.5 pt-6 text-[11px] text-muted-foreground flex-wrap justify-center border-t border-border/30 w-full mt-4">
+          <div className="flex items-center gap-3 pt-6 text-[11px] text-muted-foreground flex-wrap justify-center border-t border-border/30 w-full mt-4">
             <span className="font-semibold text-foreground/80">Activation Legend:</span>
             <div className="flex items-center gap-1.5">
               <span className="h-3 w-3 rounded-sm bg-[#18181b] border border-[#27272a]" />
               <span>Unworked</span>
             </div>
-            <div className="flex items-center gap-1.5">
-              <span className="h-3 w-3 rounded-sm bg-[#F2E03F] border border-[#EFC03A]/60" />
-              <span>Low (1-2 sets)</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="h-3 w-3 rounded-sm bg-[#EFC03A] border border-[#ECA035]/60" />
-              <span>Light (3-4 sets)</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="h-3 w-3 rounded-sm bg-[#ECA035] border border-[#E8812F]/60" />
-              <span>Moderate (5-6 sets)</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="h-3 w-3 rounded-sm bg-[#E8812F] border border-[#E5612A]/60" />
-              <span>Solid (7-8 sets)</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="h-3 w-3 rounded-sm bg-[#E5612A] border border-[#E24125]/60" />
-              <span>High (9-11 sets)</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="h-3 w-3 rounded-sm bg-[#E24125] border border-[#c53018]" />
-              <span>Peak (12+ sets)</span>
-            </div>
+            {MUSCLE_PALETTES[palette].levels.map((color, idx) => (
+              <div key={idx} className="flex items-center gap-1.5">
+                <span
+                  className="h-3 w-3 rounded-sm border border-white/10 shadow-xs"
+                  style={{ backgroundColor: color }}
+                />
+                <span>{MUSCLE_PALETTES[palette].labels[idx]}</span>
+              </div>
+            ))}
           </div>
         </div>
 

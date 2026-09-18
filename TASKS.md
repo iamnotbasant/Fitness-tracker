@@ -120,20 +120,22 @@
 
 ---
 
-## 🎨 Phase 11: Exact Warm Gradient Palette on Muscle Map & Heatmap
+## 🎨 Phase 11: High-Contrast Multi-Palette Shading on Muscle Map & Heatmap
 - [x] **Task 11.1:** Revert `WorkoutHeatmap` (`src/components/charts/workout-heatmap.tsx`) back to original consistency grid themes (`flame`, `emerald`, `monochrome`).
-- [x] **Task 11.2:** Implement exact 6-Step Warm Gradient Palette in `MuscleAnatomyMap` ("Muscle Map & Heatmap" anatomical body model, `src/components/charts/muscle-anatomy-map.tsx`).
-  - Integrated the exact 6 warm gradient hex codes:
-    1. Canary Yellow: `#F2E03F` (Level 1: 1-2 sets / minimal activation)
-    2. Warm Golden Yellow: `#EFC03A` (Level 2: 3-4 sets / light activation)
-    3. Amber Gold: `#ECA035` (Level 3: 5-6 sets / moderate activation)
-    4. Warm Tangerine Orange: `#E8812F` (Level 4: 7-8 sets / solid activation)
-    5. Fiery Deep Orange: `#E5612A` (Level 5: 9-11 sets / high activation)
-    6. Crimson Flame Red: `#E24125` (Level 6: 12+ sets / peak activation)
-  - Updated SVG body model paths fill logic (`getFillColor`, `getIntensityColor`).
-  - Updated selected muscle hover & active highlight colors (`#E24125` & `#E8812F`).
-  - Updated Activation Legend under anatomical body models with all 6 gradient chips + unworked tile.
-  - Updated muscle detail inspector Heat Intensity Gauge to dynamically reflect exact activation shade.
-  - Updated Top Worked Muscle Groups bars to color-code each muscle according to its activation tier.
+- [x] **Task 11.2:** Add Multi-Palette Switcher (`Thermal`, `Fire`, `Neon`) in `MuscleAnatomyMap` (`src/components/charts/muscle-anatomy-map.tsx`):
+  - **Thermal Spectrum (Default - Max Contrast):**
+    - Level 1: `#06b6d4` (Electric Cyan - 1-2 sets)
+    - Level 2: `#10b981` (Emerald Mint - 3-4 sets)
+    - Level 3: `#facc15` (Radiant Solar Yellow - 5-6 sets)
+    - Level 4: `#f97316` (Vivid Fiery Orange - 7-8 sets)
+    - Level 5: `#ef4444` (Crimson Red - 9-11 sets)
+    - Level 6: `#a855f7` (Electric Violet - 12+ sets / Overload)
+  - **High-Contrast Fire (Pure Warm Gradient):**
+    - Level 1: `#fef08a` (Pale Lemon Cream) ➔ Level 2: `#f59e0b` (Golden Amber) ➔ Level 3: `#ea580c` (Burning Orange) ➔ Level 4: `#dc2626` (Blood Red) ➔ Level 5: `#991b1b` (Deep Burgundy) ➔ Level 6: `#581c87` (Obsidian Plum)
+  - **Cyberpunk Neon (Modern High-Tech):**
+    - Level 1: `#38bdf8` (Ice Sky Blue) ➔ Level 2: `#4ade80` (Neon Lime) ➔ Level 3: `#fde047` (Electric Yellow) ➔ Level 4: `#f43f5e` (Neon Coral) ➔ Level 5: `#d946ef` (Hot Fuchsia) ➔ Level 6: `#8b5cf6` (Ultraviolet)
+  - Added real-time palette toggle buttons (`Thermal`, `Fire`, `Neon`) in the header next to View mode buttons.
+  - Dynamically synchronized the Anatomical SVG body model, Activation Legend, Heat Intensity Gauge, and Top Worked Muscle Groups bars with the selected palette.
+
 
 
