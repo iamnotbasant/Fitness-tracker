@@ -55,7 +55,9 @@ export function SegmentedNav({
               >
                 <span
                   aria-hidden
-                  className="grid h-4 w-4 place-items-center shrink-0"
+                  className={`grid h-4 w-4 place-items-center shrink-0 transition-colors ${
+                    active ? "text-background" : "text-white"
+                  }`}
                 >
                   {it.icon}
                 </span>

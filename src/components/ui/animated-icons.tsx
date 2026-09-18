@@ -9,7 +9,7 @@ interface AnimatedIconProps {
 }
 
 // 1. Animated Flame (Pulsing fire for streak & points)
-export function AnimatedFlame({ className = "text-amber-500", size = 20 }: AnimatedIconProps) {
+export function AnimatedFlame({ className = "text-current", size = 20 }: AnimatedIconProps) {
   return (
     <motion.svg
       width={size}
@@ -38,7 +38,7 @@ export function AnimatedFlame({ className = "text-amber-500", size = 20 }: Anima
 }
 
 // 2. Animated Dumbbell (Lifting micro-animation for workouts & exercises)
-export function AnimatedDumbbell({ className = "text-primary", size = 20 }: AnimatedIconProps) {
+export function AnimatedDumbbell({ className = "text-current", size = 20 }: AnimatedIconProps) {
   return (
     <motion.svg
       width={size}
@@ -66,7 +66,7 @@ export function AnimatedDumbbell({ className = "text-primary", size = 20 }: Anim
 }
 
 // 3. Animated Trophy (Shimmering award for PRs)
-export function AnimatedTrophy({ className = "text-amber-400", size = 20 }: AnimatedIconProps) {
+export function AnimatedTrophy({ className = "text-current", size = 20 }: AnimatedIconProps) {
   return (
     <motion.svg
       width={size}
@@ -100,7 +100,7 @@ export function AnimatedTrophy({ className = "text-amber-400", size = 20 }: Anim
 }
 
 // 4. Animated Checkmark (Drawing stroke on set completion)
-export function AnimatedCheckmark({ className = "text-emerald-500", size = 20 }: AnimatedIconProps) {
+export function AnimatedCheckmark({ className = "text-current", size = 20 }: AnimatedIconProps) {
   return (
     <motion.svg
       width={size}
@@ -127,7 +127,7 @@ export function AnimatedCheckmark({ className = "text-emerald-500", size = 20 }:
 }
 
 // 5. Animated Activity (Pulse waveform for muscular density & stats)
-export function AnimatedActivity({ className = "text-rose-500", size = 20 }: AnimatedIconProps) {
+export function AnimatedActivity({ className = "text-current", size = 20 }: AnimatedIconProps) {
   return (
     <motion.svg
       width={size}

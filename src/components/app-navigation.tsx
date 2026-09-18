@@ -16,11 +16,11 @@ export function AppNavigation() {
   const { isOnline, pendingCount, syncNow } = useOfflineStatus()
   
   const navItems = [
-    { href: "/", label: "Dashboard", icon: <AnimatedFlame size={16} className="text-amber-500" /> },
-    { href: "/workout", label: "Workout", icon: <Play size={16} className="text-emerald-500" /> },
-    { href: "/exercises", label: "Exercises", icon: <AnimatedDumbbell size={16} className="text-primary" /> },
-    { href: "/progress", label: "Progress", icon: <AnimatedActivity size={16} className="text-rose-500" /> },
-    { href: "/profile", label: "Profile", icon: <User size={16} className="text-sky-500" /> },
+    { href: "/", label: "Dashboard", icon: <AnimatedFlame size={16} className="text-current" /> },
+    { href: "/workout", label: "Workout", icon: <Play size={16} className="text-current" /> },
+    { href: "/exercises", label: "Exercises", icon: <AnimatedDumbbell size={16} className="text-current" /> },
+    { href: "/progress", label: "Progress", icon: <AnimatedActivity size={16} className="text-current" /> },
+    { href: "/profile", label: "Profile", icon: <User size={16} className="text-current" /> },
   ]
 
   return (
@@ -137,11 +137,11 @@ function NavItem({ href, icon, label }: { href: string; icon: React.ReactNode; l
       prefetch={true}
       className={`flex flex-col items-center gap-1 px-1.5 py-1.5 rounded-xl transition-all min-w-0 flex-1 cursor-pointer select-none ${
         active 
-          ? "text-primary font-semibold bg-secondary/80 shadow-xs" 
-          : "text-muted-foreground hover:text-foreground"
+          ? "text-white font-semibold bg-white/10 shadow-xs" 
+          : "text-zinc-400 hover:text-white"
       }`}
     >
-      <div className="h-4 w-4 flex items-center justify-center shrink-0">{icon}</div>
+      <div className={`h-4 w-4 flex items-center justify-center shrink-0 ${active ? "text-white" : "text-white/80"}`}>{icon}</div>
       <span className="text-[11px] font-medium truncate w-full text-center leading-none">{label}</span>
     </Link>
   )
