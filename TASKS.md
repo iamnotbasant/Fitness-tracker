@@ -231,6 +231,18 @@
   - Updated default animated SVG classes to `text-current` across `AnimatedFlame`, `AnimatedDumbbell`, `AnimatedTrophy`, `AnimatedCheckmark`, and `AnimatedActivity`.
   - Upgraded mobile bottom navigation `NavItem` to render white active and white/80 inactive icons with zero emojis.
 
+---
+
+## 📅 Phase 19: High-Precision Preset Dropdown & Date Range Picker System
+- [x] **Task 19.1:** DateRangeFilter Component Architecture (`src/components/ui/date-range-filter.tsx`):
+  - Built custom dual-control range filter implementing the exact layout from user reference.
+  - Implemented 8 accurate local calendar presets: `Today`, `Yesterday`, `This Week`, `Last Week`, `This Month`, `Last Month`, `This Year`, and `All Time` with active checkmark styling.
+  - Integrated custom date range picker popover allowing users to specify exact start/end dates with interactive inputs, apply action, and instant clear reset button.
+- [x] **Task 19.2:** Progress Page Integration & Strict Local Date Filtering (`src/app/progress/page.tsx`):
+  - Replaced clumsy `Last 7 Days / Last 3 Months` selector with the new `DateRangeFilter`.
+  - Implemented timezone-drift-free lexicographical date matching across all workout logs.
+  - Derived dynamic `goalPeriod` for `RadialGoalsChart` matching active filter presets (`weekly`, `monthly`, `yearly`, `all`).
+
 
 
 

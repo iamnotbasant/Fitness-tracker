@@ -11,58 +11,68 @@ import { ProgressionTimeline } from "@/components/charts/progression-timeline"
 import { WorkoutDensity } from "@/components/charts/workout-density"
 import { TimeUnderTension } from "@/components/charts/time-under-tension"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { RadialGoalsChart } from "@/components/charts/radial-goals-chart"
 import { MuscleRadarChart } from "@/components/charts/muscle-radar-chart"
 import { StrengthProgressionChart } from "@/components/charts/strength-progression-chart"
 import { Dumbbell, Award, Flame, Calendar } from "lucide-react"
 import { AnimatedDumbbell, AnimatedTrophy, AnimatedFlame, AnimatedCalendar } from "@/components/ui/animated-icons"
 
-type TimeRange = "7days" | "month" | "3months" | "year" | "all"
+import { DateRangeFilter, type DateFilterValue, getPresetDates } from "@/components/ui/date-range-filter"
 
 export default function ProgressPage() {
   const [mounted, setMounted] = useState(false)
   const { workouts, isLoading: workoutsLoading } = useWorkouts()
   const { exercises } = useExercises()
-  const [timeRange, setTimeRange] = useState<TimeRange>("all")
+  const [filterValue, setFilterValue] = useState<DateFilterValue>({
+    preset: "all_time",
+  })
 
   useEffect(() => {
     setMounted(true)
   }, [])
 
   const filtered = useMemo(() => {
-    if (timeRange === "all") return workouts
-
-    const now = new Date()
-    let daysToSubtract = 0
-
-    switch (timeRange) {
-      case "7days":
-        daysToSubtract = 7
-        break
-      case "month":
-        daysToSubtract = 30
-        break
-      case "3months":
-        daysToSubtract = 90
-        break
-      case "year":
-        daysToSubtract = 365
-        break
+    if (filterValue.preset === "all_time" && !filterValue.startDate && !filterValue.endDate) {
+      return workouts
     }
 
-    const startDate = new Date(now)
-    startDate.setDate(now.getDate() - daysToSubtract)
-    const y = startDate.getFullYear()
-    const m = String(startDate.getMonth() + 1).padStart(2, "0")
-    const d = String(startDate.getDate()).padStart(2, "0")
-    const startDateStr = `${y}-${m}-${d}`
+    let start = filterValue.startDate
+    let end = filterValue.endDate
+
+    if (filterValue.preset !== "custom") {
+      const dates = getPresetDates(filterValue.preset)
+      start = dates.start
+      end = dates.end
+    }
+
+    if (!start && !end) return workouts
 
     return workouts.filter((w) => {
       const wDate = (w.date || "").slice(0, 10)
-      return wDate >= startDateStr
+      if (!wDate) return false
+      if (start && wDate < start) return false
+      if (end && wDate > end) return false
+      return true
     })
-  }, [workouts, timeRange])
+  }, [workouts, filterValue])
+
+  const goalPeriod = useMemo(() => {
+    switch (filterValue.preset) {
+      case "this_week":
+      case "last_week":
+      case "today":
+      case "yesterday":
+        return "weekly"
+      case "this_month":
+      case "last_month":
+        return "monthly"
+      case "this_year":
+        return "yearly"
+      case "all_time":
+      default:
+        return "all"
+    }
+  }, [filterValue.preset])
 
   // Overview unique non-repetitive stats
   const quickStats = useMemo(() => {
@@ -126,21 +136,9 @@ export default function ProgressPage() {
             </h1>
           </div>
 
-          {/* Time Range Filter */}
-          <div className="flex items-center gap-2 self-start sm:self-auto">
-            <span className="text-xs font-medium text-muted-foreground">Range:</span>
-            <Select value={timeRange} onValueChange={(value) => setTimeRange(value as TimeRange)}>
-              <SelectTrigger className="w-[140px] h-9 text-xs rounded-xl bg-card border-border/80">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="7days">Last 7 Days</SelectItem>
-                <SelectItem value="month">Last 30 Days</SelectItem>
-                <SelectItem value="3months">Last 3 Months</SelectItem>
-                <SelectItem value="year">Past Year</SelectItem>
-                <SelectItem value="all">All Time</SelectItem>
-              </SelectContent>
-            </Select>
+          {/* Time Range Filter & Date Range Picker */}
+          <div className="self-start sm:self-auto">
+            <DateRangeFilter value={filterValue} onChange={setFilterValue} />
           </div>
         </div>
 
@@ -219,7 +217,7 @@ export default function ProgressPage() {
             <div>
               <RadialGoalsChart 
                 workouts={filtered} 
-                period={timeRange === "7days" ? "weekly" : timeRange === "month" ? "monthly" : timeRange === "year" ? "yearly" : timeRange} 
+                period={goalPeriod} 
               />
             </div>
           </TabsContent>
