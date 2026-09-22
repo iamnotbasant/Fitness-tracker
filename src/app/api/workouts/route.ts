@@ -4,29 +4,7 @@ import { workouts, exercises, user } from '@/db/schema';
 import { eq, and, like, or, gte, lte, desc, asc } from 'drizzle-orm';
 import { getAuthenticatedUser } from '@/lib/auth-server';
 
-// Helper function to calculate points based on exercise type
-function calculatePoints(
-  exerciseType: string | null,
-  reps: number,
-  timeSeconds: number | null,
-  weight: number | null,
-  level: number
-): number {
-  const exerciseLevel = level || 1;
-
-  if (exerciseType === 'timer') {
-    // Points = (timeSeconds ÷ 5) × level
-    const seconds = timeSeconds || 0;
-    return Math.round((seconds / 5) * exerciseLevel);
-  } else if (exerciseType === 'weighted') {
-    // Points = (weight × reps × 1) × level
-    const w = weight || 0;
-    return Math.round((w * reps * 1) * exerciseLevel);
-  } else {
-    // bodyweight or standard: Points = (reps × 1) × level
-    return Math.round((reps * 1) * exerciseLevel);
-  }
-}
+import { calculateWorkoutPoints, parseExerciseLevel } from '@/lib/points';
 
 export async function GET(request: NextRequest) {
   try {
@@ -142,7 +120,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Fetch exercise details if exerciseId provided
-    let exerciseType: string | null = 'standard';
+    let exerciseType: string | null = null;
     let exerciseLevel: number = 1;
 
     if (exerciseId) {
@@ -153,23 +131,26 @@ export async function POST(request: NextRequest) {
 
       if (exerciseRecord.length > 0) {
         exerciseType = exerciseRecord[0].type;
-        // Parse level if it's a string like "beginner", "intermediate", "advanced"
-        const levelStr = exerciseRecord[0].level;
-        if (levelStr === 'beginner') exerciseLevel = 1;
-        else if (levelStr === 'intermediate') exerciseLevel = 2;
-        else if (levelStr === 'advanced') exerciseLevel = 3;
-        else if (typeof levelStr === 'number') exerciseLevel = levelStr;
+        exerciseLevel = parseExerciseLevel(exerciseRecord[0].level);
       }
     }
 
-    // Calculate points
-    const calculatedPoints = calculatePoints(
+    if (!exerciseType) {
+      if (timeSeconds && timeSeconds > 0) exerciseType = 'timer';
+      else if (weight && weight > 0) exerciseType = 'weighted';
+      else exerciseType = 'standard';
+    }
+
+    // Calculate points using unified engine
+    const { points: calculatedPoints } = calculateWorkoutPoints({
       exerciseType,
-      reps || 1,
-      timeSeconds || null,
-      weight || null,
-      exerciseLevel
-    );
+      sets: sets || 1,
+      reps: reps || 0,
+      timeSeconds: timeSeconds || null,
+      weight: weight || null,
+      level: exerciseLevel,
+      bonusPoints: bonusPoints || 0,
+    });
 
     // Create insert object explicitly without undefined values
     const insertValues: any = {
@@ -328,32 +309,43 @@ export async function PUT(request: NextRequest) {
 
     // Recalculate points if necessary
     if (needsRecalculation) {
-      let exerciseType: string | null = 'standard';
+      const targetExerciseId = newExerciseId ?? existing[0].exerciseId;
+      let exerciseType: string | null = null;
       let exerciseLevel: number = existing[0].exerciseLevel || 1;
 
-      if (newExerciseId) {
+      if (targetExerciseId) {
         const exerciseRecord = await db.select()
           .from(exercises)
-          .where(eq(exercises.id, newExerciseId))
+          .where(eq(exercises.id, targetExerciseId))
           .limit(1);
 
         if (exerciseRecord.length > 0) {
           exerciseType = exerciseRecord[0].type;
-          const levelStr = exerciseRecord[0].level;
-          if (levelStr === 'beginner') exerciseLevel = 1;
-          else if (levelStr === 'intermediate') exerciseLevel = 2;
-          else if (levelStr === 'advanced') exerciseLevel = 3;
-          else if (typeof levelStr === 'number') exerciseLevel = levelStr;
+          exerciseLevel = parseExerciseLevel(exerciseRecord[0].level);
         }
       }
 
-      const recalculatedPoints = calculatePoints(
+      const finalTimeSeconds = newTimeSeconds !== null && newTimeSeconds !== undefined ? newTimeSeconds : existing[0].timeSeconds;
+      const finalWeight = newWeight !== null && newWeight !== undefined ? newWeight : existing[0].weight;
+      const finalReps = newReps !== null && newReps !== undefined ? newReps : existing[0].reps;
+      const finalSets = sets !== undefined ? sets : existing[0].sets;
+      const finalBonus = bonusPoints !== undefined ? bonusPoints : existing[0].bonusPoints;
+
+      if (!exerciseType) {
+        if (finalTimeSeconds && finalTimeSeconds > 0) exerciseType = 'timer';
+        else if (finalWeight && finalWeight > 0) exerciseType = 'weighted';
+        else exerciseType = 'standard';
+      }
+
+      const { points: recalculatedPoints } = calculateWorkoutPoints({
         exerciseType,
-        newReps,
-        newTimeSeconds,
-        newWeight,
-        exerciseLevel
-      );
+        sets: finalSets,
+        reps: finalReps,
+        timeSeconds: finalTimeSeconds,
+        weight: finalWeight,
+        level: exerciseLevel,
+        bonusPoints: finalBonus,
+      });
 
       updates.points = recalculatedPoints;
       updates.exerciseLevel = exerciseLevel;

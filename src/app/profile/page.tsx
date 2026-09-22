@@ -3,8 +3,9 @@
 import { useState, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { useProfile, useExercises } from "@/hooks/use-local-data"
-import { User, Save, Activity } from "lucide-react"
+import { User, Save, Activity, RefreshCw } from "lucide-react"
 import { toast } from "sonner"
+import { mutate as globalMutate } from "swr"
 import { DataBackup } from "@/components/profile/data-backup"
 
 export default function ProfilePage() {
@@ -126,6 +127,34 @@ export default function ProfilePage() {
     } catch (error) {
       console.error("Failed to update exercise goals:", error)
       toast.error("Failed to update exercise goals")
+    }
+  }
+
+  const [isRecalculating, setIsRecalculating] = useState(false)
+  const handleRecalculatePoints = async () => {
+    const token = typeof window !== "undefined" ? localStorage.getItem("bearer_token") : null
+    setIsRecalculating(true)
+    const toastId = toast.loading("Normalizing points for all workouts...")
+    try {
+      const res = await fetch("/api/workouts/recalculate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        credentials: "include",
+      })
+      const data = await res.json()
+      if (res.ok) {
+        toast.success(data.message || `Updated ${data.updatedCount} workouts successfully!`, { id: toastId })
+        globalMutate("/api/workouts?limit=10000")
+      } else {
+        toast.error(data.error || "Failed to normalize points", { id: toastId })
+      }
+    } catch {
+      toast.error("Network error while normalizing points", { id: toastId })
+    } finally {
+      setIsRecalculating(false)
     }
   }
 
@@ -414,7 +443,7 @@ export default function ProfilePage() {
                       placeholder="Goal"
                       min="1"
                     />
-                    <span className="text-xs text-muted-foreground">reps</span>
+                    <span className="text-xs text-muted-foreground">{ex.type === "timer" ? "sec" : "reps"}</span>
                   </div>
                 </div>
               ))}
@@ -424,11 +453,32 @@ export default function ProfilePage() {
           <button
             type="button"
             onClick={handleSaveExerciseGoals}
-            className="rounded-lg bg-primary px-4 py-2 text-primary-foreground flex items-center justify-center gap-2"
+            className="rounded-lg bg-primary px-4 py-2 text-primary-foreground flex items-center justify-center gap-2 cursor-pointer hover:bg-primary/90 transition-colors"
           >
             <Save className="h-4 w-4" />
             Save Exercise Goals
           </button>
+        </div>
+
+        {/* Points System Calibration */}
+        <div className="grid gap-3 rounded-xl border bg-card p-4 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-medium">Points System Calibration</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Normalize past workouts to the balanced points scale. Preserves 100% of your workouts and history.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleRecalculatePoints}
+              disabled={isRecalculating}
+              className="rounded-lg bg-secondary border border-border/80 px-3.5 py-2 text-xs font-semibold hover:bg-secondary/80 flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 transition-colors self-start sm:self-auto shrink-0"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${isRecalculating ? "animate-spin" : ""}`} />
+              <span>{isRecalculating ? "Normalizing..." : "Normalize Points"}</span>
+            </button>
+          </div>
         </div>
 
         {/* Data Backup & Restore Section */}

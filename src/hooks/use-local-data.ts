@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback, useMemo } from "react"
 import type { Exercise, Workout, Profile, WorkoutSession, SessionExercise, Routine, RoutineExercise } from "@/lib/types"
 import { useSession } from "@/lib/auth-client"
 import { toast } from "sonner"
+import { calculateWorkoutPoints } from "@/lib/points"
 
 const fetcher = async (url: string) => {
   const token = typeof window !== "undefined" ? localStorage.getItem("bearer_token") : null
@@ -664,6 +665,15 @@ export function useActiveSession() {
           volume = weight > 0 ? reps * weight : reps
         }
         
+        const { points: calculatedPoints, totalPoints } = calculateWorkoutPoints({
+          exerciseType: isTimeBased ? "timer" : set.weight ? "weighted" : "standard",
+          sets: 1,
+          reps: isTimeBased ? 0 : (set.reps || 0),
+          timeSeconds: durationSec,
+          weight: set.weight,
+          level: 1,
+        })
+
         const workout: any = {
           date: localDate,
           time: localTime,
@@ -673,6 +683,8 @@ export function useActiveSession() {
           reps: isTimeBased ? 0 : (set.reps || 0),
           volume: volume,
           setType: set.setType || "normal",
+          points: calculatedPoints,
+          total_points: totalPoints,
         }
         
         if (item.restEnabled && item.restSec) {

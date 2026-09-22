@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { workouts } from '@/db/schema';
 import { getAuthenticatedUser } from '@/lib/auth-server';
+import { calculateWorkoutPoints } from '@/lib/points';
 
 export async function POST(request: NextRequest) {
   try {
@@ -32,7 +33,19 @@ export async function POST(request: NextRequest) {
       const reps = Number(w.reps) || 0;
       const timeSeconds = w.timeSeconds ? Number(w.timeSeconds) : null;
       const weight = w.weight ? Number(w.weight) : null;
-      const points = w.points || (weight ? Math.round(weight * reps) : reps);
+      const level = Number(w.exerciseLevel) || 1;
+
+      const calculated = calculateWorkoutPoints({
+        exerciseType: w.exerciseType || (timeSeconds ? 'timer' : weight ? 'weighted' : 'standard'),
+        sets,
+        reps,
+        timeSeconds,
+        weight,
+        level,
+        bonusPoints: w.bonusPoints,
+      });
+
+      const points = w.points !== undefined && w.points !== null ? Number(w.points) : calculated.points;
 
       const row: any = {
         userId: currentUser.id,
@@ -41,7 +54,7 @@ export async function POST(request: NextRequest) {
         sets,
         reps: reps || 1,
         points,
-        exerciseLevel: Number(w.exerciseLevel) || 1,
+        exerciseLevel: level,
         createdAt: new Date(),
       };
 
