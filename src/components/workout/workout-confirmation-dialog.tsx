@@ -72,7 +72,7 @@ export default function WorkoutConfirmationDialog({ open, onClose, onConfirm, ex
   // Robust helper to check if exercise is timer-based
   const isTimerExercise = (exerciseId: string, exerciseName?: string, sets?: any[]) => {
     const exercise = exercisesList?.find(e => String(e.id) === String(exerciseId) || (exerciseName && e.name.toLowerCase() === exerciseName.toLowerCase()))
-    if (exercise?.type === "timer") return true
+    if (exercise?.type?.toLowerCase().includes("timer")) return true
     const nameLower = (exerciseName || exercise?.name || "").toLowerCase()
     if (nameLower.includes("hang") || nameLower.includes("plank") || nameLower.includes("hold") || nameLower.includes("wall sit")) {
       return true
@@ -86,7 +86,7 @@ export default function WorkoutConfirmationDialog({ open, onClose, onConfirm, ex
   // Helper to check if exercise is weighted
   const isWeightedExercise = (exerciseId: string, exerciseName?: string, sets?: any[]) => {
     const exercise = exercisesList?.find(e => String(e.id) === String(exerciseId) || (exerciseName && e.name.toLowerCase() === exerciseName.toLowerCase()))
-    if (exercise?.type === "weighted") return true
+    if (exercise?.type?.toLowerCase().includes("weighted")) return true
     if (sets && sets.some(s => s.weight !== undefined && s.weight > 0)) return true
     return false
   }

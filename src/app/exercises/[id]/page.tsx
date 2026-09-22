@@ -225,7 +225,12 @@ export default function ExerciseDetailPage() {
     }
   }
 
-  const isTimerExercise = exercise?.type === "timer"
+  const isTimerExercise = Boolean(
+    String(exercise?.type || "").toLowerCase().includes("timer") ||
+    String(exercise?.name || "").toLowerCase().includes("hang") ||
+    String(exercise?.name || "").toLowerCase().includes("plank") ||
+    String(exercise?.name || "").toLowerCase().includes("hold")
+  )
 
   const dateRange = useMemo(() => {
     if (timePeriod === "all") {

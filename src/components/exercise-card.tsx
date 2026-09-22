@@ -115,16 +115,11 @@ export function ExerciseCard({ ex, onDelete }: ExerciseCardProps) {
               {ex.split}
             </span>
           )}
-          {ex.type && (
-            <span className="rounded-lg bg-muted px-2 py-0.5 text-[11px] font-medium capitalize text-muted-foreground">
-              {ex.type}
+          {ex.type && ex.type.split(',').map((t, idx) => (
+            <span key={idx} className="rounded-lg bg-muted px-2 py-0.5 text-[11px] font-medium capitalize text-muted-foreground">
+              {t.trim()}
             </span>
-          )}
-          {ex.repGoal && (
-            <span className="rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 px-2 py-0.5 text-[11px] font-semibold">
-              {ex.type === "timer" ? `${ex.repGoal}s` : `${ex.repGoal} reps`}
-            </span>
-          )}
+          ))}
         </div>
       </div>
     </div>

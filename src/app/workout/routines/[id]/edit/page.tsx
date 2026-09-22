@@ -87,8 +87,8 @@ export default function EditRoutinePage() {
   const addExercise = (exerciseId: string, exerciseName: string, split?: string, level?: number) => {
     const exRecord = exercises?.find(e => String(e.id) === String(exerciseId) || e.name.toLowerCase() === exerciseName.toLowerCase())
     const effectiveType = exRecord?.type || (exerciseName.toLowerCase().includes("plank") || exerciseName.toLowerCase().includes("hang") || exerciseName.toLowerCase().includes("hold") ? "timer" : "standard")
-    const isTimer = effectiveType === "timer"
-    const isWeighted = effectiveType === "weighted"
+    const isTimer = String(effectiveType).toLowerCase().includes("timer") || exerciseName.toLowerCase().includes("plank") || exerciseName.toLowerCase().includes("hang") || exerciseName.toLowerCase().includes("hold")
+    const isWeighted = String(effectiveType).toLowerCase().includes("weighted")
 
     const newEx: RoutineExercise = {
       exerciseId: String(exerciseId),
@@ -218,8 +218,8 @@ export default function EditRoutinePage() {
               {routineExercises.map((ex, index) => {
                 const exRec = exercises?.find(e => String(e.id) === String(ex.exerciseId) || e.name.toLowerCase() === ex.exerciseName.toLowerCase())
                 const effectiveType = ex.type || exRec?.type || (ex.exerciseName.toLowerCase().includes("plank") || ex.exerciseName.toLowerCase().includes("hang") || ex.exerciseName.toLowerCase().includes("hold") ? "timer" : "standard")
-                const isTimer = effectiveType === "timer" || ex.defaultTimeSeconds !== undefined
-                const isWeighted = effectiveType === "weighted" || ex.defaultWeight !== undefined
+                const isTimer = String(effectiveType).toLowerCase().includes("timer") || ex.defaultTimeSeconds !== undefined || ex.exerciseName.toLowerCase().includes("plank") || ex.exerciseName.toLowerCase().includes("hang") || ex.exerciseName.toLowerCase().includes("hold")
+                const isWeighted = String(effectiveType).toLowerCase().includes("weighted") || ex.defaultWeight !== undefined
 
                 // Clean display values: 0 is treated as blank
                 const repsVal = (ex.defaultReps && ex.defaultReps > 0) ? ex.defaultReps : ""
