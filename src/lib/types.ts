@@ -96,6 +96,7 @@ export type RoutineExercise = {
   defaultSets: number
   defaultReps?: number
   defaultTimeSeconds?: number
+  defaultWeight?: number
   restSec?: number
   notes?: string
 }

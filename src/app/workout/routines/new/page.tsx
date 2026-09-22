@@ -37,18 +37,21 @@ export default function NewRoutinePage() {
   )
 
   const addExercise = (exerciseId: string, exerciseName: string, split?: string, level?: number) => {
-    const exRecord = exercises?.find(e => e.id === exerciseId)
-    const isTimer = exRecord?.type === "timer" || exerciseName.toLowerCase().includes("plank")
+    const exRecord = exercises?.find(e => String(e.id) === String(exerciseId) || e.name.toLowerCase() === exerciseName.toLowerCase())
+    const effectiveType = exRecord?.type || (exerciseName.toLowerCase().includes("plank") || exerciseName.toLowerCase().includes("hang") || exerciseName.toLowerCase().includes("hold") ? "timer" : "standard")
+    const isTimer = effectiveType === "timer"
+    const isWeighted = effectiveType === "weighted"
 
     const newEx: RoutineExercise = {
-      exerciseId,
+      exerciseId: String(exerciseId),
       exerciseName,
       split: split as any,
       level,
-      type: exRecord?.type,
+      type: effectiveType,
       defaultSets: 3,
-      defaultReps: isTimer ? undefined : 10,
-      defaultTimeSeconds: isTimer ? 30 : undefined,
+      defaultReps: isTimer ? undefined : undefined,
+      defaultTimeSeconds: isTimer ? (exRecord?.repGoal || 30) : undefined,
+      defaultWeight: isWeighted ? undefined : undefined,
       restSec: 60,
       notes: "",
     }
@@ -179,61 +182,100 @@ export default function NewRoutinePage() {
                     </button>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-3">
-                    <div>
-                      <label className="block text-xs text-muted-foreground mb-1">Sets</label>
-                      <input
-                        type="number"
-                        value={ex.defaultSets ?? ""}
-                        onChange={(e) => updateExercise(index, { defaultSets: e.target.value ? parseInt(e.target.value) : undefined })}
-                        min={1}
-                        placeholder="Optional"
-                        className="w-full px-3 py-2 rounded-lg border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-muted-foreground mb-1">
-                        {ex.type === "timer" || ex.defaultTimeSeconds !== undefined ? "Time (sec)" : "Reps"}
-                      </label>
-                      <input
-                        type="number"
-                        value={ex.type === "timer" || ex.defaultTimeSeconds !== undefined ? (ex.defaultTimeSeconds ?? "") : (ex.defaultReps ?? "")}
-                        onChange={(e) => {
-                          const val = e.target.value ? parseInt(e.target.value) : undefined
-                          if (ex.type === "timer" || ex.defaultTimeSeconds !== undefined) {
-                            updateExercise(index, { defaultTimeSeconds: val, defaultReps: undefined })
-                          } else {
-                            updateExercise(index, { defaultReps: val })
-                          }
-                        }}
-                        min={1}
-                        placeholder={ex.type === "timer" || ex.defaultTimeSeconds !== undefined ? "e.g. 30" : "Optional"}
-                        className="w-full px-3 py-2 rounded-lg border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-muted-foreground mb-1">Rest (s)</label>
-                      <input
-                        type="number"
-                        value={ex.restSec || 60}
-                        onChange={(e) => updateExercise(index, { restSec: parseInt(e.target.value) || 60 })}
-                        min={0}
-                        step={15}
-                        className="w-full px-3 py-2 rounded-lg border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                      />
-                    </div>
-                  </div>
+                  {(() => {
+                    const exRec = exercises?.find(e => String(e.id) === String(ex.exerciseId) || e.name.toLowerCase() === ex.exerciseName.toLowerCase())
+                    const effectiveType = ex.type || exRec?.type || (ex.exerciseName.toLowerCase().includes("plank") || ex.exerciseName.toLowerCase().includes("hang") || ex.exerciseName.toLowerCase().includes("hold") ? "timer" : "standard")
+                    const isTimer = effectiveType === "timer" || ex.defaultTimeSeconds !== undefined
+                    const isWeighted = effectiveType === "weighted" || ex.defaultWeight !== undefined
 
-                  <div>
-                    <label className="block text-xs text-muted-foreground mb-1">Notes (Optional)</label>
-                    <input
-                      type="text"
-                      value={ex.notes || ""}
-                      onChange={(e) => updateExercise(index, { notes: e.target.value })}
-                      placeholder="Add exercise notes..."
-                      className="w-full px-3 py-2 rounded-lg border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                    />
-                  </div>
+                    // Clean display values: 0 is treated as blank
+                    const repsVal = (ex.defaultReps && ex.defaultReps > 0) ? ex.defaultReps : ""
+                    const timeVal = (ex.defaultTimeSeconds && ex.defaultTimeSeconds > 0) ? ex.defaultTimeSeconds : ""
+                    const weightVal = (ex.defaultWeight && ex.defaultWeight > 0) ? ex.defaultWeight : ""
+
+                    return (
+                      <div className="space-y-3">
+                        <div className={`grid ${isWeighted ? "grid-cols-4" : "grid-cols-3"} gap-3`}>
+                          <div>
+                            <label className="block text-xs font-medium text-muted-foreground mb-1">Sets</label>
+                            <input
+                              type="number"
+                              value={ex.defaultSets || ""}
+                              onChange={(e) => updateExercise(index, { defaultSets: e.target.value ? parseInt(e.target.value) : undefined })}
+                              min={1}
+                              placeholder="Sets (e.g. 3)"
+                              className="w-full px-3 py-2 rounded-lg border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                            />
+                          </div>
+
+                          {isTimer ? (
+                            <div>
+                              <label className="block text-xs font-medium text-muted-foreground mb-1">Time (sec)</label>
+                              <input
+                                type="number"
+                                value={timeVal}
+                                onChange={(e) => updateExercise(index, { defaultTimeSeconds: e.target.value ? parseInt(e.target.value) : undefined, defaultReps: undefined })}
+                                min={1}
+                                placeholder="Seconds (e.g. 30)"
+                                className="w-full px-3 py-2 rounded-lg border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                              />
+                            </div>
+                          ) : (
+                            <div>
+                              <label className="block text-xs font-medium text-muted-foreground mb-1">Reps</label>
+                              <input
+                                type="number"
+                                value={repsVal}
+                                onChange={(e) => updateExercise(index, { defaultReps: e.target.value ? parseInt(e.target.value) : undefined, defaultTimeSeconds: undefined })}
+                                min={1}
+                                placeholder="Reps (optional)"
+                                className="w-full px-3 py-2 rounded-lg border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                              />
+                            </div>
+                          )}
+
+                          {isWeighted && (
+                            <div>
+                              <label className="block text-xs font-medium text-muted-foreground mb-1">Weight (kg)</label>
+                              <input
+                                type="number"
+                                value={weightVal}
+                                onChange={(e) => updateExercise(index, { defaultWeight: e.target.value ? parseFloat(e.target.value) : undefined })}
+                                min={0}
+                                step="0.5"
+                                placeholder="kg (optional)"
+                                className="w-full px-3 py-2 rounded-lg border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                              />
+                            </div>
+                          )}
+
+                          <div>
+                            <label className="block text-xs font-medium text-muted-foreground mb-1">Rest (s)</label>
+                            <input
+                              type="number"
+                              value={ex.restSec ?? 60}
+                              onChange={(e) => updateExercise(index, { restSec: parseInt(e.target.value) || 60 })}
+                              min={0}
+                              step={15}
+                              placeholder="60"
+                              className="w-full px-3 py-2 rounded-lg border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs text-muted-foreground mb-1">Notes (Optional)</label>
+                          <input
+                            type="text"
+                            value={ex.notes || ""}
+                            onChange={(e) => updateExercise(index, { notes: e.target.value })}
+                            placeholder="Add exercise notes..."
+                            className="w-full px-3 py-2 rounded-lg border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                          />
+                        </div>
+                      </div>
+                    )
+                  })()}
                 </div>
               ))}
 

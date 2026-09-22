@@ -6,6 +6,8 @@ import { Toaster } from "@/components/ui/sonner"
 import { AppNavigation } from "@/components/app-navigation"
 import { ThemeProvider } from "@/components/theme-provider"
 
+import { ServiceWorkerRegister } from "@/components/sw-register"
+
 export const metadata: Metadata = {
   title: 'Fitness Tracker',
   description: 'Track your workouts and progress',
@@ -27,6 +29,7 @@ export default function RootLayout({
           disableTransitionOnChange={false}
           storageKey="fitness-tracker-theme"
         >
+          <ServiceWorkerRegister />
           <AppNavigation />
           {children}
           <Toaster />

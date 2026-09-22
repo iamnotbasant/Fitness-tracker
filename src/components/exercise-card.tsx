@@ -120,6 +120,11 @@ export function ExerciseCard({ ex, onDelete }: ExerciseCardProps) {
               {ex.type}
             </span>
           )}
+          {ex.repGoal && (
+            <span className="rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 px-2 py-0.5 text-[11px] font-semibold">
+              {ex.type === "timer" ? `${ex.repGoal}s` : `${ex.repGoal} reps`}
+            </span>
+          )}
         </div>
       </div>
     </div>

@@ -412,18 +412,55 @@ export function useActiveSession() {
     const now = new Date()
     const isoDatetime = now.toISOString()
     
-    // Create optimistic local session immediately
+    // Instantly construct items if routineId is provided from local cache
+    let initialItems: SessionExercise[] = []
+    if (routineId && typeof window !== "undefined") {
+      try {
+        const cachedRaw = localStorage.getItem("ft_cache_/api/routines")
+        if (cachedRaw) {
+          const cached = JSON.parse(cachedRaw)
+          const allRoutines: Routine[] = cached.routines || cached || []
+          const found = allRoutines.find((r) => String(r.id) === String(routineId))
+          if (found && Array.isArray(found.exercises)) {
+            initialItems = found.exercises.map((ex: any) => {
+              const isTimer = ex.type === "timer" || ex.defaultTimeSeconds !== undefined || String(ex.exerciseName || "").toLowerCase().includes("plank") || String(ex.exerciseName || "").toLowerCase().includes("hang") || String(ex.exerciseName || "").toLowerCase().includes("hold")
+              const numSets = ex.defaultSets || 3
+              return {
+                id: `item-${crypto.randomUUID()}`,
+                exerciseId: String(ex.exerciseId),
+                name: ex.exerciseName,
+                split: ex.split,
+                level: ex.level,
+                notes: ex.notes || "",
+                restEnabled: true,
+                restSec: ex.restSec || 60,
+                sets: Array(numSets).fill(null).map(() => ({
+                  reps: isTimer ? undefined : undefined,
+                  timeSeconds: isTimer ? (ex.defaultTimeSeconds || 30) : undefined,
+                  weight: ex.defaultWeight,
+                  done: false,
+                })),
+              }
+            })
+          }
+        }
+      } catch (err) {
+        console.warn("Could not pre-populate routine items locally:", err)
+      }
+    }
+
+    // Create optimistic local session immediately with populated items!
     const optimisticSession: WorkoutSession = {
       id: `session-local-${Date.now()}`,
       userId: "local",
       status: "active",
       startedAt: isoDatetime,
-      items: [],
-      routineId,
+      items: initialItems,
+      routineId: routineId ? String(routineId) : undefined,
       createdAt: isoDatetime,
     }
 
-    // Save locally immediately
+    // Save locally immediately for 0ms transition
     if (typeof window !== "undefined") {
       localStorage.setItem("ft_active_offline_session", JSON.stringify(optimisticSession))
     }
@@ -443,8 +480,8 @@ export function useActiveSession() {
         credentials: "include",
         body: JSON.stringify({ 
           startedAt: isoDatetime,
-          items: [],
-          routineId 
+          items: initialItems,
+          routineId: routineId ? String(routineId) : undefined 
         }),
       })
       if (res.ok) {
@@ -708,6 +745,7 @@ export function useActiveSession() {
 export function useOfflineStatus() {
   const [isOnline, setIsOnline] = useState(true)
   const [pendingCount, setPendingCount] = useState(0)
+  const [isSyncing, setIsSyncing] = useState(false)
 
   const checkStatus = useCallback(() => {
     if (typeof window === "undefined") return
@@ -719,6 +757,30 @@ export function useOfflineStatus() {
       setPendingCount(0)
     }
   }, [])
+
+  const syncNow = useCallback(async () => {
+    if (typeof window === "undefined") return
+    if (!navigator.onLine) {
+      toast.error("Device is offline. Reconnect to the internet to sync.")
+      return
+    }
+    setIsSyncing(true)
+    const toastId = toast.loading("Syncing offline workouts...")
+    try {
+      const count = await syncOfflineWorkouts()
+      checkStatus()
+      if (count > 0) {
+        toast.success(`Synced ${count} offline workout(s) successfully!`, { id: toastId })
+        globalMutate("/api/workouts?limit=10000")
+      } else {
+        toast.success("All workouts are up to date!", { id: toastId })
+      }
+    } catch (e) {
+      toast.error("Failed to sync offline workouts. Will retry automatically.", { id: toastId })
+    } finally {
+      setIsSyncing(false)
+    }
+  }, [checkStatus])
 
   useEffect(() => {
     checkStatus()
@@ -737,13 +799,18 @@ export function useOfflineStatus() {
     }
     window.addEventListener("online", handleOnline)
     window.addEventListener("offline", handleOffline)
+    window.addEventListener("focus", checkStatus)
+    const interval = setInterval(checkStatus, 5000)
+
     return () => {
       window.removeEventListener("online", handleOnline)
       window.removeEventListener("offline", handleOffline)
+      window.removeEventListener("focus", checkStatus)
+      clearInterval(interval)
     }
   }, [checkStatus])
 
-  return { isOnline, pendingCount, syncNow: syncOfflineWorkouts }
+  return { isOnline, pendingCount, isSyncing, syncNow }
 }
 
 export function useRoutines() {
@@ -756,50 +823,104 @@ export function useRoutines() {
     }
   )
 
+  const currentRoutines = data?.routines ?? []
+
+  const updateLocalRoutineCache = (newList: Routine[]) => {
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("ft_cache_/api/routines", JSON.stringify({ routines: newList }))
+      } catch {}
+    }
+  }
+
   const create = async (routine: Omit<Routine, "id" | "createdAt">) => {
-    const token = localStorage.getItem("bearer_token")
-    const res = await fetch("/api/routines", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(token && { Authorization: `Bearer ${token}` }),
-      },
-      credentials: "include",
-      body: JSON.stringify(routine),
-    })
-    if (!res.ok) throw new Error("Failed to create routine")
-    const result = await res.json()
-    await mutate()
-    return result.routine
+    const token = typeof window !== "undefined" ? localStorage.getItem("bearer_token") : null
+    const tempId = `routine-local-${Date.now()}`
+    const tempRoutine: Routine = {
+      ...routine,
+      id: tempId,
+      createdAt: new Date().toISOString(),
+    }
+
+    const optimisticList = [tempRoutine, ...currentRoutines]
+    mutate({ routines: optimisticList }, { revalidate: false })
+    updateLocalRoutineCache(optimisticList)
+
+    if (typeof window !== "undefined" && !navigator.onLine) {
+      return tempRoutine
+    }
+
+    try {
+      const res = await fetch("/api/routines", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        credentials: "include",
+        body: JSON.stringify(routine),
+      })
+      if (!res.ok) throw new Error("Failed to create routine")
+      const result = await res.json()
+      await mutate()
+      return result.routine
+    } catch (err) {
+      console.warn("Offline or network issue saving routine, kept locally:", err)
+      return tempRoutine
+    }
   }
 
   const update = async (routine: Routine) => {
-    const token = localStorage.getItem("bearer_token")
-    const res = await fetch(`/api/routines/${routine.id}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        ...(token && { Authorization: `Bearer ${token}` }),
-      },
-      credentials: "include",
-      body: JSON.stringify(routine),
-    })
-    if (!res.ok) throw new Error("Failed to update routine")
-    await mutate()
+    const token = typeof window !== "undefined" ? localStorage.getItem("bearer_token") : null
+    const updatedList = currentRoutines.map((r) => String(r.id) === String(routine.id) ? { ...r, ...routine } : r)
+    mutate({ routines: updatedList }, { revalidate: false })
+    updateLocalRoutineCache(updatedList)
+
+    if (typeof window !== "undefined" && !navigator.onLine) {
+      return
+    }
+
+    try {
+      const res = await fetch(`/api/routines/${routine.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        credentials: "include",
+        body: JSON.stringify(routine),
+      })
+      if (!res.ok) throw new Error("Failed to update routine")
+      await mutate()
+    } catch (err) {
+      console.warn("Offline or network issue updating routine, saved locally:", err)
+    }
   }
 
   const remove = async (id: string) => {
-    const token = localStorage.getItem("bearer_token")
-    const res = await fetch(`/api/routines/${id}`, {
-      method: "DELETE",
-      credentials: "include",
-      headers: token ? {
-        Authorization: `Bearer ${token}`,
-      } : {},
-    })
-    if (!res.ok) throw new Error("Failed to delete routine")
-    await mutate()
+    const token = typeof window !== "undefined" ? localStorage.getItem("bearer_token") : null
+    const filtered = currentRoutines.filter((r) => String(r.id) !== String(id))
+    mutate({ routines: filtered }, { revalidate: false })
+    updateLocalRoutineCache(filtered)
+
+    if (typeof window !== "undefined" && !navigator.onLine) {
+      return
+    }
+
+    try {
+      const res = await fetch(`/api/routines/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+        headers: token ? {
+          Authorization: `Bearer ${token}`,
+        } : {},
+      })
+      if (!res.ok) throw new Error("Failed to delete routine")
+      await mutate()
+    } catch (err) {
+      console.warn("Offline or network issue deleting routine, updated locally:", err)
+    }
   }
 
-  return { routines: data?.routines ?? [], create, update, remove, refresh: () => mutate() }
+  return { routines: currentRoutines, create, update, remove, refresh: () => mutate() }
 }

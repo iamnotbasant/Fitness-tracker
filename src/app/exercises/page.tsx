@@ -461,17 +461,19 @@ function NewExerciseForm({
           </select>
         </div>
         <div>
-          <label className="text-sm font-medium text-muted-foreground">Rep Goal</label>
+          <label className="text-sm font-medium text-muted-foreground">
+            {selectedTypes.includes("timer") ? "Time Goal (seconds)" : "Rep Goal"}
+          </label>
           <input
             type="number"
             value={repGoal}
             onChange={(e) => setRepGoal(e.target.value ? Number(e.target.value) : "")}
             className="mt-2 w-full rounded-lg border bg-card px-4 py-2.5 text-base"
-            placeholder="e.g., 10"
+            placeholder={selectedTypes.includes("timer") ? "e.g., 60s" : "e.g., 10"}
             min="1"
           />
           <p className="mt-1.5 text-xs text-muted-foreground">
-            Target reps for this exercise
+            {selectedTypes.includes("timer") ? "Target duration in seconds" : "Target reps for this exercise"}
           </p>
         </div>
       </div>

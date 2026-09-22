@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation"
 import { useActiveSession, useExercises, useWorkouts, useRoutines, getLocalDateString, getLocalTimeString } from "@/hooks/use-local-data"
-import { Dumbbell, Plus, Search, ChevronLeft, Clock, Play, Loader2, Pin, MoreVertical, Eye, Edit, X, Check, AlertTriangle, Trash2 } from "lucide-react"
+import { Dumbbell, Plus, Search, ChevronLeft, Clock, Timer, Play, Loader2, Pin, MoreVertical, Eye, Edit, X, Check, AlertTriangle, Trash2 } from "lucide-react"
 import { useSession } from "@/lib/auth-client"
 import { useEffect, useState, useMemo, useCallback, useRef, memo } from "react"
 import { toast } from "sonner"
@@ -18,7 +18,7 @@ export default function WorkoutHub() {
   const { session: activeSession, start, addExercise, updateExercise, removeExercise, reorderExercises, discard, finish } = useActiveSession()
   const { exercises } = useExercises()
   const { workouts, refresh } = useWorkouts()
-  const { routines } = useRoutines()
+  const { routines, remove: removeRoutine } = useRoutines()
   const { data: session } = useSession()
   const [mounted, setMounted] = useState(false)
   
@@ -53,6 +53,19 @@ export default function WorkoutHub() {
   // Routine Full Overview & Context Menu
   const [overviewRoutine, setOverviewRoutine] = useState<any | null>(null)
   const [routineContextMenu, setRoutineContextMenu] = useState<{ routine: any; x: number; y: number } | null>(null)
+  const [deletingRoutine, setDeletingRoutine] = useState<any | null>(null)
+
+  const handleDeleteRoutine = async (routineId: string) => {
+    try {
+      await removeRoutine(String(routineId))
+      toast.success("Routine deleted successfully")
+      setDeletingRoutine(null)
+      setOverviewRoutine(null)
+    } catch (e) {
+      console.error("Failed to delete routine:", e)
+      toast.error("Failed to delete routine")
+    }
+  }
 
   // Load pinned routines from localStorage
   useEffect(() => {
@@ -699,17 +712,17 @@ export default function WorkoutHub() {
               <div className="rounded-2xl border border-border/80 bg-card/95 backdrop-blur-xl p-3.5 shadow-xl">
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary font-bold">
-                      <Clock className="h-5 w-5 animate-pulse" />
+                    <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary font-bold shadow-xs">
+                      <Timer className="h-5 w-5" />
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-[11px] font-semibold uppercase tracking-wider text-primary">Resting</span>
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-primary">Resting</span>
                         <span className="text-xs text-muted-foreground truncate max-w-[110px] sm:max-w-[160px]">
                           {activeRest.exerciseName}
                         </span>
                       </div>
-                      <div className="text-xl font-bold tracking-tight text-foreground font-mono">
+                      <div className="text-2xl font-bold tracking-tight text-foreground font-mono">
                         {Math.floor(restRemaining / 60)}:{String(restRemaining % 60).padStart(2, "0")}
                       </div>
                     </div>
@@ -1069,6 +1082,18 @@ export default function WorkoutHub() {
                   <span>{pinnedRoutineIds.includes(String(routineContextMenu.routine.id)) ? "Unpin Routine" : "Pin to Top"}</span>
                 </button>
 
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDeletingRoutine(routineContextMenu.routine)
+                    setRoutineContextMenu(null)
+                  }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-destructive hover:bg-destructive/10 font-medium transition-colors cursor-pointer text-left"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  <span>Delete Routine</span>
+                </button>
+
                 <div className="my-1 border-t border-border/50" />
 
                 <button
@@ -1178,22 +1203,34 @@ export default function WorkoutHub() {
 
                   {/* Footer Actions */}
                   <div className="flex items-center justify-between p-4 border-t border-border/60 bg-muted/20">
-                    <button
-                      onClick={() => {
-                        const id = overviewRoutine.id
-                        setOverviewRoutine(null)
-                        router.push(`/workout/routines/${id}/edit`)
-                      }}
-                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
-                    >
-                      <Edit className="h-3.5 w-3.5" />
-                      <span>Edit Routine</span>
-                    </button>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => {
+                          const id = overviewRoutine.id
+                          setOverviewRoutine(null)
+                          router.push(`/workout/routines/${id}/edit`)
+                        }}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+                      >
+                        <Edit className="h-3.5 w-3.5" />
+                        <span>Edit</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          setDeletingRoutine(overviewRoutine)
+                          setOverviewRoutine(null)
+                        }}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        <span>Delete</span>
+                      </button>
+                    </div>
 
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => setOverviewRoutine(null)}
-                        className="px-4 py-2 rounded-xl border border-border/80 text-xs font-medium hover:bg-muted transition-colors cursor-pointer"
+                        className="px-3.5 py-1.5 rounded-xl border border-border/80 text-xs font-medium hover:bg-muted transition-colors cursor-pointer"
                       >
                         Close
                       </button>
@@ -1203,12 +1240,61 @@ export default function WorkoutHub() {
                           setOverviewRoutine(null)
                           handleStartRoutine(id)
                         }}
-                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-xs font-semibold text-primary-foreground hover:bg-primary/90 shadow-sm transition-all cursor-pointer"
+                        className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-primary text-xs font-semibold text-primary-foreground hover:bg-primary/90 shadow-sm transition-all cursor-pointer"
                       >
                         <Play className="h-3.5 w-3.5 fill-current" />
-                        <span>Start Workout</span>
+                        <span>Start</span>
                       </button>
                     </div>
+                  </div>
+                </motion.div>
+              </div>
+            </>
+          )}
+        </AnimatePresence>
+
+        {/* Delete Routine Confirmation Dialog */}
+        <AnimatePresence>
+          {deletingRoutine && (
+            <>
+              <div 
+                className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" 
+                onClick={() => setDeletingRoutine(null)}
+              />
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  className="w-full max-w-sm rounded-2xl border border-border/80 bg-card p-5 shadow-2xl space-y-4"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-destructive/10 text-destructive flex items-center justify-center shrink-0">
+                      <Trash2 className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-sm text-foreground">Delete Routine?</h3>
+                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
+                        &quot;{deletingRoutine.name}&quot; will be permanently deleted.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setDeletingRoutine(null)}
+                      className="px-3.5 py-1.5 rounded-xl border border-border/70 text-xs font-medium hover:bg-muted cursor-pointer transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteRoutine(deletingRoutine.id)}
+                      className="px-3.5 py-1.5 rounded-xl bg-destructive text-destructive-foreground text-xs font-semibold hover:bg-destructive/90 cursor-pointer shadow-xs transition-colors"
+                    >
+                      Delete Routine
+                    </button>
                   </div>
                 </motion.div>
               </div>

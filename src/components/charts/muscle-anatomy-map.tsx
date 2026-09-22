@@ -39,33 +39,33 @@ export interface MuscleStat {
   intensity: number // 0 to 1
 }
 
-// Exact 5-tier red intensity scale + pure white for No Workout (0%)
+// Refined thermal red heatmap scale with sleek dark slate for Untrained
 export const RED_HEATMAP_SCALE = [
-  { key: "no-workout", label: "No Workout (0%)", color: "#ffffff", stroke: "#18181b", min: 0, max: 0 },
-  { key: "very-low", label: "Very Low (0–10%)", color: "#FCD3D3", stroke: "#FE9997", min: 0, max: 10 },
-  { key: "low", label: "Low (10–40%)", color: "#FE9997", stroke: "#FD5F5F", min: 10, max: 40 },
-  { key: "moderate", label: "Moderate (40–70%)", color: "#FD5F5F", stroke: "#FE1E26", min: 40, max: 70 },
-  { key: "high", label: "High (70–90%)", color: "#FE1E26", stroke: "#840004", min: 70, max: 90 },
-  { key: "very-high", label: "Very High (90–100%)", color: "#840004", stroke: "#550002", min: 90, max: 100 },
+  { key: "no-workout", label: "Untrained", color: "#1c1f26", stroke: "#2d323e", min: 0, max: 0 },
+  { key: "very-low", label: "Light (0–10%)", color: "#4a181d", stroke: "#682329", min: 0, max: 10 },
+  { key: "low", label: "Mild (10–40%)", color: "#7f1d1d", stroke: "#991b1b", min: 10, max: 40 },
+  { key: "moderate", label: "Moderate (40–70%)", color: "#b91c1c", stroke: "#dc2626", min: 40, max: 70 },
+  { key: "high", label: "High (70–90%)", color: "#ef4444", stroke: "#f87171", min: 70, max: 90 },
+  { key: "very-high", label: "Max Overload (90–100%)", color: "#ff334b", stroke: "#ff6b7b", min: 90, max: 100 },
 ] as const
 
 export function getIntensityTier(intensity: number) {
   if (intensity <= 0) {
-    return { key: "no-workout", label: "No Workout", bracket: "0%", color: "#ffffff", stroke: "#18181b", text: "Untrained" }
+    return { key: "no-workout", label: "Untrained", bracket: "0%", color: "#1c1f26", stroke: "#2d323e", text: "Untrained" }
   }
   if (intensity <= 0.10) {
-    return { key: "very-low", label: "Very Low", bracket: "0–10%", color: "#FCD3D3", stroke: "#FE9997", text: "Light" }
+    return { key: "very-low", label: "Light", bracket: "0–10%", color: "#4a181d", stroke: "#682329", text: "Light" }
   }
   if (intensity <= 0.40) {
-    return { key: "low", label: "Low", bracket: "10–40%", color: "#FE9997", stroke: "#FD5F5F", text: "Mild" }
+    return { key: "low", label: "Mild", bracket: "10–40%", color: "#7f1d1d", stroke: "#991b1b", text: "Mild" }
   }
   if (intensity <= 0.70) {
-    return { key: "moderate", label: "Moderate", bracket: "40–70%", color: "#FD5F5F", stroke: "#FE1E26", text: "Solid" }
+    return { key: "moderate", label: "Moderate", bracket: "40–70%", color: "#b91c1c", stroke: "#dc2626", text: "Moderate" }
   }
   if (intensity <= 0.90) {
-    return { key: "high", label: "High", bracket: "70–90%", color: "#FE1E26", stroke: "#840004", text: "Heavy" }
+    return { key: "high", label: "High", bracket: "70–90%", color: "#ef4444", stroke: "#f87171", text: "High" }
   }
-  return { key: "very-high", label: "Very High", bracket: "90–100%", color: "#840004", stroke: "#550002", text: "Max Overload" }
+  return { key: "very-high", label: "Max Overload", bracket: "90–100%", color: "#ff334b", stroke: "#ff6b7b", text: "Max Overload" }
 }
 
 interface MuscleAnatomyMapProps {
@@ -378,33 +378,33 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
     return stats
   }, [workouts, exercises])
 
-  // Intensity color according to user-specified 5-tier red scale + pure white for No Workout
+  // Intensity color according to refined thermal red scale + dark slate for Untrained
   const getIntensityColor = (intensity: number) => {
-    if (intensity <= 0) return "#ffffff"    // Pure White for No Workout (0%)
-    if (intensity <= 0.10) return "#FCD3D3" // Very Low (0–10%)
-    if (intensity <= 0.40) return "#FE9997" // Low (10–40%)
-    if (intensity <= 0.70) return "#FD5F5F" // Moderate (40–70%)
-    if (intensity <= 0.90) return "#FE1E26" // High (70–90%)
-    return "#840004"                         // Very High (90–100%)
+    if (intensity <= 0) return "#1c1f26"    // Sleek Dark Slate for Untrained
+    if (intensity <= 0.10) return "#4a181d" // Light (0–10%)
+    if (intensity <= 0.40) return "#7f1d1d" // Mild (10–40%)
+    if (intensity <= 0.70) return "#b91c1c" // Moderate (40–70%)
+    if (intensity <= 0.90) return "#ef4444" // High (70–90%)
+    return "#ff334b"                         // Max Overload (90–100%)
   }
 
   // Get fill color for an SVG body part
   const getFillColor = (slug: string, isHovered: boolean, isSelected: boolean) => {
     if (NEUTRAL_SLUGS.has(slug)) {
-      return "#000000"
+      return "#101217"
     }
 
     const muscleKey = slugToMuscleKey(slug)
-    if (!muscleKey) return "#000000"
+    if (!muscleKey) return "#101217"
 
     const stat = muscleStats[muscleKey]
     const intensity = stat?.intensity ?? 0
 
     if (isSelected) {
-      return intensity > 0 ? "#FE1E26" : "#f4f4f5"
+      return intensity > 0 ? "#ef4444" : "#2d323f"
     }
     if (isHovered) {
-      return intensity > 0 ? "#FD5F5F" : "#e4e4e7"
+      return intensity > 0 ? "#f87171" : "#262a34"
     }
 
     return getIntensityColor(intensity)
@@ -412,26 +412,26 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
 
   // Get contour stroke color for crisp anatomical definition
   const getStrokeColor = (slug: string, isHovered: boolean, isSelected: boolean) => {
-    if (isSelected) return "#FE1E26"
-    if (isHovered) return "#FD5F5F"
+    if (isSelected) return "#ef4444"
+    if (isHovered) return "#f87171"
 
     const muscleKey = slugToMuscleKey(slug)
     const intensity = muscleKey ? muscleStats[muscleKey]?.intensity ?? 0 : 0
 
-    // Neutral non-muscle anatomical parts (head, hands, feet) keep obsidian slate outline
+    // Neutral non-muscle anatomical parts (head, hands, feet) keep dark slate outline
     if (NEUTRAL_SLUGS.has(slug)) {
-      return "#383842"
+      return "#232731"
     }
 
-    // Unworked muscles (pure white) get crisp dark seam outline so muscle shapes stand out clearly
+    // Unworked muscles get subtle dark seam outline
     if (intensity <= 0) {
-      return "#18181b"
+      return "#2a2f3a"
     }
 
     // High and very-high active muscles get glowing distinct red borders
-    if (intensity > 0.70) return "#FE1E26"
-    if (intensity > 0.40) return "#840004"
-    return "#550002"
+    if (intensity > 0.70) return "#f87171"
+    if (intensity > 0.40) return "#ef4444"
+    return "#991b1b"
   }
 
   // Active inspected muscle (hover takes temporary preview precedence, selected locks it)
@@ -545,7 +545,7 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
           <div>
             <h3 className="text-sm sm:text-base font-bold text-foreground">Muscle Map & Heatmap</h3>
             <p className="text-[11px] text-muted-foreground">
-              Anatomical mannequin with 5-tier red intensity & pure white unworked muscles
+              Anatomical activation & volume distribution
             </p>
           </div>
         </div>
@@ -592,46 +592,19 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
           {/* Subtle ambient gradient backdrop */}
           <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_center,_rgba(255,255,255,0.03)_0%,_transparent_70%)]" />
 
-          {/* Training Status HUD Bar */}
-          <div className="w-full flex items-center justify-between gap-2 mb-3 px-1 z-10 flex-wrap">
-            <div className="flex items-center gap-2 text-[11px]">
-              <span className="font-bold text-muted-foreground flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                Trained: <span className="text-[#FE1E26] font-black">{trainedStats.trainedCount}</span>/16 ({trainedStats.trainedPct}%)
+          {/* Minimal Status Header */}
+          <div className="w-full flex items-center justify-between gap-2 mb-3 px-1 z-10">
+            <div className="flex items-center gap-2 text-xs">
+              <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+              <span className="font-semibold text-foreground">
+                {trainedStats.trainedCount} of 16
               </span>
-              <span className="text-muted-foreground">·</span>
-              <span className="text-muted-foreground">
-                Untrained: <span className="font-semibold text-foreground/80">{trainedStats.untrainedCount}</span>/16
-              </span>
+              <span className="text-muted-foreground text-[11px]">muscles active ({trainedStats.trainedPct}%)</span>
             </div>
 
-            {/* Quick highlight filter: All | Trained | Untrained */}
-            <div className="flex items-center gap-1 bg-background/80 p-0.5 rounded-lg border border-border/60 text-[10px] font-semibold">
-              <button
-                onClick={() => setFilterMode("all")}
-                className={`px-2 py-0.5 rounded-md transition-all cursor-pointer ${
-                  filterMode === "all" ? "bg-primary text-primary-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                All
-              </button>
-              <button
-                onClick={() => setFilterMode("trained")}
-                className={`px-2 py-0.5 rounded-md transition-all cursor-pointer ${
-                  filterMode === "trained" ? "bg-[#FE1E26] text-white shadow-xs" : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                Trained ({trainedStats.trainedCount})
-              </button>
-              <button
-                onClick={() => setFilterMode("untrained")}
-                className={`px-2 py-0.5 rounded-md transition-all cursor-pointer ${
-                  filterMode === "untrained" ? "bg-secondary text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                Untrained ({trainedStats.untrainedCount})
-              </button>
-            </div>
+            <span className="text-[11px] text-muted-foreground hidden sm:inline">
+              Click muscle to inspect
+            </span>
           </div>
 
           {/* Live Interactive Hover HUD */}
@@ -650,15 +623,15 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
                     <span className="text-muted-foreground">({activeInspectedStat.reps} reps)</span>
                     <span
                       className="px-1.5 py-0.2 rounded text-[10px] font-bold uppercase tracking-wider text-white shadow-xs"
-                      style={{ backgroundColor: activeInspectedTier.color === "#ffffff" ? "#27272a" : activeInspectedTier.color }}
+                      style={{ backgroundColor: activeInspectedTier.color }}
                     >
                       {activeInspectedTier.label} ({Math.round(activeInspectedStat.intensity * 100)}%)
                     </span>
                   </span>
                 ) : (
                   <span className="text-muted-foreground font-medium flex items-center gap-1.5">
-                    <span className="h-2 w-2 rounded-sm bg-white border border-border/80 shadow-2xs" />
-                    0 sets logged (No Workout / Untrained)
+                    <span className="h-2 w-2 rounded-sm bg-[#1c1f26] border border-border/80 shadow-2xs" />
+                    Untrained (0 sets)
                   </span>
                 )}
               </div>
@@ -758,23 +731,23 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
             </AnimatePresence>
           </div>
 
-          {/* Color Intensity Scale Legend (Clean Heatmap Style matching user reference) */}
-          <div className="flex items-center justify-center gap-2.5 pt-5 border-t border-border/30 w-full mt-4 z-10 text-xs">
-            <span className="text-xs font-semibold text-muted-foreground">Less</span>
+          {/* Color Intensity Scale Legend */}
+          <div className="flex items-center justify-center gap-2.5 pt-4 border-t border-border/30 w-full mt-3 z-10 text-xs">
+            <span className="text-[11px] font-semibold text-muted-foreground">Untrained</span>
             <div className="flex items-center gap-1.5">
               {RED_HEATMAP_SCALE.map((item) => (
                 <div
                   key={item.key}
-                  className="h-3.5 w-3.5 sm:h-4 sm:w-4 rounded-[4px] border shadow-2xs transition-transform hover:scale-120 cursor-pointer"
+                  className="h-3.5 w-3.5 sm:h-4 sm:w-4 rounded-[4px] border shadow-2xs transition-transform hover:scale-110 cursor-pointer"
                   style={{
                     backgroundColor: item.color,
-                    borderColor: item.color === "#ffffff" ? "#cbd5e1" : item.stroke,
+                    borderColor: item.color === "#1c1f26" ? "#2d323e" : item.stroke,
                   }}
                   title={item.label}
                 />
               ))}
             </div>
-            <span className="text-xs font-semibold text-muted-foreground">More Intensity</span>
+            <span className="text-[11px] font-semibold text-muted-foreground">Max Overload</span>
           </div>
         </div>
 
@@ -800,16 +773,14 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
                         <span
                           className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-md text-white shadow-xs"
                           style={{
-                            backgroundColor: getIntensityTier(muscleStats[selectedMuscle].intensity).color === "#ffffff"
-                              ? "#27272a"
-                              : getIntensityTier(muscleStats[selectedMuscle].intensity).color,
+                            backgroundColor: getIntensityTier(muscleStats[selectedMuscle].intensity).color,
                           }}
                         >
                           {getIntensityTier(muscleStats[selectedMuscle].intensity).label} ({Math.round(muscleStats[selectedMuscle].intensity * 100)}%)
                         </span>
                       ) : (
-                        <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-md bg-muted text-muted-foreground border border-border/60">
-                          Untrained (No Workout)
+                        <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-md bg-[#1c1f26] text-muted-foreground border border-border/60">
+                          Untrained
                         </span>
                       )}
                     </div>
@@ -841,7 +812,7 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
                     <span className="font-bold text-foreground">
                       {muscleStats[selectedMuscle].sets > 0
                         ? `${Math.round(muscleStats[selectedMuscle].intensity * 100)}% (${getIntensityTier(muscleStats[selectedMuscle].intensity).label})`
-                        : "0% (No Workout)"}
+                        : "0% (Untrained)"}
                     </span>
                   </div>
                   <div className="h-2 w-full rounded-full bg-secondary overflow-hidden">
@@ -859,7 +830,7 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
                 <div className="grid grid-cols-3 gap-2.5 text-center">
                   <div className="p-2.5 rounded-xl bg-background/80 border border-border/50">
                     <span className="text-[10px] text-muted-foreground block font-medium">Logged Sets</span>
-                    <span className={`text-lg font-black ${muscleStats[selectedMuscle].sets > 0 ? "text-[#FE1E26]" : "text-muted-foreground"}`}>
+                    <span className="text-lg font-black text-foreground">
                       {muscleStats[selectedMuscle].sets}
                     </span>
                   </div>
@@ -870,32 +841,31 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
                     </span>
                   </div>
                   <div className="p-2.5 rounded-xl bg-background/80 border border-border/50">
-                    <span className="text-[10px] text-muted-foreground block font-medium">Points Volume</span>
+                    <span className="text-[10px] text-muted-foreground block font-medium">Points</span>
                     <span className="text-lg font-black text-primary">
                       {muscleStats[selectedMuscle].points}
                     </span>
                   </div>
                 </div>
 
-                {/* Targeted Exercises or Suggested Exercises */}
+                {/* Exercises logged for this muscle */}
                 <div className="space-y-2 pt-1">
+                  <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                    <AnimatedDumbbell className="h-3.5 w-3.5 text-primary" />
+                    Exercises Stimulating This Muscle
+                  </span>
+
                   {muscleStats[selectedMuscle].exercises.length > 0 ? (
                     <>
-                      <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
-                        <AnimatedDumbbell className="h-3.5 w-3.5 text-primary" />
-                        Targeted Exercises in this Period
-                      </span>
-                      <div className="space-y-1.5 max-h-44 overflow-y-auto pr-1 scrollbar-none">
-                        {muscleStats[selectedMuscle].exercises.map((ex, i) => (
+                      <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1 scrollbar-none">
+                        {muscleStats[selectedMuscle].exercises.map((ex, idx) => (
                           <div
-                            key={i}
+                            key={idx}
                             className="flex items-center justify-between p-2.5 rounded-xl bg-background/70 border border-border/40 text-xs"
                           >
-                            <span className="font-semibold text-foreground truncate max-w-[170px]">
-                              {ex.name}
-                            </span>
-                            <span className="text-muted-foreground font-medium shrink-0">
-                              {ex.sets} sets · {ex.reps} reps
+                            <span className="font-semibold text-foreground">{ex.name}</span>
+                            <span className="text-muted-foreground font-medium">
+                              <span className="text-foreground font-bold">{ex.sets} sets</span> ({ex.reps} reps)
                             </span>
                           </div>
                         ))}
@@ -947,8 +917,8 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
                 {/* Quick Stats Grid */}
                 <div className="grid grid-cols-3 gap-2.5 text-center">
                   <div className="p-2.5 rounded-xl bg-background/80 border border-border/50">
-                    <span className="text-[10px] text-muted-foreground block font-medium">Trained Muscles</span>
-                    <span className="text-lg font-black text-[#FE1E26]">
+                    <span className="text-[10px] text-muted-foreground block font-medium">Trained</span>
+                    <span className="text-lg font-black text-[#ef4444]">
                       {trainedStats.trainedCount} <span className="text-xs font-normal text-muted-foreground">/ 16</span>
                     </span>
                   </div>
@@ -959,7 +929,7 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
                     </span>
                   </div>
                   <div className="p-2.5 rounded-xl bg-background/80 border border-border/50">
-                    <span className="text-[10px] text-muted-foreground block font-medium">Points Volume</span>
+                    <span className="text-[10px] text-muted-foreground block font-medium">Points</span>
                     <span className="text-lg font-black text-primary">
                       {trainedStats.totalPoints}
                     </span>
@@ -983,7 +953,7 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
                       </p>
                     </div>
                   ) : (
-                    <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1 scrollbar-none">
+                    <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1 scrollbar-none">
                       {trainedStats.topMuscles.map((m) => {
                         const pct = Math.round((m.sets / Math.max(1, trainedStats.totalSets)) * 100)
                         const tier = getIntensityTier(m.intensity)
@@ -994,9 +964,9 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
                               soundManager.play("click", 0.35)
                               setSelectedMuscle(m.key)
                             }}
-                            className="p-2 rounded-xl bg-background/70 border border-border/40 text-xs cursor-pointer hover:border-primary/50 transition-colors"
+                            className="p-2.5 rounded-xl bg-background/70 border border-border/40 text-xs cursor-pointer hover:border-primary/50 transition-colors"
                           >
-                            <div className="flex items-center justify-between mb-1">
+                            <div className="flex items-center justify-between mb-1.5">
                               <span className="font-semibold text-foreground flex items-center gap-1.5">
                                 <span
                                   className="h-2 w-2 rounded-full"
@@ -1031,7 +1001,7 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
                       <AlertCircle className="h-3.5 w-3.5 text-muted-foreground" />
                       Untrained Muscles ({trainedStats.untrainedCount})
                     </span>
-                    <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto pr-1">
+                    <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-1">
                       {trainedStats.untrained.map((u) => (
                         <button
                           key={u.key}
@@ -1039,7 +1009,7 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
                             soundManager.play("click", 0.3)
                             setSelectedMuscle(u.key)
                           }}
-                          className="px-2 py-0.5 rounded-lg text-[10px] font-medium bg-background/60 hover:bg-background text-muted-foreground hover:text-foreground border border-border/50 transition-colors cursor-pointer"
+                          className="px-2.5 py-1 rounded-lg text-[10px] font-medium bg-background/60 hover:bg-background text-muted-foreground hover:text-foreground border border-border/50 transition-colors cursor-pointer"
                         >
                           {u.name.split(" ")[0]}
                         </button>
@@ -1050,64 +1020,6 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
               </motion.div>
             )}
           </AnimatePresence>
-
-          {/* Muscle Select Chips */}
-          <div className="rounded-2xl border border-border/60 bg-secondary/20 p-3.5">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-semibold text-muted-foreground block">
-                Quick Select Muscle:
-              </span>
-              {selectedMuscle && (
-                <button
-                  onClick={() => {
-                    soundManager.play("click", 0.3)
-                    setSelectedMuscle(null)
-                  }}
-                  className="text-[10px] text-primary hover:underline cursor-pointer"
-                >
-                  Clear Selection
-                </button>
-              )}
-            </div>
-            <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto pr-1 scrollbar-none">
-              {Object.values(muscleStats).map((s) => {
-                const isSelected = selectedMuscle === s.key
-                const isTrained = s.sets > 0
-                const tier = getIntensityTier(s.intensity)
-
-                return (
-                  <button
-                    key={s.key}
-                    onClick={() => {
-                      soundManager.play("click", 0.3)
-                      setSelectedMuscle((prev) => (prev === s.key ? null : s.key))
-                    }}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer flex items-center gap-1.5 ${
-                      isSelected
-                        ? "bg-primary text-primary-foreground font-semibold shadow-xs"
-                        : isTrained
-                        ? "bg-secondary/90 text-foreground border border-border/70 hover:border-primary/50"
-                        : "bg-secondary/40 text-muted-foreground hover:bg-secondary/70 hover:text-foreground"
-                    }`}
-                  >
-                    <span
-                      className="h-2 w-2 rounded-full shrink-0"
-                      style={{
-                        backgroundColor: isTrained ? tier.color : "#ffffff",
-                        border: isTrained ? undefined : "1px solid #71717a",
-                      }}
-                    />
-                    <span>{s.name.split(" ")[0]}</span>
-                    {s.sets > 0 ? (
-                      <span className="font-bold text-[11px] text-primary">({s.sets})</span>
-                    ) : (
-                      <span className="text-[10px] opacity-60">(0)</span>
-                    )}
-                  </button>
-                )
-              })}
-            </div>
-          </div>
         </div>
       </div>
     </div>

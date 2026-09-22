@@ -6,14 +6,14 @@ import Link from "next/link"
 import { useTheme } from "next-themes"
 import { SegmentedNav } from "@/components/nav-segmented"
 import { AuthButton } from "@/components/auth-button"
-import { Menu, Sun, Moon, WifiOff, Play, User } from "lucide-react"
+import { Menu, Sun, Moon, WifiOff, Play, User, RefreshCw } from "lucide-react"
 import { AnimatedFlame, AnimatedDumbbell, AnimatedActivity } from "@/components/ui/animated-icons"
 import { useOfflineStatus } from "@/hooks/use-local-data"
 
 export function AppNavigation() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const { theme, setTheme } = useTheme()
-  const { isOnline, pendingCount, syncNow } = useOfflineStatus()
+  const { isOnline, pendingCount, isSyncing, syncNow } = useOfflineStatus()
   
   const navItems = [
     { href: "/", label: "Dashboard", icon: <AnimatedFlame size={16} className="text-current" /> },
@@ -33,16 +33,26 @@ export function AppNavigation() {
             <Link href="/" className="text-lg font-semibold tracking-tight whitespace-nowrap hover:opacity-90 transition-opacity">
               Fitness Tracker
             </Link>
-            {!isOnline && (
+            {!isOnline ? (
               <button
                 onClick={syncNow}
-                className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-500 text-[11px] font-semibold transition-all hover:bg-amber-500/20 cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-500 text-[11px] font-semibold transition-all hover:bg-amber-500/20 cursor-pointer"
                 title="Working offline. Click to sync."
               >
                 <WifiOff className="h-3 w-3" />
                 <span>Offline {pendingCount > 0 ? `(${pendingCount})` : ""}</span>
               </button>
-            )}
+            ) : pendingCount > 0 ? (
+              <button
+                onClick={syncNow}
+                disabled={isSyncing}
+                className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-primary/15 border border-primary/40 text-primary text-[11px] font-semibold transition-all hover:bg-primary/25 cursor-pointer"
+                title="Pending offline workouts. Click to sync now."
+              >
+                <RefreshCw className={`h-3 w-3 ${isSyncing ? "animate-spin" : ""}`} />
+                <span>{isSyncing ? "Syncing..." : `Sync (${pendingCount})`}</span>
+              </button>
+            ) : null}
           </div>
           
           {/* Desktop Navigation - Center (Fits 5 tabs cleanly without overflow or scrollbars) */}

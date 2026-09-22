@@ -69,10 +69,26 @@ export default function WorkoutConfirmationDialog({ open, onClose, onConfirm, ex
 
   if (!open) return null
 
-  // Helper to check if exercise is timer-based
-  const isTimerExercise = (exerciseId: string) => {
-    const exercise = exercisesList?.find(e => e.id === exerciseId)
-    return exercise?.type === "timer"
+  // Robust helper to check if exercise is timer-based
+  const isTimerExercise = (exerciseId: string, exerciseName?: string, sets?: any[]) => {
+    const exercise = exercisesList?.find(e => String(e.id) === String(exerciseId) || (exerciseName && e.name.toLowerCase() === exerciseName.toLowerCase()))
+    if (exercise?.type === "timer") return true
+    const nameLower = (exerciseName || exercise?.name || "").toLowerCase()
+    if (nameLower.includes("hang") || nameLower.includes("plank") || nameLower.includes("hold") || nameLower.includes("wall sit")) {
+      return true
+    }
+    if (sets && sets.some(s => s.timeSeconds !== undefined && s.timeSeconds > 0)) {
+      return true
+    }
+    return false
+  }
+
+  // Helper to check if exercise is weighted
+  const isWeightedExercise = (exerciseId: string, exerciseName?: string, sets?: any[]) => {
+    const exercise = exercisesList?.find(e => String(e.id) === String(exerciseId) || (exerciseName && e.name.toLowerCase() === exerciseName.toLowerCase()))
+    if (exercise?.type === "weighted") return true
+    if (sets && sets.some(s => s.weight !== undefined && s.weight > 0)) return true
+    return false
   }
 
   const updateExerciseSet = (exerciseIndex: number, setIndex: number, field: 'reps' | 'timeSeconds' | 'weight', value: number | undefined) => {
@@ -97,18 +113,20 @@ export default function WorkoutConfirmationDialog({ open, onClose, onConfirm, ex
   const totalSets = editableExercises.reduce((acc, ex) => acc + ex.sets.filter(s => s.done).length, 0)
 
   const totalReps = editableExercises.reduce((acc, ex) => {
+    const isTimer = isTimerExercise(ex.exerciseId, ex.name, ex.sets)
+    if (isTimer) return acc
     return acc + ex.sets.filter(s => s.done).reduce((setAcc, s) => setAcc + (s.reps || 0), 0)
   }, 0)
 
   const totalPoints = editableExercises.reduce((acc, ex) => {
-    const exRecord = exercisesList?.find(e => e.id === ex.exerciseId)
-    const isTimer = exRecord?.type === "timer"
-    const isWeighted = exRecord?.type === "weighted"
+    const exRecord = exercisesList?.find(e => String(e.id) === String(ex.exerciseId) || e.name.toLowerCase() === ex.name.toLowerCase())
+    const isTimer = isTimerExercise(ex.exerciseId, ex.name, ex.sets)
+    const isWeighted = isWeightedExercise(ex.exerciseId, ex.name, ex.sets)
     const level = exRecord?.level || ex.level || 1
     
     const exPoints = ex.sets.filter(s => s.done).reduce((setAcc, s) => {
       if (isTimer) {
-        const sec = s.timeSeconds || 0
+        const sec = s.timeSeconds || s.reps || 0
         return setAcc + Math.round((sec / 5) * level)
       } else if (isWeighted || (s.weight && s.weight > 0)) {
         const w = s.weight || 0
@@ -228,14 +246,20 @@ export default function WorkoutConfirmationDialog({ open, onClose, onConfirm, ex
               const completedSets = exercise.sets.filter(s => s.done)
               if (completedSets.length === 0) return null
 
-              // Check if this exercise is timer-based by looking up its type
-              const isTimeBased = isTimerExercise(exercise.exerciseId)
+              // Check if this exercise is timer-based by looking up its type or name
+              const isTimeBased = isTimerExercise(exercise.exerciseId, exercise.name, exercise.sets)
+              const isWeighted = isWeightedExercise(exercise.exerciseId, exercise.name, exercise.sets)
 
               return (
                 <div key={exercise.id} className="rounded-xl border bg-background p-4">
                   <div className="flex items-start justify-between mb-3">
                     <div>
-                      <h3 className="font-semibold text-primary">{exercise.name}</h3>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold text-primary">{exercise.name}</h3>
+                        <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-muted text-muted-foreground uppercase tracking-wide">
+                          {isTimeBased ? "Timer" : isWeighted ? "Weighted" : "Reps"}
+                        </span>
+                      </div>
                       <p className="text-xs text-muted-foreground mt-0.5">
                         {completedSets.length} set{completedSets.length !== 1 ? 's' : ''} completed
                       </p>
@@ -243,7 +267,7 @@ export default function WorkoutConfirmationDialog({ open, onClose, onConfirm, ex
                     <button
                       onClick={() => removeExercise(exIdx)}
                       disabled={isSaving}
-                      className="rounded-lg px-3 py-1.5 text-xs font-medium text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="rounded-lg px-3 py-1.5 text-xs font-medium text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                     >
                       Remove
                     </button>
@@ -255,56 +279,56 @@ export default function WorkoutConfirmationDialog({ open, onClose, onConfirm, ex
                       
                       return (
                         <div key={setIdx} className="flex items-center gap-3 text-sm">
-                          <span className="font-medium w-12">Set {setIdx + 1}</span>
+                          <span className="font-medium w-12 text-muted-foreground">Set {setIdx + 1}</span>
                           
                           {isTimeBased ? (
-                            <>
+                            <div className="flex items-center gap-1.5">
                               <input
                                 type="number"
-                                value={set.timeSeconds ?? ""}
+                                value={set.timeSeconds ?? (set.reps && set.reps > 0 ? set.reps : "")}
                                 onChange={(e) => updateExerciseSet(exIdx, setIdx, 'timeSeconds', Number(e.target.value) || undefined)}
                                 disabled={isSaving}
-                                className="w-20 rounded-lg border bg-card px-2 py-1.5 outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="w-20 rounded-lg border bg-card px-2.5 py-1.5 outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed font-medium text-foreground"
                                 placeholder="sec"
                                 min={0}
                               />
-                              <span className="text-muted-foreground">seconds</span>
-                            </>
+                              <span className="text-muted-foreground text-xs font-medium">seconds</span>
+                            </div>
                           ) : (
-                            <>
+                            <div className="flex items-center gap-1.5">
                               <input
                                 type="number"
                                 value={set.reps ?? ""}
                                 onChange={(e) => updateExerciseSet(exIdx, setIdx, 'reps', Number(e.target.value) || undefined)}
                                 disabled={isSaving}
-                                className="w-20 rounded-lg border bg-card px-2 py-1.5 outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="w-20 rounded-lg border bg-card px-2.5 py-1.5 outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed font-medium text-foreground"
                                 placeholder="reps"
                                 min={0}
                               />
-                              <span className="text-muted-foreground">reps</span>
-                            </>
+                              <span className="text-muted-foreground text-xs font-medium">reps</span>
+                            </div>
                           )}
 
-                          {set.weight !== undefined && !isTimeBased && (
-                            <>
+                          {(isWeighted || set.weight !== undefined) && !isTimeBased && (
+                            <div className="flex items-center gap-1.5">
                               <input
                                 type="number"
                                 value={set.weight ?? ""}
                                 onChange={(e) => updateExerciseSet(exIdx, setIdx, 'weight', Number(e.target.value) || undefined)}
                                 disabled={isSaving}
-                                className="w-20 rounded-lg border bg-card px-2 py-1.5 outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="w-20 rounded-lg border bg-card px-2.5 py-1.5 outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed font-medium text-foreground"
                                 placeholder="kg"
                                 min={0}
                                 step="0.5"
                               />
-                              <span className="text-muted-foreground">kg</span>
-                            </>
+                              <span className="text-muted-foreground text-xs font-medium">kg</span>
+                            </div>
                           )}
 
                           <button
                             onClick={() => removeSet(exIdx, setIdx)}
                             disabled={isSaving}
-                            className="ml-auto text-xs text-destructive hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="ml-auto text-xs text-destructive hover:underline disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                           >
                             Remove
                           </button>

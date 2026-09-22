@@ -903,7 +903,7 @@ function LiveExerciseCard({
             }}
             className="mt-2.5 text-xs font-semibold rounded-xl px-3 py-1.5 inline-flex items-center gap-1.5 bg-primary/15 text-primary border border-primary/25"
           >
-            <Clock className="h-3.5 w-3.5 animate-spin" />
+            <TimerIcon className="h-3.5 w-3.5" />
             <span>Rest: {restLeft}s remaining</span>
           </motion.div>
         )}

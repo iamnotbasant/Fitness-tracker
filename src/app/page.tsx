@@ -164,9 +164,14 @@ export default function DashboardPage() {
             // Combine all sets for this exercise
             const totalSets = sortedWorkouts.length
             const durationSeconds = sortedWorkouts[0].durationSeconds
+            const minId = Math.min(...sortedWorkouts.map(w => {
+              const n = Number(String(w.id).replace(/\D/g, ''))
+              return isNaN(n) ? 0 : n
+            }))
             
             return {
               id: sortedWorkouts[0].id,
+              minId,
               exerciseName,
               sets: totalSets,
               setDetails: sortedWorkouts.map(w => ({
@@ -182,6 +187,7 @@ export default function DashboardPage() {
               allIds: sortedWorkouts.map(w => w.id)
             }
           })
+          .sort((a, b) => a.minId - b.minId)
         }
       })
   }, [filteredWorkouts])

@@ -713,7 +713,7 @@ export default function ExerciseDetailPage() {
 
               <div>
                 <label htmlFor="repGoal" className="block text-sm font-medium mb-2">
-                  Rep Goal
+                  {editSelectedTypes.includes("timer") ? "Time Goal (seconds)" : "Rep Goal"}
                 </label>
                 <input
                   id="repGoal"
@@ -721,9 +721,12 @@ export default function ExerciseDetailPage() {
                   value={editRepGoal}
                   onChange={(e) => setEditRepGoal(e.target.value ? Number(e.target.value) : "")}
                   className="w-full rounded-lg border bg-background px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                  placeholder="e.g., 10"
+                  placeholder={editSelectedTypes.includes("timer") ? "e.g., 60s" : "e.g., 10"}
                   min="1"
                 />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {editSelectedTypes.includes("timer") ? "Target duration in seconds" : "Target reps for this exercise"}
+                </p>
               </div>
             </div>
 
@@ -917,6 +920,11 @@ export default function ExerciseDetailPage() {
             ) : null}
             {typeof exercise.level === "number" ? (
               <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium">L{exercise.level}</span>
+            ) : null}
+            {exercise.repGoal ? (
+              <span className="rounded-full bg-primary/10 text-primary border border-primary/20 px-2.5 py-1 text-xs font-semibold">
+                {isTimerExercise ? `Target: ${exercise.repGoal}s` : `Target: ${exercise.repGoal} reps`}
+              </span>
             ) : null}
           </div>
         </div>
@@ -1241,7 +1249,7 @@ export default function ExerciseDetailPage() {
           <div className="rounded-lg border p-4">
             <h2 className="text-lg font-medium">Information</h2>
             <div className="mt-3 space-y-3 text-sm">
-              <div className="grid grid-cols-2 gap-3 max-sm:grid-cols-1">
+              <div className="grid grid-cols-3 gap-3 max-sm:grid-cols-1">
                 <div className="rounded-lg border bg-card p-3">
                   <div className="text-xs text-muted-foreground">Split</div>
                   <div className="mt-1 font-medium capitalize text-foreground">{exercise.split || "—"}</div>
@@ -1250,6 +1258,12 @@ export default function ExerciseDetailPage() {
                   <div className="text-xs text-muted-foreground">Level</div>
                   <div className="mt-1 font-medium text-foreground">
                     {typeof exercise.level === "number" ? `L${exercise.level}` : "—"}
+                  </div>
+                </div>
+                <div className="rounded-lg border bg-card p-3">
+                  <div className="text-xs text-muted-foreground">{isTimerExercise ? "Time Goal" : "Rep Goal"}</div>
+                  <div className="mt-1 font-medium text-foreground">
+                    {exercise.repGoal ? (isTimerExercise ? `${exercise.repGoal}s` : `${exercise.repGoal} reps`) : "—"}
                   </div>
                 </div>
               </div>

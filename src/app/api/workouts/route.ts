@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { workouts, exercises, user } from '@/db/schema';
-import { eq, and, like, or, gte, lte, desc } from 'drizzle-orm';
+import { eq, and, like, or, gte, lte, desc, asc } from 'drizzle-orm';
 import { getAuthenticatedUser } from '@/lib/auth-server';
 
 // Helper function to calculate points based on exercise type
@@ -73,7 +73,7 @@ export async function GET(request: NextRequest) {
     const results = await db.select()
       .from(workouts)
       .where(conditions.length > 0 ? and(...conditions) : undefined)
-      .orderBy(desc(workouts.date))
+      .orderBy(desc(workouts.date), asc(workouts.id))
       .limit(limit)
       .offset(offset);
 
