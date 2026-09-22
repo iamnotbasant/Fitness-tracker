@@ -77,9 +77,9 @@ export function calculateWorkoutPoints(params: PointsCalculationParams): {
     pointsPerSet = Math.round(reps * 2 * levelMultiplier)
   }
 
-  // Ensure minimum 1 point per completed set if exercise was performed,
+  // Ensure minimum 2 points per completed set if exercise was performed,
   // and cap at 250 points per single set to protect against typos
-  pointsPerSet = Math.max(1, Math.min(pointsPerSet, 250))
+  pointsPerSet = Math.max(2, Math.min(pointsPerSet, 250))
 
   const totalBasePoints = Math.round(pointsPerSet * sets)
   const totalPoints = totalBasePoints + bonus

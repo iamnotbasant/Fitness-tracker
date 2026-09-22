@@ -306,44 +306,38 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
       const exName = w.exerciseName || ex?.name || "Exercise"
       const nameLower = exName.toLowerCase().trim()
 
-      const targetedKeys = new Set<string>()
+      let primaryKeys: string[] = []
+      let secondaryKeys: string[] = []
 
-      // 1. Direct match from exercise bodyParts
-      parts.forEach((p) => {
-        const norm = normalizeBodyPart(p)
-        if (stats[norm]) targetedKeys.add(norm)
-      })
-
-      // 2. Lookup in exercise target dictionary
-      if (targetedKeys.size === 0) {
-        for (const [key, mapping] of Object.entries(EXERCISE_TARGET_DICTIONARY)) {
-          if (nameLower.includes(key)) {
-            mapping.primary.forEach((m) => stats[m] && targetedKeys.add(m))
-            break
-          }
+      // 1. Precise exercise-science target dictionary lookup
+      for (const [key, mapping] of Object.entries(EXERCISE_TARGET_DICTIONARY)) {
+        if (nameLower.includes(key)) {
+          primaryKeys = mapping.primary.filter((m) => !!stats[m])
+          secondaryKeys = (mapping.secondary || []).filter((m) => !!stats[m])
+          break
         }
+      }
+
+      // 2. Fallback to exercise.bodyParts if not found in dictionary
+      if (primaryKeys.length === 0 && parts.length > 0) {
+        const normalized = parts.map((p) => normalizeBodyPart(p)).filter((p) => !!stats[p])
+        // First 2 parts are primary agonists, remaining are secondary stabilizers
+        primaryKeys = normalized.slice(0, 2)
+        secondaryKeys = normalized.slice(2)
       }
 
       // 3. Fallback to split classification if still not matched
-      if (targetedKeys.size === 0 && ex?.split) {
+      if (primaryKeys.length === 0 && ex?.split) {
         const split = ex.split.toLowerCase()
-        if (split === "push") {
-          targetedKeys.add("chest")
-          targetedKeys.add("shoulders")
-        } else if (split === "pull") {
-          targetedKeys.add("lats")
-        } else if (split === "legs") {
-          targetedKeys.add("quads")
-        } else if (split === "core") {
-          targetedKeys.add("core")
-        } else if (split === "arms") {
-          targetedKeys.add("biceps")
-          targetedKeys.add("triceps")
-        }
+        if (split === "push") primaryKeys = ["chest", "shoulders", "triceps"]
+        else if (split === "pull") primaryKeys = ["lats", "biceps"]
+        else if (split === "legs") primaryKeys = ["quads", "glutes"]
+        else if (split === "core") primaryKeys = ["core"]
+        else if (split === "arms") primaryKeys = ["biceps", "triceps"]
       }
 
-      // Attribute sets, reps, and points
-      targetedKeys.forEach((key) => {
+      // Attribute to primary target muscles (1.0x volume, sets, reps, points)
+      primaryKeys.forEach((key) => {
         const item = stats[key]
         item.sets += sets
         item.reps += reps
@@ -355,6 +349,24 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
           existingEx.reps += reps
         } else {
           item.exercises.push({ name: exName, sets, reps })
+        }
+      })
+
+      // Attribute to secondary assisting muscles (stabilizers get fractional intensity volume)
+      secondaryKeys.forEach((key) => {
+        if (primaryKeys.includes(key)) return
+        const item = stats[key]
+        const assistingSets = Math.max(1, Math.round(sets * 0.5))
+        item.sets += assistingSets
+        item.reps += Math.round(reps * 0.5)
+        item.points += Math.round(points * 0.5)
+
+        const existingEx = item.exercises.find((e) => e.name.toLowerCase() === exName.toLowerCase())
+        if (existingEx) {
+          existingEx.sets += assistingSets
+          existingEx.reps += Math.round(reps * 0.5)
+        } else {
+          item.exercises.push({ name: exName, sets: assistingSets, reps: Math.round(reps * 0.5) })
         }
       })
     })
@@ -439,18 +451,20 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
   const activeInspectedStat = activeKey ? muscleStats[activeKey] : null
   const activeInspectedTier = activeInspectedStat ? getIntensityTier(activeInspectedStat.intensity) : null
 
+  // Real totals calculated directly from workouts without double counting across muscles
+  const actualTotalSets = useMemo(() => workouts.reduce((sum, w) => sum + (w.sets || 1), 0), [workouts])
+  const actualTotalPoints = useMemo(() => workouts.reduce((sum, w) => sum + (w.points ?? w.total_points ?? 0), 0), [workouts])
+  const actualTotalReps = useMemo(() => workouts.reduce((sum, w) => sum + (w.reps || 0), 0), [workouts])
+
   // Summary statistics for "Trained vs Untrained" presentation
   const trainedStats = useMemo(() => {
     const list = Object.values(muscleStats)
     const trained = list.filter((s) => s.sets > 0)
     const untrained = list.filter((s) => s.sets === 0)
-    const totalSets = list.reduce((sum, s) => sum + s.sets, 0)
-    const totalReps = list.reduce((sum, s) => sum + s.reps, 0)
-    const totalPoints = list.reduce((sum, s) => sum + s.points, 0)
     const trainedCount = trained.length
     const trainedPct = Math.round((trainedCount / list.length) * 100)
 
-    const topMuscles = [...trained].sort((a, b) => b.sets - a.sets).slice(0, 5)
+    const topMuscles = [...trained].sort((a, b) => b.sets - a.sets).slice(0, 6)
 
     return {
       trained,
@@ -458,9 +472,6 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
       trainedCount,
       untrainedCount: untrained.length,
       trainedPct,
-      totalSets,
-      totalReps,
-      totalPoints,
       topMuscles,
     }
   }, [muscleStats])
@@ -528,7 +539,6 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
                   ? "drop-shadow(0 0 5px rgba(254, 30, 38, 0.45))"
                   : "drop-shadow(0 0 2px rgba(253, 95, 95, 0.2))"
                 : undefined,
-              transition: "fill 0.25s ease, stroke 0.2s ease, stroke-width 0.2s ease",
             }}
           />
         ))}
@@ -537,490 +547,494 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
   }
 
   return (
-    <div className="rounded-2xl border border-border/70 bg-card p-4 sm:p-6 shadow-sm space-y-5">
-      {/* Header & Controls: Title & View Mode */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/40 pb-3">
-        <div className="flex items-center gap-2">
-          <AnimatedFlame className="h-5 w-5 text-primary" />
-          <div>
-            <h3 className="text-sm sm:text-base font-bold text-foreground">Muscle Map & Heatmap</h3>
-            <p className="text-[11px] text-muted-foreground">
-              Anatomical activation & volume distribution
-            </p>
-          </div>
-        </div>
+    <div className="space-y-6">
+      {/* 1. TOP CONTAINER: Anatomical Mascot Hero */}
+      <div className="rounded-2xl border border-border/70 bg-gradient-to-b from-[#14141a] via-[#101015] to-[#0d0d12] p-4 sm:p-6 shadow-sm relative overflow-hidden">
+        {/* Ambient subtle glow */}
+        <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_top,_rgba(239,68,68,0.06)_0%,_transparent_65%)]" />
 
-        {/* View Switcher: Both, Front, Back */}
-        <div className="flex items-center gap-1 bg-secondary/50 p-1 rounded-xl border border-border/60 self-start sm:self-auto">
-          <button
-            onClick={() => setActiveView("both")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-              activeView === "both"
-                ? "bg-background text-foreground shadow-xs"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            Both Views
-          </button>
-          <button
-            onClick={() => setActiveView("front")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-              activeView === "front"
-                ? "bg-background text-foreground shadow-xs"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            Front (Anterior)
-          </button>
-          <button
-            onClick={() => setActiveView("back")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-              activeView === "back"
-                ? "bg-background text-foreground shadow-xs"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            Back (Posterior)
-          </button>
-        </div>
-      </div>
-
-      {/* Main Grid: Body Map + Muscle Inspector */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Anatomical Models Container */}
-        <div className="lg:col-span-7 flex flex-col items-center justify-center p-5 sm:p-7 min-h-[560px] rounded-2xl bg-gradient-to-b from-[#14141a] via-[#101015] to-[#0d0d12] border border-border/70 relative overflow-hidden shadow-inner">
-          {/* Subtle ambient gradient backdrop */}
-          <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_center,_rgba(255,255,255,0.03)_0%,_transparent_70%)]" />
-
-          {/* Minimal Status Header */}
-          <div className="w-full flex items-center justify-between gap-2 mb-3 px-1 z-10">
-            <div className="flex items-center gap-2 text-xs">
-              <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-              <span className="font-semibold text-foreground">
-                {trainedStats.trainedCount} of 16
-              </span>
-              <span className="text-muted-foreground text-[11px]">muscles active ({trainedStats.trainedPct}%)</span>
+        {/* Top Header Bar */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/40 pb-4 mb-4 relative z-10">
+          <div className="flex items-center gap-2.5">
+            <AnimatedFlame className="h-5 w-5 text-primary" />
+            <div>
+              <h3 className="text-base sm:text-lg font-bold text-foreground tracking-tight">Muscle Map & Heatmap</h3>
+              <p className="text-xs text-muted-foreground">
+                Anatomical activation & volume distribution
+              </p>
             </div>
-
-            <span className="text-[11px] text-muted-foreground hidden sm:inline">
-              Click muscle to inspect
-            </span>
           </div>
 
-          {/* Live Interactive Hover HUD */}
-          <div className="w-full min-h-[36px] mb-2 flex items-center justify-center z-10">
-            {activeInspectedStat && activeInspectedTier ? (
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-xl bg-background/95 border border-border/80 shadow-md text-xs backdrop-blur-md transition-all animate-in fade-in duration-150">
-                <span
-                  className="h-2.5 w-2.5 rounded-sm border border-white/20 shadow-xs shrink-0"
-                  style={{ backgroundColor: activeInspectedTier.color }}
-                />
-                <span className="font-bold text-foreground">{activeInspectedStat.name}</span>
-                <span className="text-muted-foreground">·</span>
-                {activeInspectedStat.sets > 0 ? (
-                  <span className="font-semibold text-foreground flex items-center gap-1.5">
-                    <span className="text-primary font-bold">{activeInspectedStat.sets} sets</span>
-                    <span className="text-muted-foreground">({activeInspectedStat.reps} reps)</span>
-                    <span
-                      className="px-1.5 py-0.2 rounded text-[10px] font-bold uppercase tracking-wider text-white shadow-xs"
-                      style={{ backgroundColor: activeInspectedTier.color }}
-                    >
-                      {activeInspectedTier.label} ({Math.round(activeInspectedStat.intensity * 100)}%)
-                    </span>
-                  </span>
-                ) : (
-                  <span className="text-muted-foreground font-medium flex items-center gap-1.5">
-                    <span className="h-2 w-2 rounded-sm bg-[#1c1f26] border border-border/80 shadow-2xs" />
-                    Untrained (0 sets)
-                  </span>
-                )}
-              </div>
-            ) : (
-              <span className="text-[11px] text-muted-foreground flex items-center gap-1.5">
-                <Info className="h-3 w-3 text-muted-foreground/80" />
-                Hover or click any muscle to inspect volume and activation
-              </span>
-            )}
+          {/* View Switcher: Both, Front, Back */}
+          <div className="flex items-center gap-1 bg-secondary/60 p-1 rounded-xl border border-border/60 self-start sm:self-auto">
+            <button
+              onClick={() => setActiveView("both")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                activeView === "both"
+                  ? "bg-background text-foreground shadow-xs"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Both Views
+            </button>
+            <button
+              onClick={() => setActiveView("front")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                activeView === "front"
+                  ? "bg-background text-foreground shadow-xs"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Front (Anterior)
+            </button>
+            <button
+              onClick={() => setActiveView("back")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                activeView === "back"
+                  ? "bg-background text-foreground shadow-xs"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Back (Posterior)
+            </button>
           </div>
+        </div>
 
-          {/* SVG Body Mannequins */}
-          <div className="w-full [perspective:1000px] z-10">
-            <AnimatePresence mode="wait">
-              {activeView === "both" ? (
-                <motion.div
-                  key="both"
-                  initial={{ opacity: 0, scale: 0.96 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.96 }}
-                  transition={{ duration: 0.25 }}
-                  className="w-full flex flex-row justify-center gap-4 sm:gap-8 items-center"
-                >
-                  {/* Anterior (Front) View */}
-                  <div className="flex flex-col items-center flex-1 max-w-[310px]">
-                    <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-1.5">
-                      <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                      Front (Anterior)
-                    </span>
-                    <svg
-                      viewBox={MALE_FRONT_VIEWBOX}
-                      className="w-full h-auto select-none max-h-[520px]"
-                    >
-                      {frontParts.map(renderPart)}
-                    </svg>
-                  </div>
-
-                  {/* Posterior (Back) View */}
-                  <div className="flex flex-col items-center flex-1 max-w-[310px]">
-                    <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-1.5">
-                      <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                      Back (Posterior)
-                    </span>
-                    <svg
-                      viewBox={MALE_BACK_VIEWBOX}
-                      className="w-full h-auto select-none max-h-[520px]"
-                    >
-                      {backParts.map(renderPart)}
-                    </svg>
-                  </div>
-                </motion.div>
-              ) : activeView === "front" ? (
-                <motion.div
-                  key="front"
-                  initial={{ rotateY: 90, opacity: 0 }}
-                  animate={{ rotateY: 0, opacity: 1 }}
-                  exit={{ rotateY: -90, opacity: 0 }}
-                  transition={{ duration: 0.35, ease: "easeInOut" }}
-                  className="w-full flex justify-center items-center"
-                >
-                  <div className="flex flex-col items-center flex-1 max-w-[350px]">
-                    <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-1.5">
-                      <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                      Front (Anterior)
-                    </span>
-                    <svg
-                      viewBox={MALE_FRONT_VIEWBOX}
-                      className="w-full h-auto select-none max-h-[550px]"
-                    >
-                      {frontParts.map(renderPart)}
-                    </svg>
-                  </div>
-                </motion.div>
+        {/* Interactive Live HUD Pill */}
+        <div className="w-full min-h-[42px] mb-3 flex items-center justify-center relative z-10">
+          {activeInspectedStat && activeInspectedTier ? (
+            <motion.div
+              initial={{ opacity: 0, y: -4, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.98 }}
+              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-background/95 border border-border/80 shadow-lg text-xs backdrop-blur-md transition-all"
+            >
+              <span
+                className="h-2.5 w-2.5 rounded-sm border border-white/20 shadow-xs shrink-0"
+                style={{ backgroundColor: activeInspectedTier.color }}
+              />
+              <span className="font-bold text-foreground text-sm">{activeInspectedStat.name}</span>
+              <span className="text-muted-foreground">·</span>
+              {activeInspectedStat.sets > 0 ? (
+                <span className="font-semibold text-foreground flex items-center gap-2">
+                  <span className="text-primary font-bold">{activeInspectedStat.sets} sets</span>
+                  <span className="text-muted-foreground">({activeInspectedStat.reps} reps)</span>
+                  <span
+                    className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider text-white shadow-xs"
+                    style={{ backgroundColor: activeInspectedTier.color }}
+                  >
+                    {activeInspectedTier.label} ({Math.round(activeInspectedStat.intensity * 100)}%)
+                  </span>
+                </span>
               ) : (
-                <motion.div
-                  key="back"
-                  initial={{ rotateY: -90, opacity: 0 }}
-                  animate={{ rotateY: 0, opacity: 1 }}
-                  exit={{ rotateY: 90, opacity: 0 }}
-                  transition={{ duration: 0.35, ease: "easeInOut" }}
-                  className="w-full flex justify-center items-center"
-                >
-                  <div className="flex flex-col items-center flex-1 max-w-[350px]">
-                    <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-1.5">
-                      <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                      Back (Posterior)
-                    </span>
-                    <svg
-                      viewBox={MALE_BACK_VIEWBOX}
-                      className="w-full h-auto select-none max-h-[550px]"
-                    >
-                      {backParts.map(renderPart)}
-                    </svg>
-                  </div>
-                </motion.div>
+                <span className="text-muted-foreground font-medium flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-sm bg-[#1c1f26] border border-border/80 shadow-2xs" />
+                  Untrained (0 sets)
+                </span>
               )}
-            </AnimatePresence>
-          </div>
-
-          {/* Color Intensity Scale Legend */}
-          <div className="flex items-center justify-center gap-2.5 pt-4 border-t border-border/30 w-full mt-3 z-10 text-xs">
-            <span className="text-[11px] font-semibold text-muted-foreground">Untrained</span>
-            <div className="flex items-center gap-1.5">
-              {RED_HEATMAP_SCALE.map((item) => (
-                <div
-                  key={item.key}
-                  className="h-3.5 w-3.5 sm:h-4 sm:w-4 rounded-[4px] border shadow-2xs transition-transform hover:scale-110 cursor-pointer"
-                  style={{
-                    backgroundColor: item.color,
-                    borderColor: item.color === "#1c1f26" ? "#2d323e" : item.stroke,
-                  }}
-                  title={item.label}
-                />
-              ))}
+            </motion.div>
+          ) : (
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-xl bg-secondary/40 border border-border/40 text-xs text-muted-foreground">
+              <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+              <span>
+                <strong className="text-foreground">{trainedStats.trainedCount} of 16</strong> muscles active ({trainedStats.trainedPct}%)
+              </span>
+              <span className="text-muted-foreground/60">·</span>
+              <span>Click any muscle to inspect focus below</span>
             </div>
-            <span className="text-[11px] font-semibold text-muted-foreground">Max Overload</span>
-          </div>
+          )}
         </div>
 
-        {/* Selected Muscle Detail Inspector or Full Body Overview */}
-        <div className="lg:col-span-5 flex flex-col gap-4">
+        {/* Anatomical SVGs Canvas */}
+        <div className="w-full [perspective:1000px] relative z-10 flex justify-center py-2">
           <AnimatePresence mode="wait">
-            {selectedMuscle && muscleStats[selectedMuscle] ? (
+            {activeView === "both" ? (
               <motion.div
-                key={selectedMuscle}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                className="rounded-2xl border border-border/60 bg-secondary/30 p-4 sm:p-5 space-y-4 shadow-xs"
+                key="both"
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.98 }}
+                transition={{ duration: 0.2 }}
+                className="w-full max-w-3xl flex flex-row justify-center gap-6 sm:gap-14 items-center"
               >
-                {/* Header */}
-                <div className="flex items-center justify-between gap-2 border-b border-border/40 pb-3">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-md bg-primary/10 text-primary">
-                        {muscleStats[selectedMuscle].category.toUpperCase()}
-                      </span>
-                      {muscleStats[selectedMuscle].sets > 0 ? (
-                        <span
-                          className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-md text-white shadow-xs"
-                          style={{
-                            backgroundColor: getIntensityTier(muscleStats[selectedMuscle].intensity).color,
-                          }}
-                        >
-                          {getIntensityTier(muscleStats[selectedMuscle].intensity).label} ({Math.round(muscleStats[selectedMuscle].intensity * 100)}%)
-                        </span>
-                      ) : (
-                        <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-md bg-[#1c1f26] text-muted-foreground border border-border/60">
-                          Untrained
-                        </span>
-                      )}
-                    </div>
-                    <h4 className="text-lg font-bold tracking-tight text-foreground mt-1.5">
-                      {muscleStats[selectedMuscle].name}
-                    </h4>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => {
-                        soundManager.play("click", 0.3)
-                        setSelectedMuscle(null)
-                      }}
-                      title="Close Inspector"
-                      className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Heat Intensity Gauge */}
-                <div className="p-3 rounded-xl bg-background/80 border border-border/50 space-y-1.5">
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="text-muted-foreground font-medium flex items-center gap-1.5">
-                      <AnimatedActivity className="h-3.5 w-3.5 text-primary" />
-                      Relative Heat Intensity
-                    </span>
-                    <span className="font-bold text-foreground">
-                      {muscleStats[selectedMuscle].sets > 0
-                        ? `${Math.round(muscleStats[selectedMuscle].intensity * 100)}% (${getIntensityTier(muscleStats[selectedMuscle].intensity).label})`
-                        : "0% (Untrained)"}
-                    </span>
-                  </div>
-                  <div className="h-2 w-full rounded-full bg-secondary overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all duration-500"
-                      style={{
-                        width: `${Math.max(muscleStats[selectedMuscle].sets > 0 ? 5 : 0, Math.round(muscleStats[selectedMuscle].intensity * 100))}%`,
-                        backgroundColor: getIntensityColor(muscleStats[selectedMuscle].intensity),
-                      }}
-                    />
-                  </div>
-                </div>
-
-                {/* Quick Stats Grid */}
-                <div className="grid grid-cols-3 gap-2.5 text-center">
-                  <div className="p-2.5 rounded-xl bg-background/80 border border-border/50">
-                    <span className="text-[10px] text-muted-foreground block font-medium">Logged Sets</span>
-                    <span className="text-lg font-black text-foreground">
-                      {muscleStats[selectedMuscle].sets}
-                    </span>
-                  </div>
-                  <div className="p-2.5 rounded-xl bg-background/80 border border-border/50">
-                    <span className="text-[10px] text-muted-foreground block font-medium">Total Reps</span>
-                    <span className="text-lg font-black text-foreground">
-                      {muscleStats[selectedMuscle].reps}
-                    </span>
-                  </div>
-                  <div className="p-2.5 rounded-xl bg-background/80 border border-border/50">
-                    <span className="text-[10px] text-muted-foreground block font-medium">Points</span>
-                    <span className="text-lg font-black text-primary">
-                      {muscleStats[selectedMuscle].points}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Exercises logged for this muscle */}
-                <div className="space-y-2 pt-1">
-                  <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                    <AnimatedDumbbell className="h-3.5 w-3.5 text-primary" />
-                    Exercises Stimulating This Muscle
+                {/* Front (Anterior) */}
+                <div className="flex flex-col items-center flex-1 max-w-[340px]">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1.5">
+                    <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                    Front (Anterior)
                   </span>
+                  <svg
+                    viewBox={MALE_FRONT_VIEWBOX}
+                    className="w-full h-auto select-none max-h-[520px]"
+                  >
+                    {frontParts.map(renderPart)}
+                  </svg>
+                </div>
 
-                  {muscleStats[selectedMuscle].exercises.length > 0 ? (
-                    <>
-                      <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1 scrollbar-none">
-                        {muscleStats[selectedMuscle].exercises.map((ex, idx) => (
-                          <div
-                            key={idx}
-                            className="flex items-center justify-between p-2.5 rounded-xl bg-background/70 border border-border/40 text-xs"
-                          >
-                            <span className="font-semibold text-foreground">{ex.name}</span>
-                            <span className="text-muted-foreground font-medium">
-                              <span className="text-foreground font-bold">{ex.sets} sets</span> ({ex.reps} reps)
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </>
-                  ) : (
-                    <div className="rounded-xl border border-dashed border-border/70 p-3.5 bg-background/40 space-y-2.5">
-                      <div className="flex items-center gap-2 text-amber-500 text-xs font-semibold">
-                        <AlertCircle className="h-4 w-4 shrink-0" />
-                        <span>No workouts logged for {muscleStats[selectedMuscle].name}</span>
-                      </div>
-                      <p className="text-[11px] text-muted-foreground leading-relaxed">
-                        This muscle has 0 sets in the current time period. Recommended exercises to activate this group:
-                      </p>
-                      <div className="flex flex-wrap gap-1.5 pt-0.5">
-                        {(SUGGESTED_EXERCISES[selectedMuscle] || []).map((rec, i) => (
-                          <span
-                            key={i}
-                            className="px-2 py-0.5 rounded-md text-[10px] font-medium bg-secondary/80 text-foreground/80 border border-border/50"
-                          >
-                            {rec}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                {/* Back (Posterior) */}
+                <div className="flex flex-col items-center flex-1 max-w-[340px]">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1.5">
+                    <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                    Back (Posterior)
+                  </span>
+                  <svg
+                    viewBox={MALE_BACK_VIEWBOX}
+                    className="w-full h-auto select-none max-h-[520px]"
+                  >
+                    {backParts.map(renderPart)}
+                  </svg>
+                </div>
+              </motion.div>
+            ) : activeView === "front" ? (
+              <motion.div
+                key="front"
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.98 }}
+                transition={{ duration: 0.2 }}
+                className="w-full max-w-md flex justify-center items-center"
+              >
+                <div className="flex flex-col items-center flex-1 max-w-[360px]">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1.5">
+                    <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                    Front (Anterior)
+                  </span>
+                  <svg
+                    viewBox={MALE_FRONT_VIEWBOX}
+                    className="w-full h-auto select-none max-h-[540px]"
+                  >
+                    {frontParts.map(renderPart)}
+                  </svg>
                 </div>
               </motion.div>
             ) : (
               <motion.div
-                key="all-overview"
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                className="rounded-2xl border border-border/60 bg-secondary/30 p-4 sm:p-5 space-y-4 shadow-xs"
+                key="back"
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.98 }}
+                transition={{ duration: 0.2 }}
+                className="w-full max-w-md flex justify-center items-center"
               >
-                <div className="border-b border-border/40 pb-2.5 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <BarChart3 className="h-4 w-4 text-primary" />
-                    <h4 className="text-sm font-semibold text-foreground">
-                      Anatomy Activation Overview
-                    </h4>
-                  </div>
-                  <span className="text-[10px] text-muted-foreground">
-                    Click any muscle on the mannequin
+                <div className="flex flex-col items-center flex-1 max-w-[360px]">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1.5">
+                    <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                    Back (Posterior)
                   </span>
+                  <svg
+                    viewBox={MALE_BACK_VIEWBOX}
+                    className="w-full h-auto select-none max-h-[540px]"
+                  >
+                    {backParts.map(renderPart)}
+                  </svg>
                 </div>
-
-                {/* Quick Stats Grid */}
-                <div className="grid grid-cols-3 gap-2.5 text-center">
-                  <div className="p-2.5 rounded-xl bg-background/80 border border-border/50">
-                    <span className="text-[10px] text-muted-foreground block font-medium">Trained</span>
-                    <span className="text-lg font-black text-[#ef4444]">
-                      {trainedStats.trainedCount} <span className="text-xs font-normal text-muted-foreground">/ 16</span>
-                    </span>
-                  </div>
-                  <div className="p-2.5 rounded-xl bg-background/80 border border-border/50">
-                    <span className="text-[10px] text-muted-foreground block font-medium">Total Sets</span>
-                    <span className="text-lg font-black text-foreground">
-                      {trainedStats.totalSets}
-                    </span>
-                  </div>
-                  <div className="p-2.5 rounded-xl bg-background/80 border border-border/50">
-                    <span className="text-[10px] text-muted-foreground block font-medium">Points</span>
-                    <span className="text-lg font-black text-primary">
-                      {trainedStats.totalPoints}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Top Activated Muscles */}
-                <div className="space-y-2 pt-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                      <Sparkles className="h-3.5 w-3.5 text-primary" />
-                      Top Worked Muscles
-                    </span>
-                    <span className="text-[10px] text-muted-foreground">Ranked by volume</span>
-                  </div>
-
-                  {trainedStats.topMuscles.length === 0 ? (
-                    <div className="rounded-xl border border-dashed border-border/70 p-4 text-center bg-background/40">
-                      <p className="text-xs text-muted-foreground">
-                        No muscle volume logged yet. Start a workout to light up the map!
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1 scrollbar-none">
-                      {trainedStats.topMuscles.map((m) => {
-                        const pct = Math.round((m.sets / Math.max(1, trainedStats.totalSets)) * 100)
-                        const tier = getIntensityTier(m.intensity)
-                        return (
-                          <div
-                            key={m.key}
-                            onClick={() => {
-                              soundManager.play("click", 0.35)
-                              setSelectedMuscle(m.key)
-                            }}
-                            className="p-2.5 rounded-xl bg-background/70 border border-border/40 text-xs cursor-pointer hover:border-primary/50 transition-colors"
-                          >
-                            <div className="flex items-center justify-between mb-1.5">
-                              <span className="font-semibold text-foreground flex items-center gap-1.5">
-                                <span
-                                  className="h-2 w-2 rounded-full"
-                                  style={{ backgroundColor: tier.color }}
-                                />
-                                {m.name}
-                              </span>
-                              <span className="text-muted-foreground font-medium">
-                                <span className="text-foreground font-bold">{m.sets} sets</span> ({pct}%)
-                              </span>
-                            </div>
-                            <div className="h-1.5 w-full rounded-full bg-secondary overflow-hidden">
-                              <div
-                                className="h-full rounded-full transition-all duration-500"
-                                style={{
-                                  width: `${Math.round(m.intensity * 100)}%`,
-                                  backgroundColor: getIntensityColor(m.intensity),
-                                }}
-                              />
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  )}
-                </div>
-
-                {/* Untrained Muscles List */}
-                {trainedStats.untrained.length > 0 && (
-                  <div className="space-y-2 pt-1">
-                    <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
-                      <AlertCircle className="h-3.5 w-3.5 text-muted-foreground" />
-                      Untrained Muscles ({trainedStats.untrainedCount})
-                    </span>
-                    <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-1">
-                      {trainedStats.untrained.map((u) => (
-                        <button
-                          key={u.key}
-                          onClick={() => {
-                            soundManager.play("click", 0.3)
-                            setSelectedMuscle(u.key)
-                          }}
-                          className="px-2.5 py-1 rounded-lg text-[10px] font-medium bg-background/60 hover:bg-background text-muted-foreground hover:text-foreground border border-border/50 transition-colors cursor-pointer"
-                        >
-                          {u.name.split(" ")[0]}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </motion.div>
             )}
           </AnimatePresence>
         </div>
+
+        {/* Clean Heatmap Scale Legend */}
+        <div className="flex flex-wrap items-center justify-center gap-3 pt-4 border-t border-border/40 w-full mt-4 relative z-10 text-xs">
+          <span className="text-[11px] font-semibold text-muted-foreground">Untrained</span>
+          <div className="flex items-center gap-1.5">
+            {RED_HEATMAP_SCALE.map((item) => (
+              <div
+                key={item.key}
+                className="h-3.5 w-3.5 sm:h-4 sm:w-4 rounded-[4px] border shadow-2xs transition-transform hover:scale-115 cursor-pointer"
+                style={{
+                  backgroundColor: item.color,
+                  borderColor: item.color === "#1c1f26" ? "#2d323e" : item.stroke,
+                }}
+                title={item.label}
+              />
+            ))}
+          </div>
+          <span className="text-[11px] font-semibold text-muted-foreground">Max Overload</span>
+        </div>
+      </div>
+
+      {/* 2. BOTTOM CONTAINER: Activation & Muscular Focus Details (Spacious Full Width) */}
+      <div className="rounded-2xl border border-border/70 bg-card p-4 sm:p-6 shadow-sm">
+        <AnimatePresence mode="wait">
+          {selectedMuscle && muscleStats[selectedMuscle] ? (
+            /* Selected Muscle Focus Inspector */
+            <motion.div
+              key={selectedMuscle}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="space-y-5"
+            >
+              {/* Header with Title and Close Button */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/50 pb-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-md bg-primary/10 text-primary border border-primary/20">
+                      {muscleStats[selectedMuscle].category.toUpperCase()}
+                    </span>
+                    {muscleStats[selectedMuscle].sets > 0 ? (
+                      <span
+                        className="text-[10px] uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-md text-white shadow-xs"
+                        style={{
+                          backgroundColor: getIntensityTier(muscleStats[selectedMuscle].intensity).color,
+                        }}
+                      >
+                        {getIntensityTier(muscleStats[selectedMuscle].intensity).label} ({Math.round(muscleStats[selectedMuscle].intensity * 100)}%)
+                      </span>
+                    ) : (
+                      <span className="text-[10px] uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-md bg-[#1c1f26] text-muted-foreground border border-border/60">
+                        Untrained (0 sets)
+                      </span>
+                    )}
+                  </div>
+                  <h4 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground mt-2">
+                    {muscleStats[selectedMuscle].name}
+                  </h4>
+                </div>
+
+                <button
+                  onClick={() => {
+                    soundManager.play("click", 0.3)
+                    setSelectedMuscle(null)
+                  }}
+                  className="self-start sm:self-auto px-3.5 py-1.5 rounded-xl border border-border/60 bg-secondary/50 hover:bg-secondary text-xs font-semibold text-muted-foreground hover:text-foreground transition-all flex items-center gap-1.5 cursor-pointer"
+                >
+                  <X className="h-3.5 w-3.5" />
+                  Back to Overview
+                </button>
+              </div>
+
+              {/* Heat Intensity Bar */}
+              <div className="p-3.5 rounded-xl bg-secondary/30 border border-border/50 space-y-2">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-muted-foreground font-semibold flex items-center gap-1.5">
+                    <AnimatedActivity className="h-4 w-4 text-primary" />
+                    Relative Muscular Load Intensity
+                  </span>
+                  <span className="font-bold text-foreground">
+                    {muscleStats[selectedMuscle].sets > 0
+                      ? `${Math.round(muscleStats[selectedMuscle].intensity * 100)}% · ${getIntensityTier(muscleStats[selectedMuscle].intensity).label}`
+                      : "0% · Untrained"}
+                  </span>
+                </div>
+                <div className="h-2.5 w-full rounded-full bg-secondary overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all duration-500"
+                    style={{
+                      width: `${Math.max(muscleStats[selectedMuscle].sets > 0 ? 5 : 0, Math.round(muscleStats[selectedMuscle].intensity * 100))}%`,
+                      backgroundColor: getIntensityColor(muscleStats[selectedMuscle].intensity),
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* 3 Large KPI Stat Boxes */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="p-3.5 rounded-xl bg-secondary/30 border border-border/50">
+                  <span className="text-xs text-muted-foreground block font-medium">Logged Sets</span>
+                  <span className="text-2xl font-black text-foreground mt-0.5 block">
+                    {muscleStats[selectedMuscle].sets}
+                  </span>
+                </div>
+                <div className="p-3.5 rounded-xl bg-secondary/30 border border-border/50">
+                  <span className="text-xs text-muted-foreground block font-medium">Total Reps</span>
+                  <span className="text-2xl font-black text-foreground mt-0.5 block">
+                    {muscleStats[selectedMuscle].reps}
+                  </span>
+                </div>
+                <div className="p-3.5 rounded-xl bg-secondary/30 border border-border/50">
+                  <span className="text-xs text-muted-foreground block font-medium">Workout Points</span>
+                  <span className="text-2xl font-black text-primary mt-0.5 block">
+                    {muscleStats[selectedMuscle].points}
+                  </span>
+                </div>
+              </div>
+
+              {/* Exercises Stimulating This Muscle */}
+              <div className="space-y-2.5 pt-1">
+                <span className="text-sm font-bold text-foreground flex items-center gap-2">
+                  <AnimatedDumbbell className="h-4 w-4 text-primary" />
+                  Exercises Stimulating This Muscle ({muscleStats[selectedMuscle].exercises.length})
+                </span>
+
+                {muscleStats[selectedMuscle].exercises.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
+                    {muscleStats[selectedMuscle].exercises.map((ex, idx) => (
+                      <div
+                        key={idx}
+                        className="flex flex-col justify-between p-3 rounded-xl bg-secondary/20 border border-border/50 hover:border-border transition-colors"
+                      >
+                        <span className="font-semibold text-foreground text-sm">{ex.name}</span>
+                        <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/30 text-xs text-muted-foreground">
+                          <span>Volume:</span>
+                          <span className="font-bold text-foreground">
+                            {ex.sets} sets {ex.reps > 0 ? `· ${ex.reps} reps` : ""}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="rounded-xl border border-dashed border-border/70 p-4 bg-secondary/15 space-y-2">
+                    <div className="flex items-center gap-2 text-amber-500 text-xs font-semibold">
+                      <AlertCircle className="h-4 w-4 shrink-0" />
+                      <span>No workouts logged for {muscleStats[selectedMuscle].name}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      This muscle group hasn't been trained yet in this period. Recommended exercises:
+                    </p>
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      {(SUGGESTED_EXERCISES[selectedMuscle] || []).map((rec, i) => (
+                        <span
+                          key={i}
+                          className="px-2.5 py-1 rounded-lg text-xs font-medium bg-secondary text-foreground border border-border/50"
+                        >
+                          {rec}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          ) : (
+            /* Full Body Activation Overview (Default) */
+            <motion.div
+              key="all-overview"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="space-y-6"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between border-b border-border/40 pb-3">
+                <div className="flex items-center gap-2">
+                  <BarChart3 className="h-4 w-4 text-primary" />
+                  <h4 className="text-base font-bold text-foreground">
+                    Anatomy Activation & Muscular Focus
+                  </h4>
+                </div>
+                <span className="text-xs text-muted-foreground hidden sm:inline">
+                  Click any muscle card to inspect on mannequin
+                </span>
+              </div>
+
+              {/* 4 Wide Metric Summary Cards */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="p-3.5 rounded-xl bg-secondary/30 border border-border/50">
+                  <span className="text-xs text-muted-foreground block font-medium">Trained Muscles</span>
+                  <span className="text-xl sm:text-2xl font-black text-rose-500 mt-1 block">
+                    {trainedStats.trainedCount} <span className="text-xs font-normal text-muted-foreground">/ 16</span>
+                  </span>
+                </div>
+                <div className="p-3.5 rounded-xl bg-secondary/30 border border-border/50">
+                  <span className="text-xs text-muted-foreground block font-medium">Total Sets Logged</span>
+                  <span className="text-xl sm:text-2xl font-black text-foreground mt-1 block">
+                    {actualTotalSets}
+                  </span>
+                </div>
+                <div className="p-3.5 rounded-xl bg-secondary/30 border border-border/50">
+                  <span className="text-xs text-muted-foreground block font-medium">Workout Points</span>
+                  <span className="text-xl sm:text-2xl font-black text-primary mt-1 block">
+                    {actualTotalPoints}
+                  </span>
+                </div>
+                <div className="p-3.5 rounded-xl bg-secondary/30 border border-border/50">
+                  <span className="text-xs text-muted-foreground block font-medium">Top Muscle Focus</span>
+                  <span className="text-base sm:text-lg font-bold text-foreground mt-1 block truncate">
+                    {trainedStats.topMuscles[0]?.name.split(" ")[0] || "None"}
+                  </span>
+                </div>
+              </div>
+
+              {/* Top Worked Muscles Grid */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs sm:text-sm font-bold text-foreground flex items-center gap-1.5">
+                    <Sparkles className="h-4 w-4 text-primary" />
+                    Top Worked Muscles
+                  </span>
+                  <span className="text-[11px] text-muted-foreground">Click to highlight on body</span>
+                </div>
+
+                {trainedStats.topMuscles.length === 0 ? (
+                  <div className="rounded-xl border border-dashed border-border/70 p-6 text-center bg-secondary/20">
+                    <p className="text-sm text-muted-foreground">
+                      No muscle activation logged yet. Complete a workout to light up your heatmap!
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                    {trainedStats.topMuscles.map((m) => {
+                      const pct = Math.round((m.sets / Math.max(1, actualTotalSets)) * 100)
+                      const tier = getIntensityTier(m.intensity)
+                      return (
+                        <div
+                          key={m.key}
+                          onClick={() => {
+                            soundManager.play("click", 0.35)
+                            setSelectedMuscle(m.key)
+                          }}
+                          className="p-3 rounded-xl bg-secondary/30 border border-border/50 hover:border-primary/50 transition-all cursor-pointer space-y-2 group hover:shadow-xs"
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-foreground text-xs sm:text-sm flex items-center gap-2 group-hover:text-primary transition-colors">
+                              <span
+                                className="h-2.5 w-2.5 rounded-full shrink-0"
+                                style={{ backgroundColor: tier.color }}
+                              />
+                              {m.name}
+                            </span>
+                            <span className="text-xs text-muted-foreground font-semibold">
+                              <strong className="text-foreground">{m.sets}</strong> sets
+                            </span>
+                          </div>
+                          <div className="h-1.5 w-full rounded-full bg-secondary overflow-hidden">
+                            <div
+                              className="h-full rounded-full transition-all duration-500"
+                              style={{
+                                width: `${Math.round(m.intensity * 100)}%`,
+                                backgroundColor: getIntensityColor(m.intensity),
+                              }}
+                            />
+                          </div>
+                          <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                            <span>{tier.label}</span>
+                            <span>{pct}% of workout volume</span>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Untrained Muscles Chips */}
+              {trainedStats.untrained.length > 0 && (
+                <div className="space-y-2 pt-2 border-t border-border/40">
+                  <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
+                    <AlertCircle className="h-3.5 w-3.5 text-muted-foreground" />
+                    Untrained Muscles ({trainedStats.untrainedCount})
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {trainedStats.untrained.map((u) => (
+                      <button
+                        key={u.key}
+                        onClick={() => {
+                          soundManager.play("click", 0.3)
+                          setSelectedMuscle(u.key)
+                        }}
+                        className="px-2.5 py-1 rounded-lg text-xs font-medium bg-secondary/40 hover:bg-secondary text-muted-foreground hover:text-foreground border border-border/50 transition-colors cursor-pointer"
+                      >
+                        {u.name.split(" ")[0]}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   )
