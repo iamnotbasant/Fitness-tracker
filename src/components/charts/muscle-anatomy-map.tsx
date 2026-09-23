@@ -169,18 +169,18 @@ function slugToMuscleKey(slug: string): string | null {
 // Normalize freeform text to canonical muscle key
 function normalizeBodyPart(part: string): string {
   const clean = part.toLowerCase().trim()
+  if (clean.includes("core") || clean.includes("abs") || clean.includes("abdom")) return "core"
   if (clean.includes("chest") || clean.includes("pec")) return "chest"
   if (clean.includes("shoulder") || clean.includes("delt")) return "shoulders"
   if (clean.includes("bicep")) return "biceps"
   if (clean.includes("tricep")) return "triceps"
   if (clean.includes("forearm") || clean.includes("grip") || clean.includes("wrist")) return "forearms"
   if (clean.includes("oblique") || clean.includes("serratus")) return "obliques"
-  if (clean.includes("core") || clean.includes("abs") || clean.includes("abdom")) return "core"
   if (clean.includes("neck") || clean.includes("cervical")) return "neck"
   if (clean.includes("trap") || clean.includes("upper back")) return "traps"
   if (clean.includes("lower back") || clean.includes("lumbar")) return "lower back"
   if (clean.includes("lat") || clean.includes("back")) return "lats"
-  if (clean.includes("glute")) return "glutes"
+  if (clean.includes("glute") || clean.includes("abductor")) return "glutes"
   if (clean.includes("quad")) return "quads"
   if (clean.includes("hamstring")) return "hamstrings"
   if (clean.includes("calv") || clean.includes("tibialis")) return "calves"
@@ -309,31 +309,33 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
       let primaryKeys: string[] = []
       let secondaryKeys: string[] = []
 
-      // 1. Precise exercise-science target dictionary lookup
-      for (const [key, mapping] of Object.entries(EXERCISE_TARGET_DICTIONARY)) {
-        if (nameLower.includes(key)) {
-          primaryKeys = mapping.primary.filter((m) => !!stats[m])
-          secondaryKeys = (mapping.secondary || []).filter((m) => !!stats[m])
-          break
+      // 1. PRIMARY SOURCE OF TRUTH: User's explicitly chosen body parts on the exercise
+      if (parts && parts.length > 0) {
+        primaryKeys = Array.from(new Set(
+          parts
+            .map((p) => normalizeBodyPart(p))
+            .filter((p) => !!stats[p])
+        ))
+        // User explicitly configured these parts; do not add unwanted secondary muscles
+      } else {
+        // 2. Fallback to precise exercise target dictionary
+        for (const [key, mapping] of Object.entries(EXERCISE_TARGET_DICTIONARY)) {
+          if (nameLower.includes(key)) {
+            primaryKeys = mapping.primary.filter((m) => !!stats[m])
+            secondaryKeys = (mapping.secondary || []).filter((m) => !!stats[m])
+            break
+          }
         }
-      }
 
-      // 2. Fallback to exercise.bodyParts if not found in dictionary
-      if (primaryKeys.length === 0 && parts.length > 0) {
-        const normalized = parts.map((p) => normalizeBodyPart(p)).filter((p) => !!stats[p])
-        // First 2 parts are primary agonists, remaining are secondary stabilizers
-        primaryKeys = normalized.slice(0, 2)
-        secondaryKeys = normalized.slice(2)
-      }
-
-      // 3. Fallback to split classification if still not matched
-      if (primaryKeys.length === 0 && ex?.split) {
-        const split = ex.split.toLowerCase()
-        if (split === "push") primaryKeys = ["chest", "shoulders", "triceps"]
-        else if (split === "pull") primaryKeys = ["lats", "biceps"]
-        else if (split === "legs") primaryKeys = ["quads", "glutes"]
-        else if (split === "core") primaryKeys = ["core"]
-        else if (split === "arms") primaryKeys = ["biceps", "triceps"]
+        // 3. Fallback to split classification if still not matched
+        if (primaryKeys.length === 0 && ex?.split) {
+          const split = ex.split.toLowerCase()
+          if (split === "push") primaryKeys = ["chest", "shoulders", "triceps"]
+          else if (split === "pull") primaryKeys = ["lats", "biceps"]
+          else if (split === "legs") primaryKeys = ["quads", "glutes"]
+          else if (split === "core") primaryKeys = ["core"]
+          else if (split === "arms") primaryKeys = ["biceps", "triceps"]
+        }
       }
 
       // Attribute to primary target muscles (1.0x volume, sets, reps, points)
@@ -828,66 +830,59 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
                 </div>
               </div>
 
-              {/* 3 Large KPI Stat Boxes */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="p-3.5 rounded-xl bg-secondary/30 border border-border/50">
-                  <span className="text-xs text-muted-foreground block font-medium">Logged Sets</span>
-                  <span className="text-2xl font-black text-foreground mt-0.5 block">
+              {/* Clean Stats Row */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                <div className="p-3 rounded-xl bg-secondary/20 border border-border/40">
+                  <span className="text-[11px] text-muted-foreground block font-medium">Logged Sets</span>
+                  <span className="text-xl font-bold text-foreground mt-0.5 block">
                     {muscleStats[selectedMuscle].sets}
                   </span>
                 </div>
-                <div className="p-3.5 rounded-xl bg-secondary/30 border border-border/50">
-                  <span className="text-xs text-muted-foreground block font-medium">Total Reps</span>
-                  <span className="text-2xl font-black text-foreground mt-0.5 block">
+                <div className="p-3 rounded-xl bg-secondary/20 border border-border/40">
+                  <span className="text-[11px] text-muted-foreground block font-medium">Total Reps</span>
+                  <span className="text-xl font-bold text-foreground mt-0.5 block">
                     {muscleStats[selectedMuscle].reps}
                   </span>
                 </div>
-                <div className="p-3.5 rounded-xl bg-secondary/30 border border-border/50">
-                  <span className="text-xs text-muted-foreground block font-medium">Workout Points</span>
-                  <span className="text-2xl font-black text-primary mt-0.5 block">
-                    {muscleStats[selectedMuscle].points}
+                <div className="col-span-2 sm:col-span-1 p-3 rounded-xl bg-secondary/20 border border-border/40">
+                  <span className="text-[11px] text-muted-foreground block font-medium">Muscle Load</span>
+                  <span className="text-xl font-bold text-primary mt-0.5 block">
+                    {Math.round(muscleStats[selectedMuscle].intensity * 100)}%
                   </span>
                 </div>
               </div>
 
               {/* Exercises Stimulating This Muscle */}
-              <div className="space-y-2.5 pt-1">
-                <span className="text-sm font-bold text-foreground flex items-center gap-2">
-                  <AnimatedDumbbell className="h-4 w-4 text-primary" />
-                  Exercises Stimulating This Muscle ({muscleStats[selectedMuscle].exercises.length})
+              <div className="space-y-2 pt-1">
+                <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
+                  <AnimatedDumbbell className="h-3.5 w-3.5 text-primary" />
+                  Exercises ({muscleStats[selectedMuscle].exercises.length})
                 </span>
 
                 {muscleStats[selectedMuscle].exercises.length > 0 ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
                     {muscleStats[selectedMuscle].exercises.map((ex, idx) => (
                       <div
                         key={idx}
-                        className="flex flex-col justify-between p-3 rounded-xl bg-secondary/20 border border-border/50 hover:border-border transition-colors"
+                        className="flex items-center justify-between p-2.5 rounded-xl bg-secondary/20 border border-border/40"
                       >
-                        <span className="font-semibold text-foreground text-sm">{ex.name}</span>
-                        <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/30 text-xs text-muted-foreground">
-                          <span>Volume:</span>
-                          <span className="font-bold text-foreground">
-                            {ex.sets} sets {ex.reps > 0 ? `· ${ex.reps} reps` : ""}
-                          </span>
-                        </div>
+                        <span className="font-medium text-foreground text-xs truncate mr-2">{ex.name}</span>
+                        <span className="font-bold text-foreground text-xs shrink-0">
+                          {ex.sets} sets {ex.reps > 0 ? `· ${ex.reps} reps` : ""}
+                        </span>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="rounded-xl border border-dashed border-border/70 p-4 bg-secondary/15 space-y-2">
-                    <div className="flex items-center gap-2 text-amber-500 text-xs font-semibold">
-                      <AlertCircle className="h-4 w-4 shrink-0" />
-                      <span>No workouts logged for {muscleStats[selectedMuscle].name}</span>
-                    </div>
+                  <div className="rounded-xl border border-dashed border-border/60 p-4 bg-secondary/10 space-y-2">
                     <p className="text-xs text-muted-foreground">
-                      This muscle group hasn't been trained yet in this period. Recommended exercises:
+                      No workouts logged for this muscle yet. Suggested exercises:
                     </p>
-                    <div className="flex flex-wrap gap-2 pt-1">
+                    <div className="flex flex-wrap gap-1.5 pt-0.5">
                       {(SUGGESTED_EXERCISES[selectedMuscle] || []).map((rec, i) => (
                         <span
                           key={i}
-                          className="px-2.5 py-1 rounded-lg text-xs font-medium bg-secondary text-foreground border border-border/50"
+                          className="px-2 py-0.5 rounded-lg text-xs font-medium bg-secondary text-foreground border border-border/40"
                         >
                           {rec}
                         </span>
@@ -898,138 +893,69 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
               </div>
             </motion.div>
           ) : (
-            /* Full Body Activation Overview (Default) */
+            /* Full Body Activation Overview (Default) - Ultra-Clean Minimal */
             <motion.div
               key="all-overview"
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="space-y-6"
+              exit={{ opacity: 0, y: -8 }}
+              className="space-y-4"
             >
-              {/* Header */}
-              <div className="flex items-center justify-between border-b border-border/40 pb-3">
+              {/* Clean Minimal Header */}
+              <div className="flex items-center justify-between pb-2 border-b border-border/40">
                 <div className="flex items-center gap-2">
-                  <BarChart3 className="h-4 w-4 text-primary" />
-                  <h4 className="text-base font-bold text-foreground">
-                    Anatomy Activation & Muscular Focus
+                  <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                  <h4 className="text-sm font-semibold tracking-tight text-foreground">
+                    Active Muscular Focus
                   </h4>
                 </div>
-                <span className="text-xs text-muted-foreground hidden sm:inline">
-                  Click any muscle card to inspect on mannequin
+                <span className="text-xs font-medium text-muted-foreground">
+                  {trainedStats.trainedCount > 0 ? `${trainedStats.trainedCount} trained · ${actualTotalSets} sets` : "No workouts logged"}
                 </span>
               </div>
 
-              {/* 4 Wide Metric Summary Cards */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div className="p-3.5 rounded-xl bg-secondary/30 border border-border/50">
-                  <span className="text-xs text-muted-foreground block font-medium">Trained Muscles</span>
-                  <span className="text-xl sm:text-2xl font-black text-rose-500 mt-1 block">
-                    {trainedStats.trainedCount} <span className="text-xs font-normal text-muted-foreground">/ 16</span>
-                  </span>
+              {trainedStats.topMuscles.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-border/60 py-8 px-4 text-center bg-secondary/10">
+                  <p className="text-xs text-muted-foreground">
+                    No exercises logged yet. Log a workout to illuminate your anatomy map!
+                  </p>
                 </div>
-                <div className="p-3.5 rounded-xl bg-secondary/30 border border-border/50">
-                  <span className="text-xs text-muted-foreground block font-medium">Total Sets Logged</span>
-                  <span className="text-xl sm:text-2xl font-black text-foreground mt-1 block">
-                    {actualTotalSets}
-                  </span>
-                </div>
-                <div className="p-3.5 rounded-xl bg-secondary/30 border border-border/50">
-                  <span className="text-xs text-muted-foreground block font-medium">Workout Points</span>
-                  <span className="text-xl sm:text-2xl font-black text-primary mt-1 block">
-                    {actualTotalPoints}
-                  </span>
-                </div>
-                <div className="p-3.5 rounded-xl bg-secondary/30 border border-border/50">
-                  <span className="text-xs text-muted-foreground block font-medium">Top Muscle Focus</span>
-                  <span className="text-base sm:text-lg font-bold text-foreground mt-1 block truncate">
-                    {trainedStats.topMuscles[0]?.name.split(" ")[0] || "None"}
-                  </span>
-                </div>
-              </div>
-
-              {/* Top Worked Muscles Grid */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs sm:text-sm font-bold text-foreground flex items-center gap-1.5">
-                    <Sparkles className="h-4 w-4 text-primary" />
-                    Top Worked Muscles
-                  </span>
-                  <span className="text-[11px] text-muted-foreground">Click to highlight on body</span>
-                </div>
-
-                {trainedStats.topMuscles.length === 0 ? (
-                  <div className="rounded-xl border border-dashed border-border/70 p-6 text-center bg-secondary/20">
-                    <p className="text-sm text-muted-foreground">
-                      No muscle activation logged yet. Complete a workout to light up your heatmap!
-                    </p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
-                    {trainedStats.topMuscles.map((m) => {
-                      const pct = Math.round((m.sets / Math.max(1, actualTotalSets)) * 100)
-                      const tier = getIntensityTier(m.intensity)
-                      return (
-                        <div
-                          key={m.key}
-                          onClick={() => {
-                            soundManager.play("click", 0.35)
-                            setSelectedMuscle(m.key)
-                          }}
-                          className="p-3 rounded-xl bg-secondary/30 border border-border/50 hover:border-primary/50 transition-all cursor-pointer space-y-2 group hover:shadow-xs"
-                        >
-                          <div className="flex items-center justify-between">
-                            <span className="font-bold text-foreground text-xs sm:text-sm flex items-center gap-2 group-hover:text-primary transition-colors">
-                              <span
-                                className="h-2.5 w-2.5 rounded-full shrink-0"
-                                style={{ backgroundColor: tier.color }}
-                              />
-                              {m.name}
-                            </span>
-                            <span className="text-xs text-muted-foreground font-semibold">
-                              <strong className="text-foreground">{m.sets}</strong> sets
-                            </span>
-                          </div>
-                          <div className="h-1.5 w-full rounded-full bg-secondary overflow-hidden">
-                            <div
-                              className="h-full rounded-full transition-all duration-500"
-                              style={{
-                                width: `${Math.round(m.intensity * 100)}%`,
-                                backgroundColor: getIntensityColor(m.intensity),
-                              }}
-                            />
-                          </div>
-                          <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                            <span>{tier.label}</span>
-                            <span>{pct}% of workout volume</span>
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                )}
-              </div>
-
-              {/* Untrained Muscles Chips */}
-              {trainedStats.untrained.length > 0 && (
-                <div className="space-y-2 pt-2 border-t border-border/40">
-                  <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
-                    <AlertCircle className="h-3.5 w-3.5 text-muted-foreground" />
-                    Untrained Muscles ({trainedStats.untrainedCount})
-                  </span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {trainedStats.untrained.map((u) => (
-                      <button
-                        key={u.key}
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
+                  {trainedStats.topMuscles.map((m) => {
+                    const tier = getIntensityTier(m.intensity)
+                    return (
+                      <div
+                        key={m.key}
                         onClick={() => {
                           soundManager.play("click", 0.3)
-                          setSelectedMuscle(u.key)
+                          setSelectedMuscle(m.key)
                         }}
-                        className="px-2.5 py-1 rounded-lg text-xs font-medium bg-secondary/40 hover:bg-secondary text-muted-foreground hover:text-foreground border border-border/50 transition-colors cursor-pointer"
+                        className="group p-3 rounded-xl border border-border/50 bg-secondary/25 hover:bg-secondary/45 hover:border-primary/40 transition-all cursor-pointer flex items-center justify-between shadow-2xs"
                       >
-                        {u.name.split(" ")[0]}
-                      </button>
-                    ))}
-                  </div>
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <span
+                            className="h-2.5 w-2.5 rounded-full shrink-0 shadow-2xs"
+                            style={{ backgroundColor: tier.color }}
+                          />
+                          <span className="font-semibold text-xs sm:text-sm text-foreground truncate group-hover:text-primary transition-colors">
+                            {m.name.split(" ")[0]}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="text-xs font-bold text-foreground">
+                            {m.sets} sets
+                          </span>
+                          <span
+                            className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md text-white shadow-2xs"
+                            style={{ backgroundColor: tier.color }}
+                          >
+                            {tier.label}
+                          </span>
+                        </div>
+                      </div>
+                    )
+                  })}
                 </div>
               )}
             </motion.div>

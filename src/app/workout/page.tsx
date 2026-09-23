@@ -351,15 +351,56 @@ export default function WorkoutHub() {
   }
 
 
+  const STATIC_EXERCISE_IMAGES: Record<string, string> = useMemo(() => ({
+    "standard push-ups": "/images/Push Ups.png",
+    "push-ups": "/images/Push Ups.png",
+    "push ups": "/images/Push Ups.png",
+    "incline push-ups": "/images/Incline push ups.png",
+    "chair dips": "/images/Chair Dips.png",
+    "pike push-ups": "/images/Pike Push-ups.png",
+    "chin-ups": "/images/Chin-ups.png",
+    "bar hang": "/images/Bar Hang.png",
+    "bicep curls": "/images/Bicep Curls.png",
+    "pull-ups": "/images/Pull Ups.png",
+    "pull ups": "/images/Pull Ups.png",
+    "bodyweight squats": "/images/Bodyweight Squats.png",
+    "walking lunges": "/images/Walking Lunges.png",
+    "glute bridges": "/images/Glute Bridges.png",
+    "plank hold": "/images/Plank Hold.png",
+    "plank": "/images/Plank Hold.png",
+    "archer push-ups": "/images/Archer Push-ups.png",
+    "bulgarian split squats": "/images/Bulgarian Split Squats.png",
+    "clapping push-ups": "/images/Clapping Push-ups.png",
+    "dips": "/images/Dips.png",
+    "jump squats": "/images/Jump Squats.png",
+    "mountain climbers": "/images/Mountain Climbers.png",
+    "pseudo planche push-ups": "/images/Pseudo Planche Push-ups.png",
+    "single-leg glute bridges": "/images/Single-Leg Glute Bridges.png",
+  }), [])
+
+  const findExercise = useCallback((exerciseId?: string | number, exerciseName?: string) => {
+    if (!exercises || exercises.length === 0) return undefined
+    if (exerciseId !== undefined && exerciseId !== null && exerciseId !== "") {
+      const match = exercises.find((e) => String(e.id) === String(exerciseId))
+      if (match) return match
+    }
+    if (exerciseName) {
+      const nameLower = exerciseName.toLowerCase().trim()
+      const match = exercises.find((e) => e.name.toLowerCase().trim() === nameLower)
+      if (match) return match
+    }
+    return undefined
+  }, [exercises])
+
   const onAddExercise = async (exerciseId: string) => {
     try {
-      const ex = exercises?.find((e) => e.id === exerciseId)
+      const ex = findExercise(exerciseId)
       if (!ex) {
         toast.error("Exercise not found")
         return
       }
       soundManager.play('add', 0.5)
-      await addExercise({ id: ex.id, name: ex.name, split: ex.split, level: ex.level, type: ex.type })
+      await addExercise({ id: String(ex.id), name: ex.name, split: ex.split, level: ex.level, type: ex.type, imageUrl: ex.imageUrl })
       toast.success(`${ex.name} added!`)
     } catch (error) {
       console.error("Error adding exercise:", error)
@@ -395,20 +436,34 @@ export default function WorkoutHub() {
     return sets.map(s => s.timeSeconds || s.reps || 0)
   }
 
-  const getExerciseType = (exerciseId: string) => {
-    const ex = exercises?.find((e) => e.id === exerciseId)
-    return ex?.type || "standard"
-  }
+  const getExerciseType = useCallback((exerciseId?: string | number, exerciseName?: string, explicitType?: string) => {
+    if (explicitType) return explicitType
+    const ex = findExercise(exerciseId, exerciseName)
+    if (ex?.type) return ex.type
+    if (exerciseName) {
+      const lower = exerciseName.toLowerCase()
+      if (lower.includes("plank") || lower.includes("hang") || lower.includes("hold") || lower.includes("wall sit")) {
+        return "timer,bodyweight"
+      }
+    }
+    return "standard"
+  }, [findExercise])
 
-  const getExerciseImageUrl = (exerciseId: string) => {
-    const ex = exercises?.find((e) => e.id === exerciseId)
-    return ex?.imageUrl
-  }
+  const getExerciseImageUrl = useCallback((exerciseId?: string | number, exerciseName?: string, explicitUrl?: string) => {
+    if (explicitUrl) return explicitUrl
+    const ex = findExercise(exerciseId, exerciseName)
+    if (ex?.imageUrl) return ex.imageUrl
+    if (exerciseName) {
+      const key = exerciseName.toLowerCase().trim()
+      if (STATIC_EXERCISE_IMAGES[key]) return STATIC_EXERCISE_IMAGES[key]
+    }
+    return undefined
+  }, [findExercise, STATIC_EXERCISE_IMAGES])
 
-  const getExerciseRepGoal = (exerciseId: string) => {
-    const ex = exercises?.find((e) => e.id === exerciseId)
+  const getExerciseRepGoal = useCallback((exerciseId?: string | number, exerciseName?: string) => {
+    const ex = findExercise(exerciseId, exerciseName)
     return ex?.repGoal
-  }
+  }, [findExercise])
 
   // Drag and drop handlers
   const handleDragStart = (index: number) => (e: React.DragEvent) => {
@@ -678,12 +733,15 @@ export default function WorkoutHub() {
                       idx={i}
                       previousReps={previousRepsFor(it.name)}
                       previousSets={previousSetsFor(it.name)}
-                      exerciseType={getExerciseType(it.exerciseId)}
-                      exerciseImageUrl={getExerciseImageUrl(it.exerciseId)}
-                      repGoal={getExerciseRepGoal(it.exerciseId)}
+                      exerciseType={getExerciseType(it.exerciseId, it.name, it.type)}
+                      exerciseImageUrl={getExerciseImageUrl(it.exerciseId, it.name, it.imageUrl)}
+                      repGoal={getExerciseRepGoal(it.exerciseId, it.name)}
                       updateExercise={updateExercise}
                       removeExercise={removeExercise}
                       onStartRest={handleStartRest}
+                      isResting={activeRest?.exerciseName === it.name}
+                      restRemaining={activeRest?.exerciseName === it.name ? restRemaining : 0}
+                      onSkipRest={handleSkipRest}
                     />
                   </motion.div>
                 ))}
@@ -836,6 +894,18 @@ export default function WorkoutHub() {
   // Show workout hub if no active session
   return (
     <main className="min-h-screen bg-background pb-32 md:pb-16">
+      {startingRoutine && (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="flex flex-col items-center gap-3 p-6 rounded-2xl bg-card border border-border/60 shadow-xl">
+            <Loader2 className="h-8 w-8 text-primary animate-spin" />
+            <div className="text-center">
+              <p className="text-sm font-semibold text-foreground">Starting Workout Routine...</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Setting up timer and exercises</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Top Header */}
       <header className="sticky top-0 z-20 border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
         <div className="mx-auto max-w-4xl px-4 py-3.5 flex items-center justify-between">
@@ -953,7 +1023,7 @@ export default function WorkoutHub() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
               {filteredRoutines.map((routine) => {
-                const isStarting = startingRoutine === routine.id
+                const isStarting = startingRoutine ? String(startingRoutine) === String(routine.id) : false
                 const nameLower = (routine.name || "").toLowerCase()
                 const isL1 = nameLower.includes("level 1") || routine.exercises?.some((e: any) => e.level === 1)
                 const isL2 = nameLower.includes("level 2") || routine.exercises?.some((e: any) => e.level === 2)
@@ -1318,6 +1388,9 @@ const ExerciseCardItem = memo(function ExerciseCardItem({
   updateExercise,
   removeExercise,
   onStartRest,
+  isResting,
+  restRemaining,
+  onSkipRest,
 }: {
   it: SessionExercise
   idx: number
@@ -1329,6 +1402,9 @@ const ExerciseCardItem = memo(function ExerciseCardItem({
   updateExercise: (id: string, updater: (e: SessionExercise) => SessionExercise) => void
   removeExercise: (id: string) => void
   onStartRest?: (exerciseName: string, durationSec: number) => void
+  isResting?: boolean
+  restRemaining?: number
+  onSkipRest?: () => void
 }) {
   const onChange = useCallback(
     (up: (e: SessionExercise) => SessionExercise) => updateExercise(it.id, up),
@@ -1351,6 +1427,9 @@ const ExerciseCardItem = memo(function ExerciseCardItem({
       onChange={onChange}
       onRemove={onRemove}
       onStartRest={onStartRest}
+      isResting={isResting}
+      restRemaining={restRemaining}
+      onSkipRest={onSkipRest}
     />
   )
 })

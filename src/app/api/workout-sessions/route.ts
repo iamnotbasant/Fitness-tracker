@@ -113,28 +113,46 @@ export async function POST(request: NextRequest) {
         }, { status: 404 });
       }
 
+      // Fetch DB exercises to enrich session items with image_url and type
+      const dbExercises = await db.select().from(exercises);
+      const exMap = new Map();
+      dbExercises.forEach((e) => {
+        exMap.set(String(e.id), e);
+        if (e.name) exMap.set(e.name.toLowerCase().trim(), e);
+      });
+
       // Transform routine exercises into session items
       const routineExercises = routine[0].exercises as any[];
       items = routineExercises.map((ex: any) => {
-        const isTimer = ex.type === 'timer' || ex.defaultTimeSeconds !== undefined || String(ex.exerciseName || "").toLowerCase().includes("plank");
+        const dbEx = exMap.get(String(ex.exerciseId)) || (ex.exerciseName ? exMap.get(ex.exerciseName.toLowerCase().trim()) : undefined);
+        const rawType = String(ex.type || dbEx?.type || "");
+        const isTimer = rawType.includes("timer") || ex.defaultTimeSeconds !== undefined || String(ex.exerciseName || "").toLowerCase().includes("plank") || String(ex.exerciseName || "").toLowerCase().includes("hang") || String(ex.exerciseName || "").toLowerCase().includes("hold");
+        const defaultTime = ex.defaultTimeSeconds || (isTimer ? 60 : undefined);
+        const finalType = ex.type || dbEx?.type || (isTimer ? "timer" : "standard");
+        const finalImageUrl = dbEx?.imageUrl || ex.imageUrl;
+
         return {
           id: `item-${crypto.randomUUID()}`,
-          exerciseId: ex.exerciseId,
+          exerciseId: String(ex.exerciseId),
           name: ex.exerciseName,
-          split: ex.split,
-          level: ex.level,
+          split: ex.split || dbEx?.split,
+          level: ex.level ?? dbEx?.level,
+          type: finalType,
+          imageUrl: finalImageUrl,
           notes: ex.notes || "",
           restEnabled: true,
           restSec: ex.restSec || 60,
           sets: ex.defaultSets 
             ? Array(ex.defaultSets).fill(null).map(() => ({ 
-                reps: undefined,
-                timeSeconds: undefined,
+                reps: isTimer ? undefined : (ex.defaultReps || undefined),
+                timeSeconds: defaultTime,
+                weight: ex.defaultWeight,
                 done: false 
               }))
             : [{ 
-                reps: undefined, 
-                timeSeconds: undefined, 
+                reps: isTimer ? undefined : (ex.defaultReps || undefined), 
+                timeSeconds: defaultTime, 
+                weight: ex.defaultWeight,
                 done: false 
               }]
         };

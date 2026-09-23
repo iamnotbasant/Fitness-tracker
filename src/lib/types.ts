@@ -70,6 +70,8 @@ export type SessionExercise = {
   name: string
   split?: Exercise["split"]
   level?: Exercise["level"]
+  type?: Exercise["type"]
+  imageUrl?: string
   notes?: string
   restEnabled?: boolean
   restSec?: number

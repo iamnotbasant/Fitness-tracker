@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { ExerciseCard } from "@/components/exercise-card"
 import { useExercises } from "@/hooks/use-local-data"
-import { Plus, Lock, AlertCircle } from "lucide-react"
+import { Plus, Lock, AlertCircle, Loader2 } from "lucide-react"
 import type { Exercise } from "@/lib/types"
 import { useSession } from "@/lib/auth-client"
 import { toast } from "sonner"
@@ -288,13 +288,16 @@ function NewExerciseForm({
   const [imageUrl, setImageUrl] = useState<string | undefined>(undefined)
   const [imageUrlInput, setImageUrlInput] = useState("")
   const [repGoal, setRepGoal] = useState<number | "">("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isProcessingImage, setIsProcessingImage] = useState(false)
 
   const onPickFile = async (file: File) => {
     if (!file.type.startsWith("image/")) {
-      console.log("[v0] not an image, ignoring:", file.type)
+      toast.error("Please select a valid image file")
       return
     }
 
+    setIsProcessingImage(true)
     const readAsDataURL = (f: File) =>
       new Promise<string>((resolve, reject) => {
         const reader = new FileReader()
@@ -323,7 +326,8 @@ function NewExerciseForm({
           const sx = Math.max(0, Math.round((srcW - cropW) / 2))
           const sy = Math.max(0, Math.round((srcH - cropH) / 2))
 
-          const maxW = 1600
+          // Lightweight thumbnail compression (~15-20KB) to ensure rapid loading
+          const maxW = 480
           const scale = Math.min(1, maxW / cropW)
           const outW = Math.round(cropW * scale)
           const outH = Math.round(outW / targetRatio)
@@ -336,16 +340,25 @@ function NewExerciseForm({
 
           ctx.drawImage(img, sx, sy, cropW, cropH, 0, 0, outW, outH)
 
-          const out = canvas.toDataURL("image/jpeg", 0.82)
+          const out = canvas.toDataURL("image/jpeg", 0.72)
           setImageUrl(out)
+          toast.success("Image optimized and attached!")
         } catch (err) {
           console.log("[v0] image processing error:", (err as Error).message)
           setImageUrl(data)
+        } finally {
+          setIsProcessingImage(false)
         }
+      }
+      img.onerror = () => {
+        setIsProcessingImage(false)
+        toast.error("Failed to process image")
       }
       img.src = data
     } catch (e) {
       console.log("[v0] image read error:", e)
+      setIsProcessingImage(false)
+      toast.error("Failed to read image file")
     }
   }
 
@@ -354,28 +367,37 @@ function NewExerciseForm({
       className="mt-4 grid gap-4 rounded-xl border bg-card p-4 shadow-sm md:p-6"
       onSubmit={async (e) => {
         e.preventDefault()
-        const finalType = selectedTypes.length > 1 ? selectedTypes.join(",") : (selectedTypes[0] || "standard")
-        await onCreate({
-          name: name.trim(),
-          type: finalType as any,
-          split,
-          description: description.trim() || undefined,
-          level,
-          bodyParts,
-          tags,
-          imageUrl: imageUrl || imageUrlInput.trim() || undefined,
-          repGoal: repGoal ? Number(repGoal) : undefined,
-        })
-        setName("")
-        setDescription("")
-        setImageUrl(undefined)
-        setImageUrlInput("")
-        setBodyParts([])
-        setTags([])
-        setLevel(1)
-        setSelectedTypes(["standard"])
-        setSplit("push")
-        setRepGoal("")
+        if (isSubmitting) return
+        try {
+          setIsSubmitting(true)
+          const finalType = selectedTypes.length > 1 ? selectedTypes.join(",") : (selectedTypes[0] || "standard")
+          await onCreate({
+            name: name.trim(),
+            type: finalType as any,
+            split,
+            description: description.trim() || undefined,
+            level,
+            bodyParts,
+            tags,
+            imageUrl: imageUrl || imageUrlInput.trim() || undefined,
+            repGoal: repGoal ? Number(repGoal) : undefined,
+          })
+          setName("")
+          setDescription("")
+          setImageUrl(undefined)
+          setImageUrlInput("")
+          setBodyParts([])
+          setTags([])
+          setLevel(1)
+          setSelectedTypes(["standard"])
+          setSplit("push")
+          setRepGoal("")
+          toast.success("Exercise created successfully!")
+        } catch (err: any) {
+          toast.error(err.message || "Failed to create exercise")
+        } finally {
+          setIsSubmitting(false)
+        }
       }}
     >
       <div className="grid gap-2">
@@ -516,11 +538,12 @@ function NewExerciseForm({
         
         <div className="grid gap-2">
           <label className="text-xs font-medium text-muted-foreground">Upload image file</label>
-          <label className="grid h-32 place-items-center rounded-lg border bg-muted/30 text-sm text-muted-foreground hover:bg-muted/50 cursor-pointer transition-colors">
+          <label className="grid h-32 place-items-center rounded-lg border border-dashed bg-muted/30 text-sm text-muted-foreground hover:bg-muted/50 cursor-pointer transition-colors relative">
             <input
               type="file"
               accept="image/*"
               className="hidden"
+              disabled={isProcessingImage}
               onChange={async (e) => {
                 const f = e.target.files?.[0]
                 if (f) {
@@ -529,7 +552,19 @@ function NewExerciseForm({
                 }
               }}
             />
-            <span>Click to upload image</span>
+            {isProcessingImage ? (
+              <div className="flex flex-col items-center gap-2">
+                <Loader2 className="h-6 w-6 text-primary animate-spin" />
+                <span className="text-xs font-medium text-foreground">Processing & compressing image...</span>
+              </div>
+            ) : imageUrl ? (
+              <div className="flex items-center gap-3 p-2">
+                <img src={imageUrl} alt="Preview" className="h-16 w-24 object-cover rounded-md border" />
+                <span className="text-xs text-emerald-500 font-medium">Image attached · Click to replace</span>
+              </div>
+            ) : (
+              <span>Click to upload image</span>
+            )}
           </label>
         </div>
 
@@ -623,8 +658,19 @@ function NewExerciseForm({
         >
           Cancel
         </button>
-        <button type="submit" className="w-full rounded-lg bg-primary px-6 py-2.5 font-medium text-primary-foreground hover:bg-primary/90 cursor-pointer sm:w-auto">
-          Add Exercise
+        <button 
+          type="submit" 
+          disabled={isSubmitting || isProcessingImage}
+          className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-6 py-2.5 font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60 cursor-pointer sm:w-auto shadow-xs"
+        >
+          {isSubmitting ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>Saving Exercise...</span>
+            </>
+          ) : (
+            <span>Add Exercise</span>
+          )}
         </button>
       </div>
     </form>

@@ -14,7 +14,9 @@ import {
   Copy, 
   Check, 
   Timer as TimerIcon,
-  RotateCcw
+  RotateCcw,
+  Dumbbell,
+  Activity
 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import soundManager from "@/lib/sounds"
@@ -40,6 +42,9 @@ type Props = {
   exerciseImageUrl?: string
   repGoal?: number
   onStartRest?: (exerciseName: string, durationSec: number) => void
+  isResting?: boolean
+  restRemaining?: number
+  onSkipRest?: () => void
 }
 
 function LiveExerciseCard({ 
@@ -54,6 +59,9 @@ function LiveExerciseCard({
   exerciseImageUrl,
   repGoal,
   onStartRest,
+  isResting = false,
+  restRemaining = 0,
+  onSkipRest,
 }: Props) {
   const [restLeft, setRestLeft] = useState<number>(0)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -63,8 +71,21 @@ function LiveExerciseCard({
   const [celebrating, setCelebrating] = useState(false)
   
   // Time-based exercise states: Stopwatch (Count Up) & Goal Timer (Countdown)
-  const typeStr = String(exerciseType || "").toLowerCase()
-  const isTimerExercise = typeStr.includes("timer")
+  const typeStr = String(exerciseType || item.type || "").toLowerCase()
+  const itemNameLower = String(item.name || "").toLowerCase()
+  const isTimerExercise = typeStr.includes("timer") || 
+    itemNameLower.includes("plank") || 
+    itemNameLower.includes("hang") || 
+    itemNameLower.includes("hold") || 
+    itemNameLower.includes("wall sit")
+  const isBodyweightExercise = typeStr.includes("bodyweight") || 
+    itemNameLower.includes("push-up") || 
+    itemNameLower.includes("push up") || 
+    itemNameLower.includes("pull-up") || 
+    itemNameLower.includes("pull up") || 
+    itemNameLower.includes("dip") || 
+    itemNameLower.includes("squat") ||
+    itemNameLower.includes("lunge")
   const isWeightedExercise = typeStr.includes("weighted")
 
   const [timerMode, setTimerMode] = useState<"stopwatch" | "countdown">("stopwatch")
@@ -152,24 +173,14 @@ function LiveExerciseCard({
     return () => clearInterval(id)
   }, [stopwatchRunning, stopwatchStart, timerMode, initialElapsedMap, targetSecondsMap, repGoal])
 
-  // Rest timer countdown with sound effects
-  useEffect(() => {
-    if (!item.restEnabled || !item.restSec || restLeft <= 0) return
-    const id = setInterval(() => setRestLeft((s) => (s > 0 ? s - 1 : 0)), 1000)
-    return () => clearInterval(id)
-  }, [item.restEnabled, item.restSec, restLeft])
+  // Rest timer synchronized with global WorkoutHub state
+  const currentRest = isResting ? restRemaining : restLeft
 
   useEffect(() => {
-    if (restLeft === 3) {
-      soundManager.play('countdown_3', 0.4)
-    } else if (restLeft === 2) {
-      soundManager.play('countdown_2', 0.5)
-    } else if (restLeft === 1) {
-      soundManager.play('countdown_1', 0.6)
-    } else if (restLeft === 0 && item.restEnabled && item.restSec && item.restSec > 0) {
-      soundManager.play('countdown_go', 0.7)
+    if (!isResting && restLeft > 0) {
+      setRestLeft(0)
     }
-  }, [restLeft, item.restEnabled, item.restSec])
+  }, [isResting, restLeft])
 
   const startRest = () => {
     if (!item.restEnabled) return
@@ -177,6 +188,12 @@ function LiveExerciseCard({
     setRestLeft(duration)
     soundManager.play('tick', 0.3)
     onStartRest?.(item.name, duration)
+  }
+
+  const handleSkipRestClick = () => {
+    soundManager.play('click', 0.3)
+    setRestLeft(0)
+    onSkipRest?.()
   }
 
   const addSet = () => {
@@ -603,15 +620,18 @@ function LiveExerciseCard({
               src={exerciseImageUrl} 
               alt={item.name}
               className="h-full w-full object-cover"
+              onError={(e) => {
+                (e.currentTarget as HTMLElement).style.display = "none"
+              }}
             />
           ) : isTimerExercise ? (
             <TimerIcon className="h-6 w-6 text-primary" />
           ) : isWeightedExercise ? (
-            <Weight className="h-6 w-6" />
+            <Weight className="h-6 w-6 text-amber-500" />
+          ) : isBodyweightExercise ? (
+            <Activity className="h-6 w-6 text-emerald-500" />
           ) : (
-            <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M7 8l-4 4 4 4M17 8l4 4-4 4M14 4l-4 16" />
-            </svg>
+            <Dumbbell className="h-6 w-6 text-primary" />
           )}
         </motion.div>
         
@@ -632,19 +652,25 @@ function LiveExerciseCard({
 
           <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
             {isTimerExercise && (
-              <span className="inline-flex items-center text-primary font-medium">
-                <TimerIcon className="h-3.5 w-3.5 mr-1" />
+              <span className="inline-flex items-center text-primary font-medium bg-primary/10 px-2 py-0.5 rounded-md">
+                <TimerIcon className="h-3 w-3 mr-1" />
                 Time-based
               </span>
             )}
+            {isBodyweightExercise && (
+              <span className="inline-flex items-center text-emerald-500 font-medium bg-emerald-500/10 px-2 py-0.5 rounded-md">
+                <Activity className="h-3 w-3 mr-1" />
+                Bodyweight
+              </span>
+            )}
             {isWeightedExercise && (
-              <span className="inline-flex items-center text-primary font-medium">
-                <Weight className="h-3.5 w-3.5 mr-1" />
+              <span className="inline-flex items-center text-amber-500 font-medium bg-amber-500/10 px-2 py-0.5 rounded-md">
+                <Weight className="h-3 w-3 mr-1" />
                 Weighted
               </span>
             )}
-            {!isTimerExercise && !isWeightedExercise && (
-              <span>{exerciseType === "bodyweight" ? "Bodyweight" : exerciseType === "cardio" ? "Cardio" : exerciseType === "mobility" ? "Mobility" : "Standard"}</span>
+            {!isTimerExercise && !isBodyweightExercise && !isWeightedExercise && (
+              <span className="bg-secondary/60 px-2 py-0.5 rounded-md">{exerciseType === "cardio" ? "Cardio" : exerciseType === "mobility" ? "Mobility" : "Standard"}</span>
             )}
 
             {repGoal !== undefined && repGoal > 0 && (
@@ -889,22 +915,29 @@ function LiveExerciseCard({
 
       {/* Rest Remaining indicator */}
       <AnimatePresence>
-        {item.restEnabled && restLeft > 0 && (
+        {item.restEnabled && currentRest !== undefined && currentRest > 0 && (
           <motion.div 
             initial={{ opacity: 0, y: -6, scale: 0.96 }}
             animate={{ 
               opacity: 1, 
               y: 0,
-              scale: restLeft <= 3 ? [1, 1.05, 1] : 1
+              scale: currentRest <= 3 ? [1, 1.05, 1] : 1
             }}
             exit={{ opacity: 0, y: -6 }}
             transition={{
-              scale: { repeat: restLeft <= 3 ? Infinity : 0, duration: 0.5 }
+              scale: { repeat: currentRest <= 3 ? Infinity : 0, duration: 0.5 }
             }}
-            className="mt-2.5 text-xs font-semibold rounded-xl px-3 py-1.5 inline-flex items-center gap-1.5 bg-primary/15 text-primary border border-primary/25"
+            className="mt-2.5 text-xs font-semibold rounded-xl px-3 py-1.5 inline-flex items-center gap-2 bg-primary/15 text-primary border border-primary/25"
           >
-            <TimerIcon className="h-3.5 w-3.5" />
-            <span>Rest: {restLeft}s remaining</span>
+            <TimerIcon className="h-3.5 w-3.5 animate-pulse" />
+            <span>Rest: {currentRest}s remaining</span>
+            <button
+              type="button"
+              onClick={handleSkipRestClick}
+              className="ml-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-all cursor-pointer shadow-xs"
+            >
+              Skip
+            </button>
           </motion.div>
         )}
       </AnimatePresence>

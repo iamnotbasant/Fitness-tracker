@@ -434,20 +434,23 @@ export function useActiveSession() {
           const found = allRoutines.find((r) => String(r.id) === String(routineId))
           if (found && Array.isArray(found.exercises)) {
             initialItems = found.exercises.map((ex: any) => {
-              const isTimer = ex.type === "timer" || ex.defaultTimeSeconds !== undefined || String(ex.exerciseName || "").toLowerCase().includes("plank") || String(ex.exerciseName || "").toLowerCase().includes("hang") || String(ex.exerciseName || "").toLowerCase().includes("hold")
+              const isTimer = ex.type === "timer" || String(ex.type || "").includes("timer") || ex.defaultTimeSeconds !== undefined || String(ex.exerciseName || "").toLowerCase().includes("plank") || String(ex.exerciseName || "").toLowerCase().includes("hang") || String(ex.exerciseName || "").toLowerCase().includes("hold")
               const numSets = ex.defaultSets || 3
+              const defaultTime = ex.defaultTimeSeconds || (isTimer ? 60 : undefined)
               return {
                 id: `item-${crypto.randomUUID()}`,
                 exerciseId: String(ex.exerciseId),
                 name: ex.exerciseName,
                 split: ex.split,
                 level: ex.level,
+                type: ex.type || (isTimer ? "timer,bodyweight" : "bodyweight"),
+                imageUrl: ex.imageUrl,
                 notes: ex.notes || "",
                 restEnabled: true,
                 restSec: ex.restSec || 60,
                 sets: Array(numSets).fill(null).map(() => ({
-                  reps: isTimer ? undefined : undefined,
-                  timeSeconds: isTimer ? (ex.defaultTimeSeconds || 30) : undefined,
+                  reps: isTimer ? undefined : (ex.defaultReps || undefined),
+                  timeSeconds: defaultTime,
                   weight: ex.defaultWeight,
                   done: false,
                 })),
@@ -510,22 +513,25 @@ export function useActiveSession() {
     return optimisticSession
   }
 
-  const addExercise = async (exercise: Pick<SessionExercise, "id" | "name" | "split" | "level"> & { type?: string }) => {
+  const addExercise = async (exercise: Pick<SessionExercise, "id" | "name" | "split" | "level"> & { type?: string; imageUrl?: string }) => {
     if (!data?.session) {
       console.error("No active session found")
       return
     }
     
+    const isTimer = String(exercise.type || "").includes("timer") || String(exercise.name || "").toLowerCase().includes("plank") || String(exercise.name || "").toLowerCase().includes("hang")
     const newItem: SessionExercise = {
       id: `item-${crypto.randomUUID()}`,
       exerciseId: exercise.id,
       name: exercise.name,
       split: exercise.split,
       level: exercise.level,
+      type: exercise.type as any,
+      imageUrl: exercise.imageUrl,
       notes: "",
       restEnabled: true,
       restSec: 60,
-      sets: [{ reps: undefined, timeSeconds: undefined, done: false }],
+      sets: [{ reps: isTimer ? undefined : undefined, timeSeconds: isTimer ? 60 : undefined, done: false }],
     }
     
     const { userId, id, createdAt, ...sessionData } = data.session
