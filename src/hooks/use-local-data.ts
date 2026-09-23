@@ -1,7 +1,7 @@
 "use client"
 
 import useSWR, { mutate as globalMutate } from "swr"
-import { useState, useEffect, useCallback, useMemo } from "react"
+import { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import type { Exercise, Workout, Profile, WorkoutSession, SessionExercise, Routine, RoutineExercise } from "@/lib/types"
 import { useSession } from "@/lib/auth-client"
 import { toast } from "sonner"
@@ -379,22 +379,32 @@ export function useActiveSession() {
       })
       if (res.ok) {
         const sessions = await res.json()
-        const active = sessions.length > 0 ? sessions[0] : null
-        const cleaned = sanitizeActiveSession(active)
-        if (cleaned && typeof window !== "undefined") {
-          localStorage.setItem("ft_active_offline_session", JSON.stringify(cleaned))
+        if (Array.isArray(sessions) && sessions.length > 0) {
+          const active = sessions[0]
+          const cleaned = sanitizeActiveSession(active)
+          if (cleaned && typeof window !== "undefined") {
+            localStorage.setItem("ft_active_offline_session", JSON.stringify(cleaned))
+          }
+          return { session: cleaned }
         }
-        return { session: cleaned }
       }
     } catch (e) {
       // Network failure, fallback to offline cached session
-      if (typeof window !== "undefined") {
-        try {
-          const local = localStorage.getItem("ft_active_offline_session")
-          if (local) return { session: sanitizeActiveSession(JSON.parse(local)) }
-        } catch {}
-      }
     }
+
+    // Fallback to locally stored active session (e.g. guest mode or unsynced session)
+    if (typeof window !== "undefined") {
+      try {
+        const local = localStorage.getItem("ft_active_offline_session")
+        if (local) {
+          const parsed = JSON.parse(local)
+          if (parsed && !parsed.finishedAt && Array.isArray(parsed.items) && parsed.items.length > 0) {
+            return { session: sanitizeActiveSession(parsed) }
+          }
+        }
+      } catch {}
+    }
+
     return { session: null }
   }
 
@@ -526,33 +536,74 @@ export function useActiveSession() {
     debouncedSave(data.session.id, sessionData, updatedItems)
   }
 
-  // Debounced API save — fires 800ms after last call, no re-fetch on success
-  const debouncedSave = debounce(async (sessionId: string, sessionData: any, items: SessionExercise[]) => {
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Debounced API save — stable timer ref across renders
+  const debouncedSave = useCallback((sessionId: string, sessionData: any, items: SessionExercise[]) => {
     if (typeof window !== "undefined") {
       try {
         localStorage.setItem("ft_active_offline_session", JSON.stringify({ ...sessionData, id: sessionId, items }))
       } catch {}
     }
-    if (typeof window !== "undefined" && !navigator.onLine) return
 
-    const token = typeof window !== "undefined" ? localStorage.getItem("bearer_token") : null
-    try {
-      const res = await fetch(`/api/workout-sessions?id=${sessionId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token && { Authorization: `Bearer ${token}` }),
-        },
-        credentials: "include",
-        body: JSON.stringify({ ...sessionData, items }),
-      })
-      if (!res.ok) {
-        console.error("Failed to save exercise update, will retry on next change")
-      }
-    } catch (e) {
-      console.warn("Network error saving exercise update, saved to local cache:", e)
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current)
     }
-  }, 800)
+
+    debounceTimerRef.current = setTimeout(async () => {
+      if (typeof window !== "undefined" && !navigator.onLine) return
+
+      const token = typeof window !== "undefined" ? localStorage.getItem("bearer_token") : null
+
+      // If it's a local optimistic session (session-local-...), attempt to create on server via POST
+      if (!sessionId || String(sessionId).startsWith('session-local-') || isNaN(Number(sessionId))) {
+        try {
+          const res = await fetch("/api/workout-sessions", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...(token && { Authorization: `Bearer ${token}` }),
+            },
+            credentials: "include",
+            body: JSON.stringify({
+              startedAt: sessionData.startedAt || new Date().toISOString(),
+              items,
+              routineId: sessionData.routineId ? String(sessionData.routineId) : undefined,
+            }),
+          })
+          if (res.ok) {
+            const result = await res.json()
+            const cleaned = sanitizeActiveSession(result)
+            if (cleaned && typeof window !== "undefined") {
+              localStorage.setItem("ft_active_offline_session", JSON.stringify(cleaned))
+            }
+            mutate({ session: cleaned }, { revalidate: false })
+          }
+        } catch {
+          // Keep safely in local storage
+        }
+        return
+      }
+
+      // Normal numeric database ID
+      try {
+        const res = await fetch(`/api/workout-sessions?id=${sessionId}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` }),
+          },
+          credentials: "include",
+          body: JSON.stringify({ ...sessionData, items }),
+        })
+        if (!res.ok) {
+          console.warn("Server session update skipped, saved to local cache")
+        }
+      } catch (e) {
+        console.warn("Network error saving exercise update, saved to local cache:", e)
+      }
+    }, 800)
+  }, [mutate])
 
   const updateExercise = (itemId: string, updater: (e: SessionExercise) => SessionExercise) => {
     if (!data?.session) return
@@ -599,13 +650,15 @@ export function useActiveSession() {
     const sessionId = data.session.id
     mutate({ session: null }, { revalidate: false })
     if (typeof window !== "undefined" && navigator.onLine) {
-      try {
-        await fetch(`/api/workout-sessions?id=${sessionId}`, {
-          method: "DELETE",
-          credentials: "include",
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        })
-      } catch {}
+      if (!String(sessionId).startsWith("session-local-") && !isNaN(Number(sessionId))) {
+        try {
+          await fetch(`/api/workout-sessions?id=${sessionId}`, {
+            method: "DELETE",
+            credentials: "include",
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+          })
+        } catch {}
+      }
     }
   }
 
@@ -732,11 +785,13 @@ export function useActiveSession() {
         globalMutate("/api/workouts?limit=10000")
       }).catch(() => {})
 
-      fetch(`/api/workout-sessions?id=${sessionId}`, {
-        method: "DELETE",
-        credentials: "include",
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      }).catch(() => {})
+      if (!String(sessionId).startsWith("session-local-") && !isNaN(Number(sessionId))) {
+        fetch(`/api/workout-sessions?id=${sessionId}`, {
+          method: "DELETE",
+          credentials: "include",
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        }).catch(() => {})
+      }
     }
 
     return [...preparedWorkouts, ...existingWorkouts]

@@ -212,10 +212,10 @@ export async function PUT(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const id = searchParams.get('id');
 
-    if (!id || isNaN(parseInt(id))) {
+    if (!id) {
       return NextResponse.json({ 
-        error: "Valid ID is required",
-        code: "INVALID_ID" 
+        error: "ID is required",
+        code: "MISSING_ID" 
       }, { status: 400 });
     }
 
@@ -226,6 +226,25 @@ export async function PUT(request: NextRequest) {
         error: "User ID cannot be provided in request body",
         code: "USER_ID_NOT_ALLOWED" 
       }, { status: 400 });
+    }
+
+    // If id is a local optimistic ID (e.g. session-local-...), insert as a new session
+    if (isNaN(parseInt(id)) || id.startsWith('session-local-')) {
+      const startedAtDate = body.startedAt ? new Date(body.startedAt) : new Date();
+      const finishedAtDate = body.finishedAt ? new Date(body.finishedAt) : null;
+      const items = Array.isArray(body.items) ? body.items : [];
+
+      const newSession = await db.insert(workoutSessions)
+        .values({
+          userId: user.id,
+          startedAt: isNaN(startedAtDate.getTime()) ? new Date() : startedAtDate,
+          finishedAt: finishedAtDate && !isNaN(finishedAtDate.getTime()) ? finishedAtDate : null,
+          items: items,
+          createdAt: new Date(),
+        })
+        .returning();
+
+      return NextResponse.json(newSession[0], { status: 200 });
     }
 
     const existing = await db.select()
@@ -319,11 +338,19 @@ export async function DELETE(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const id = searchParams.get('id');
 
-    if (!id || isNaN(parseInt(id))) {
+    if (!id) {
       return NextResponse.json({ 
-        error: "Valid ID is required",
-        code: "INVALID_ID" 
+        error: "ID is required",
+        code: "MISSING_ID" 
       }, { status: 400 });
+    }
+
+    // If id is local optimistic session (not in DB), deletion is a graceful no-op
+    if (isNaN(parseInt(id)) || id.startsWith('session-local-')) {
+      return NextResponse.json({ 
+        message: 'Local session cleared',
+        deleted: null 
+      }, { status: 200 });
     }
 
     const existing = await db.select()

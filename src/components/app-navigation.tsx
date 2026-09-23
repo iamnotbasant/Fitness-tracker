@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { usePathname, useRouter } from "next/navigation"
 import Link from "next/link"
 import { useTheme } from "next-themes"
@@ -11,9 +11,14 @@ import { AnimatedFlame, AnimatedDumbbell, AnimatedActivity } from "@/components/
 import { useOfflineStatus } from "@/hooks/use-local-data"
 
 export function AppNavigation() {
+  const [mounted, setMounted] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const { theme, setTheme } = useTheme()
   const { isOnline, pendingCount, isSyncing, syncNow } = useOfflineStatus()
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
   
   const navItems = [
     { href: "/", label: "Dashboard", icon: <AnimatedFlame size={16} className="text-current" /> },
@@ -33,7 +38,7 @@ export function AppNavigation() {
             <Link href="/" className="text-lg font-semibold tracking-tight whitespace-nowrap hover:opacity-90 transition-opacity">
               Fitness Tracker
             </Link>
-            {!isOnline ? (
+            {mounted && (!isOnline ? (
               <button
                 onClick={syncNow}
                 className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-500 text-[11px] font-semibold transition-all hover:bg-amber-500/20 cursor-pointer"
@@ -52,7 +57,7 @@ export function AppNavigation() {
                 <RefreshCw className={`h-3 w-3 ${isSyncing ? "animate-spin" : ""}`} />
                 <span>{isSyncing ? "Syncing..." : `Sync (${pendingCount})`}</span>
               </button>
-            ) : null}
+            ) : null)}
           </div>
           
           {/* Desktop Navigation - Center (Fits 5 tabs cleanly without overflow or scrollbars) */}
@@ -64,10 +69,12 @@ export function AppNavigation() {
           <div className="hidden md:flex items-center gap-2">
             <button
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              className="p-2 rounded-lg border border-border hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground cursor-pointer"
+              className="p-2 rounded-lg border border-border hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground cursor-pointer min-w-9 min-h-9 flex items-center justify-center"
               aria-label="Toggle theme"
             >
-              {theme === "dark" ? (
+              {!mounted ? (
+                <div className="h-4 w-4" />
+              ) : theme === "dark" ? (
                 <Sun className="h-4 w-4" />
               ) : (
                 <Moon className="h-4 w-4" />
@@ -80,10 +87,12 @@ export function AppNavigation() {
           <div className="md:hidden flex items-center gap-2">
             <button
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              className="p-2 hover:bg-secondary rounded-lg text-muted-foreground hover:text-foreground cursor-pointer"
+              className="p-2 hover:bg-secondary rounded-lg text-muted-foreground hover:text-foreground cursor-pointer min-w-9 min-h-9 flex items-center justify-center"
               aria-label="Toggle theme"
             >
-              {theme === "dark" ? (
+              {!mounted ? (
+                <div className="h-5 w-5" />
+              ) : theme === "dark" ? (
                 <Sun className="h-5 w-5" />
               ) : (
                 <Moon className="h-5 w-5" />

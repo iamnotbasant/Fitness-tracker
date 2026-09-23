@@ -5,10 +5,15 @@ import { eq } from 'drizzle-orm';
 
 export async function getAuthenticatedUser(request: NextRequest) {
   try {
+    let token = '';
     const authHeader = request.headers.get('authorization');
     if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.substring(7);
-      
+      token = authHeader.substring(7);
+    } else {
+      token = request.cookies.get('better-auth.session_token')?.value || '';
+    }
+
+    if (token && token !== 'local_admin_token') {
       const sessionRecord = await db
         .select()
         .from(session)
@@ -31,7 +36,7 @@ export async function getAuthenticatedUser(request: NextRequest) {
       }
     }
     
-    // In local mode, fallback to default local user (basant/user_1) so operations are never blocked
+    // In local / single-user mode, fallback to user_1 or first available user
     const defaultUser = await db
       .select()
       .from(user)
@@ -40,6 +45,15 @@ export async function getAuthenticatedUser(request: NextRequest) {
     
     if (defaultUser.length > 0) {
       return defaultUser[0];
+    }
+
+    const firstUser = await db
+      .select()
+      .from(user)
+      .limit(1);
+
+    if (firstUser.length > 0) {
+      return firstUser[0];
     }
     
     return null;
