@@ -333,26 +333,46 @@ function debounce<T extends (...args: any[]) => any>(fn: T, delay: number): T {
     timer = setTimeout(() => fn(...args), delay)
   }) as T
 }
-// Helper to sanitize active workout session sets: uncompleted sets must start completely blank
+// Helper to sanitize active workout session sets: uncompleted sets must start completely blank, bodyweight exercises must not be corrupted with weighted
 export function sanitizeActiveSession(sess: WorkoutSession | null): WorkoutSession | null {
   if (!sess || !sess.items) return sess
   return {
     ...sess,
-    items: sess.items.map((item) => ({
-      ...item,
-      sets: (item.sets || []).map((s: any) => {
-        // Completed sets remain intact
-        if (s.done) return s
-        // If user explicitly entered this set value during the session, retain it
-        if (s.userEntered) return s
-        // Uncompleted set fields must start completely blank (undefined)
-        return {
-          ...s,
-          reps: undefined,
-          timeSeconds: undefined,
-        }
-      })
-    }))
+    items: sess.items.map((item) => {
+      const nameLower = (item.name || "").toLowerCase()
+      const isBodyweightMovement = nameLower.includes("push-up") || 
+        nameLower.includes("push up") || 
+        nameLower.includes("pull-up") || 
+        nameLower.includes("pull up") || 
+        nameLower.includes("dip") || 
+        nameLower.includes("squat") || 
+        nameLower.includes("lunge") ||
+        nameLower.includes("glute bridge")
+      const hasActualWeight = item.sets?.some((s: any) => s.weight !== undefined && Number(s.weight) > 0)
+      
+      let itemType = item.type
+      if (isBodyweightMovement && !hasActualWeight && String(itemType).toLowerCase().includes("weighted")) {
+        itemType = "bodyweight"
+      }
+
+      return {
+        ...item,
+        type: itemType,
+        sets: (item.sets || []).map((s: any) => {
+          // Completed sets remain intact
+          if (s.done) return s
+          // If user explicitly entered this set value during the session, retain it
+          if (s.userEntered) return s
+          // Uncompleted set fields must start completely blank (undefined)
+          return {
+            ...s,
+            reps: undefined,
+            timeSeconds: undefined,
+            weight: hasActualWeight ? s.weight : undefined,
+          }
+        })
+      }
+    })
   }
 }
 
@@ -437,13 +457,29 @@ export function useActiveSession() {
               const isTimer = ex.type === "timer" || String(ex.type || "").includes("timer") || ex.defaultTimeSeconds !== undefined || String(ex.exerciseName || "").toLowerCase().includes("plank") || String(ex.exerciseName || "").toLowerCase().includes("hang") || String(ex.exerciseName || "").toLowerCase().includes("hold")
               const numSets = ex.defaultSets || 3
               const defaultTime = ex.defaultTimeSeconds || (isTimer ? 60 : undefined)
+              const exNameLower = String(ex.exerciseName || "").toLowerCase()
+              const isBodyweightMovement = exNameLower.includes("push-up") || 
+                exNameLower.includes("push up") || 
+                exNameLower.includes("pull-up") || 
+                exNameLower.includes("pull up") || 
+                exNameLower.includes("dip") || 
+                exNameLower.includes("squat") || 
+                exNameLower.includes("lunge") ||
+                exNameLower.includes("glute bridge") ||
+                String(ex.type || "").toLowerCase().includes("bodyweight")
+              const hasWeight = ex.defaultWeight !== undefined && Number(ex.defaultWeight) > 0
+              const finalType = isTimer 
+                ? "timer,bodyweight" 
+                : (isBodyweightMovement && !hasWeight) 
+                  ? "bodyweight" 
+                  : (ex.type || "bodyweight")
               return {
                 id: `item-${crypto.randomUUID()}`,
                 exerciseId: String(ex.exerciseId),
                 name: ex.exerciseName,
                 split: ex.split,
                 level: ex.level,
-                type: ex.type || (isTimer ? "timer,bodyweight" : "bodyweight"),
+                type: finalType,
                 imageUrl: ex.imageUrl,
                 notes: ex.notes || "",
                 restEnabled: true,
@@ -451,7 +487,7 @@ export function useActiveSession() {
                 sets: Array(numSets).fill(null).map(() => ({
                   reps: isTimer ? undefined : (ex.defaultReps || undefined),
                   timeSeconds: defaultTime,
-                  weight: ex.defaultWeight,
+                  weight: hasWeight ? ex.defaultWeight : undefined,
                   done: false,
                 })),
               }

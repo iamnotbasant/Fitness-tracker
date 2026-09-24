@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation"
 import { useActiveSession, useExercises, useWorkouts, useRoutines, getLocalDateString, getLocalTimeString } from "@/hooks/use-local-data"
-import { Dumbbell, Plus, Search, ChevronLeft, Clock, Timer, Play, Loader2, Pin, MoreVertical, Eye, Edit, X, Check, AlertTriangle, Trash2 } from "lucide-react"
+import { Dumbbell, Plus, Minus, FastForward, Search, ChevronLeft, Clock, Timer, Play, Loader2, Pin, MoreVertical, Eye, Edit, X, Check, AlertTriangle, Trash2 } from "lucide-react"
 import { useSession } from "@/lib/auth-client"
 import { useEffect, useState, useMemo, useCallback, useRef, memo } from "react"
 import { toast } from "sonner"
@@ -437,15 +437,26 @@ export default function WorkoutHub() {
   }
 
   const getExerciseType = useCallback((exerciseId?: string | number, exerciseName?: string, explicitType?: string) => {
-    if (explicitType) return explicitType
     const ex = findExercise(exerciseId, exerciseName)
-    if (ex?.type) return ex.type
-    if (exerciseName) {
-      const lower = exerciseName.toLowerCase()
-      if (lower.includes("plank") || lower.includes("hang") || lower.includes("hold") || lower.includes("wall sit")) {
-        return "timer,bodyweight"
-      }
+    const nameLower = String(exerciseName || ex?.name || "").toLowerCase().trim()
+    const isTimerName = nameLower.includes("plank") || nameLower.includes("hang") || nameLower.includes("hold") || nameLower.includes("wall sit")
+    if (isTimerName) return "timer,bodyweight"
+
+    const isBodyweightMovement = nameLower.includes("push-up") || 
+      nameLower.includes("push up") || 
+      nameLower.includes("pull-up") || 
+      nameLower.includes("pull up") || 
+      nameLower.includes("dip") || 
+      nameLower.includes("squat") || 
+      nameLower.includes("lunge") ||
+      nameLower.includes("glute bridge")
+
+    if (ex?.type === "bodyweight" || (isBodyweightMovement && !nameLower.startsWith("weighted "))) {
+      return "bodyweight"
     }
+
+    if (ex?.type) return ex.type
+    if (explicitType) return explicitType
     return "standard"
   }, [findExercise])
 
@@ -767,20 +778,28 @@ export default function WorkoutHub() {
               transition={{ type: "spring", stiffness: 450, damping: 32 }}
               className="fixed bottom-20 md:bottom-6 left-4 right-4 max-w-md mx-auto z-50 pointer-events-auto"
             >
-              <div className="rounded-2xl border border-border/80 bg-card/95 backdrop-blur-xl p-3.5 shadow-xl">
+              <div className="rounded-2xl border border-primary/30 bg-card/95 backdrop-blur-2xl p-4 shadow-2xl shadow-primary/10 ring-1 ring-border/50">
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary font-bold shadow-xs">
-                      <Timer className="h-5 w-5" />
+                    <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/25 via-primary/15 to-primary/5 text-primary border border-primary/30 shadow-inner">
+                      <Timer className={`h-6 w-6 stroke-[2.2] ${restRemaining <= 5 ? "text-amber-500 animate-bounce" : "animate-pulse"}`} />
+                      <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                        <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${restRemaining <= 5 ? "bg-amber-500" : "bg-primary"}`} />
+                        <span className={`relative inline-flex rounded-full h-3 w-3 ${restRemaining <= 5 ? "bg-amber-500" : "bg-primary"}`} />
+                      </span>
                     </div>
                     <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[11px] font-bold uppercase tracking-wider text-primary">Resting</span>
-                        <span className="text-xs text-muted-foreground truncate max-w-[110px] sm:max-w-[160px]">
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-primary bg-primary/15 px-1.5 py-0.5 rounded-md">
+                          Resting
+                        </span>
+                        <span className="text-xs font-semibold text-muted-foreground truncate max-w-[120px] sm:max-w-[160px]">
                           {activeRest.exerciseName}
                         </span>
                       </div>
-                      <div className="text-2xl font-bold tracking-tight text-foreground font-mono">
+                      <div className={`text-3xl sm:text-4xl font-black tracking-tight font-mono tabular-nums leading-none ${
+                        restRemaining <= 5 ? "text-amber-500 dark:text-amber-400" : "text-foreground"
+                      }`}>
                         {Math.floor(restRemaining / 60)}:{String(restRemaining % 60).padStart(2, "0")}
                       </div>
                     </div>
@@ -788,32 +807,42 @@ export default function WorkoutHub() {
 
                   <div className="flex items-center gap-1.5">
                     <button
+                      type="button"
                       onClick={() => handleAddRestTime(30)}
-                      className="rounded-lg bg-secondary px-2.5 py-1.5 text-xs font-semibold text-secondary-foreground hover:bg-secondary/80 transition-all active:scale-95 cursor-pointer"
+                      className="inline-flex items-center gap-0.5 rounded-xl bg-secondary/80 hover:bg-secondary px-2.5 py-2 text-xs font-bold text-secondary-foreground hover:text-foreground border border-border/60 transition-all active:scale-90 cursor-pointer shadow-xs"
                       title="Add 30 seconds"
                     >
-                      +30s
+                      <Plus className="h-3 w-3" />
+                      <span>30s</span>
                     </button>
                     <button
+                      type="button"
                       onClick={() => handleAddRestTime(-15)}
-                      className="rounded-lg bg-secondary px-2 py-1.5 text-xs font-semibold text-secondary-foreground hover:bg-secondary/80 transition-all active:scale-95 cursor-pointer"
+                      className="inline-flex items-center gap-0.5 rounded-xl bg-secondary/80 hover:bg-secondary px-2 py-2 text-xs font-bold text-secondary-foreground hover:text-foreground border border-border/60 transition-all active:scale-90 cursor-pointer shadow-xs"
                       title="Subtract 15 seconds"
                     >
-                      -15s
+                      <Minus className="h-3 w-3" />
+                      <span>15s</span>
                     </button>
                     <button
+                      type="button"
                       onClick={handleSkipRest}
-                      className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition-all active:scale-95 cursor-pointer shadow-sm"
+                      className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3.5 py-2 text-xs font-bold text-primary-foreground hover:bg-primary/90 transition-all active:scale-90 cursor-pointer shadow-md shadow-primary/20"
                     >
-                      Skip
+                      <FastForward className="h-3.5 w-3.5 fill-current" />
+                      <span>Skip</span>
                     </button>
                   </div>
                 </div>
 
                 {/* Micro Progress Bar */}
-                <div className="mt-2.5 h-1.5 w-full overflow-hidden rounded-full bg-secondary">
+                <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-secondary/70 p-0.5 border border-border/40">
                   <motion.div
-                    className="h-full bg-primary"
+                    className={`h-full rounded-full ${
+                      restRemaining <= 5 
+                        ? "bg-gradient-to-r from-amber-500 to-rose-500" 
+                        : "bg-gradient-to-r from-primary/80 to-primary"
+                    }`}
                     initial={false}
                     animate={{ width: `${Math.min(100, Math.max(0, (restRemaining / (activeRest.totalSeconds || 60)) * 100))}%` }}
                     transition={{ ease: "linear", duration: 0.5 }}

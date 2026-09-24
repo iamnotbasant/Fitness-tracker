@@ -125,10 +125,14 @@ export async function POST(request: NextRequest) {
       const routineExercises = routine[0].exercises as any[];
       items = routineExercises.map((ex: any) => {
         const dbEx = exMap.get(String(ex.exerciseId)) || (ex.exerciseName ? exMap.get(ex.exerciseName.toLowerCase().trim()) : undefined);
-        const rawType = String(ex.type || dbEx?.type || "");
-        const isTimer = rawType.includes("timer") || ex.defaultTimeSeconds !== undefined || String(ex.exerciseName || "").toLowerCase().includes("plank") || String(ex.exerciseName || "").toLowerCase().includes("hang") || String(ex.exerciseName || "").toLowerCase().includes("hold");
+        const exNameLower = String(ex.exerciseName || "").toLowerCase();
+        const isTimer = String(ex.type || dbEx?.type || "").includes("timer") || ex.defaultTimeSeconds !== undefined || exNameLower.includes("plank") || exNameLower.includes("hang") || exNameLower.includes("hold");
         const defaultTime = ex.defaultTimeSeconds || (isTimer ? 60 : undefined);
-        const finalType = ex.type || dbEx?.type || (isTimer ? "timer" : "standard");
+        const isBodyweight = dbEx?.type === 'bodyweight' || exNameLower.includes("push-up") || exNameLower.includes("push up") || exNameLower.includes("dip") || exNameLower.includes("squat") || exNameLower.includes("lunge") || exNameLower.includes("glute bridge") || String(ex.type || "").toLowerCase().includes("bodyweight");
+        const hasWeight = ex.defaultWeight !== undefined && Number(ex.defaultWeight) > 0;
+        const finalType = isTimer 
+          ? (isBodyweight ? "timer,bodyweight" : "timer") 
+          : (isBodyweight && !hasWeight ? "bodyweight" : (dbEx?.type || ex.type || "standard"));
         const finalImageUrl = dbEx?.imageUrl || ex.imageUrl;
 
         return {
@@ -146,13 +150,13 @@ export async function POST(request: NextRequest) {
             ? Array(ex.defaultSets).fill(null).map(() => ({ 
                 reps: isTimer ? undefined : (ex.defaultReps || undefined),
                 timeSeconds: defaultTime,
-                weight: ex.defaultWeight,
+                weight: hasWeight ? ex.defaultWeight : undefined,
                 done: false 
               }))
             : [{ 
                 reps: isTimer ? undefined : (ex.defaultReps || undefined), 
                 timeSeconds: defaultTime, 
-                weight: ex.defaultWeight,
+                weight: hasWeight ? ex.defaultWeight : undefined,
                 done: false 
               }]
         };

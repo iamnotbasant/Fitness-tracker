@@ -63,7 +63,6 @@ function LiveExerciseCard({
   restRemaining = 0,
   onSkipRest,
 }: Props) {
-  const [restLeft, setRestLeft] = useState<number>(0)
   const [menuOpen, setMenuOpen] = useState(false)
   const [notesExpanded, setNotesExpanded] = useState(false)
   
@@ -84,9 +83,13 @@ function LiveExerciseCard({
     itemNameLower.includes("pull-up") || 
     itemNameLower.includes("pull up") || 
     itemNameLower.includes("dip") || 
-    itemNameLower.includes("squat") ||
-    itemNameLower.includes("lunge")
-  const isWeightedExercise = typeStr.includes("weighted")
+    itemNameLower.includes("squat") || 
+    itemNameLower.includes("lunge") ||
+    itemNameLower.includes("glute bridge")
+  // Only weighted if user explicitly entered weight (> 0) or if it's explicitly a weighted non-bodyweight movement
+  const hasEnteredWeight = item.sets.some(s => s.weight !== undefined && Number(s.weight) > 0)
+  const isExplicitWeighted = itemNameLower.startsWith("weighted ") || (!isBodyweightExercise && typeStr.includes("weighted"))
+  const isWeightedExercise = isExplicitWeighted || hasEnteredWeight
 
   const [timerMode, setTimerMode] = useState<"stopwatch" | "countdown">("stopwatch")
   const [stopwatchRunning, setStopwatchRunning] = useState<number | null>(null)
@@ -173,27 +176,11 @@ function LiveExerciseCard({
     return () => clearInterval(id)
   }, [stopwatchRunning, stopwatchStart, timerMode, initialElapsedMap, targetSecondsMap, repGoal])
 
-  // Rest timer synchronized with global WorkoutHub state
-  const currentRest = isResting ? restRemaining : restLeft
-
-  useEffect(() => {
-    if (!isResting && restLeft > 0) {
-      setRestLeft(0)
-    }
-  }, [isResting, restLeft])
-
   const startRest = () => {
     if (!item.restEnabled) return
     const duration = item.restSec || 60
-    setRestLeft(duration)
     soundManager.play('tick', 0.3)
     onStartRest?.(item.name, duration)
-  }
-
-  const handleSkipRestClick = () => {
-    soundManager.play('click', 0.3)
-    setRestLeft(0)
-    onSkipRest?.()
   }
 
   const addSet = () => {
@@ -663,10 +650,16 @@ function LiveExerciseCard({
                 Bodyweight
               </span>
             )}
-            {isWeightedExercise && (
+            {isWeightedExercise && !isBodyweightExercise && (
               <span className="inline-flex items-center text-amber-500 font-medium bg-amber-500/10 px-2 py-0.5 rounded-md">
                 <Weight className="h-3 w-3 mr-1" />
                 Weighted
+              </span>
+            )}
+            {isWeightedExercise && isBodyweightExercise && (
+              <span className="inline-flex items-center text-amber-500 font-medium bg-amber-500/10 px-2 py-0.5 rounded-md">
+                <Weight className="h-3 w-3 mr-1" />
+                +Weight
               </span>
             )}
             {!isTimerExercise && !isBodyweightExercise && !isWeightedExercise && (
@@ -912,35 +905,6 @@ function LiveExerciseCard({
           </div>
         )}
       </div>
-
-      {/* Rest Remaining indicator */}
-      <AnimatePresence>
-        {item.restEnabled && currentRest !== undefined && currentRest > 0 && (
-          <motion.div 
-            initial={{ opacity: 0, y: -6, scale: 0.96 }}
-            animate={{ 
-              opacity: 1, 
-              y: 0,
-              scale: currentRest <= 3 ? [1, 1.05, 1] : 1
-            }}
-            exit={{ opacity: 0, y: -6 }}
-            transition={{
-              scale: { repeat: currentRest <= 3 ? Infinity : 0, duration: 0.5 }
-            }}
-            className="mt-2.5 text-xs font-semibold rounded-xl px-3 py-1.5 inline-flex items-center gap-2 bg-primary/15 text-primary border border-primary/25"
-          >
-            <TimerIcon className="h-3.5 w-3.5 animate-pulse" />
-            <span>Rest: {currentRest}s remaining</span>
-            <button
-              type="button"
-              onClick={handleSkipRestClick}
-              className="ml-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-all cursor-pointer shadow-xs"
-            >
-              Skip
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* Sets list — uncluttered, clean columns with Desktop Right-Click & Mobile Long-Press removal */}
       <div className="mt-4">

@@ -217,9 +217,18 @@ export default function EditRoutinePage() {
             <div className="space-y-3">
               {routineExercises.map((ex, index) => {
                 const exRec = exercises?.find(e => String(e.id) === String(ex.exerciseId) || e.name.toLowerCase() === ex.exerciseName.toLowerCase())
-                const effectiveType = ex.type || exRec?.type || (ex.exerciseName.toLowerCase().includes("plank") || ex.exerciseName.toLowerCase().includes("hang") || ex.exerciseName.toLowerCase().includes("hold") ? "timer" : "standard")
+                const effectiveType = exRec?.type || ex.type || (ex.exerciseName.toLowerCase().includes("plank") || ex.exerciseName.toLowerCase().includes("hang") || ex.exerciseName.toLowerCase().includes("hold") ? "timer" : "standard")
                 const isTimer = String(effectiveType).toLowerCase().includes("timer") || ex.defaultTimeSeconds !== undefined || ex.exerciseName.toLowerCase().includes("plank") || ex.exerciseName.toLowerCase().includes("hang") || ex.exerciseName.toLowerCase().includes("hold")
-                const isWeighted = String(effectiveType).toLowerCase().includes("weighted") || ex.defaultWeight !== undefined
+                const isBodyweight = String(effectiveType).toLowerCase().includes("bodyweight") || 
+                  ex.exerciseName.toLowerCase().includes("push-up") || 
+                  ex.exerciseName.toLowerCase().includes("push up") || 
+                  ex.exerciseName.toLowerCase().includes("pull-up") || 
+                  ex.exerciseName.toLowerCase().includes("pull up") || 
+                  ex.exerciseName.toLowerCase().includes("dip") || 
+                  ex.exerciseName.toLowerCase().includes("squat") || 
+                  ex.exerciseName.toLowerCase().includes("lunge") ||
+                  ex.exerciseName.toLowerCase().includes("glute bridge")
+                const isWeighted = (!isBodyweight && String(effectiveType).toLowerCase().includes("weighted")) || (ex.defaultWeight !== undefined && Number(ex.defaultWeight) > 0)
 
                 // Clean display values: 0 is treated as blank
                 const repsVal = (ex.defaultReps && ex.defaultReps > 0) ? ex.defaultReps : ""
@@ -236,7 +245,7 @@ export default function EditRoutinePage() {
                         <div className="flex items-center gap-2">
                           <h3 className="font-semibold text-foreground">{ex.exerciseName}</h3>
                           <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-secondary text-muted-foreground uppercase tracking-wide">
-                            {isTimer ? "Timer" : isWeighted ? "Weighted" : "Reps"}
+                            {isTimer ? "Timer" : isWeighted ? "Weighted" : isBodyweight ? "Bodyweight" : "Reps"}
                           </span>
                         </div>
                       </div>
