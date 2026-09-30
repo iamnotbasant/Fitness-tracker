@@ -297,12 +297,12 @@ export default function ExercisesPage() {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-2.5 sm:gap-3 md:gap-4 sm:grid-cols-3 lg:grid-cols-4 items-stretch">
+          <div className="flex flex-col gap-2.5">
             {filtered.map((e) => (
               <ExerciseCard key={e.id} ex={e} onDelete={remove} />
             ))}
             {filtered.length === 0 && (
-              <div className="col-span-full rounded-2xl border border-border/80 bg-card p-8 text-center text-sm text-muted-foreground">
+              <div className="rounded-xl border bg-card p-6 text-center text-sm text-muted-foreground">
                 No exercises found.
               </div>
             )}
