@@ -3,7 +3,7 @@
 import { useMemo, useState, useEffect } from "react"
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts"
 import type { Workout } from "@/lib/types"
-import { ChevronDown, ChevronUp, Settings, Search, Flame, TrendingUp } from "lucide-react"
+import { ChevronDown, ChevronUp, Settings, Search, TrendingUp, Sparkles, Award } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -28,7 +28,6 @@ export function PersonalRecords({ workouts }: { workouts: Workout[] }) {
   const [searchQuery, setSearchQuery] = useState("")
   const { exercises } = useExercises()
 
-  // Get all available exercises with their PRs and history
   const allExercises = useMemo(() => {
     const timerExerciseNames = new Set(
       (exercises || [])
@@ -48,7 +47,7 @@ export function PersonalRecords({ workouts }: { workouts: Workout[] }) {
         history: { date: string; reps: number; timeSeconds?: number; weight: number; points: number }[]
       }
     >()
-    
+
     workouts.forEach((w) => {
       const exName = w.exerciseName || w.name || "Unknown Exercise"
       const lowerName = exName.toLowerCase()
@@ -64,14 +63,12 @@ export function PersonalRecords({ workouts }: { workouts: Workout[] }) {
         history: [],
       }
 
-      if (isTimer) {
-        existing.isTimer = true
-      }
-      
+      if (isTimer) existing.isTimer = true
+
       const reps = w.reps || 0
       const timeSeconds = w.timeSeconds || (isTimer && reps > 0 ? reps : 0)
       const weight = w.weight || 0
-      const e1RM = (!isTimer && weight > 0) ? Math.round(weight * (1 + reps / 30)) : 0
+      const e1RM = !isTimer && weight > 0 ? Math.round(weight * (1 + reps / 30)) : 0
 
       if (isTimer) {
         if (timeSeconds > existing.maxTimeSeconds) {
@@ -102,8 +99,8 @@ export function PersonalRecords({ workouts }: { workouts: Workout[] }) {
       .map(([name, data]) => {
         const sortedHistory = [...data.history].sort((a, b) => a.date.localeCompare(b.date))
         const firstVal = data.isTimer
-          ? (sortedHistory[0]?.timeSeconds || 1)
-          : (sortedHistory[0]?.reps || 1)
+          ? sortedHistory[0]?.timeSeconds || 1
+          : sortedHistory[0]?.reps || 1
         const currentVal = data.isTimer ? data.maxTimeSeconds : data.maxReps
         const improvement = Math.round(((currentVal - firstVal) / Math.max(1, firstVal)) * 100)
 
@@ -121,7 +118,14 @@ export function PersonalRecords({ workouts }: { workouts: Workout[] }) {
       })
   }, [workouts, exercises])
 
-  // Load selected exercises from localStorage
+  // Top breakthrough PR for the celebration spotlight
+  const spotlightPR = useMemo(() => {
+    if (allExercises.length === 0) return null
+    // Pick the PR with the highest improvement or most recent date
+    const sortedByDate = [...allExercises].sort((a, b) => b.prDate.localeCompare(a.prDate))
+    return sortedByDate[0]
+  }, [allExercises])
+
   useEffect(() => {
     const stored = localStorage.getItem("pr-selected-exercises")
     if (stored) {
@@ -129,14 +133,12 @@ export function PersonalRecords({ workouts }: { workouts: Workout[] }) {
         setSelectedExercises(JSON.parse(stored))
       } catch {}
     } else if (allExercises.length > 0) {
-      // Default to top 6 exercises
       const defaultSelected = allExercises.slice(0, 6).map((e) => e.name)
       setSelectedExercises(defaultSelected)
       localStorage.setItem("pr-selected-exercises", JSON.stringify(defaultSelected))
     }
   }, [allExercises])
 
-  // Filter to show only selected exercises and search
   const displayedPRs = useMemo(() => {
     return allExercises
       .filter((e) => selectedExercises.includes(e.name))
@@ -164,24 +166,66 @@ export function PersonalRecords({ workouts }: { workouts: Workout[] }) {
 
   if (allExercises.length === 0) {
     return (
-      <div className="flex h-64 items-center justify-center text-sm text-muted-foreground bg-secondary/20 rounded-2xl border border-dashed border-border/70">
+      <div className="flex h-48 items-center justify-center text-xs text-muted-foreground bg-secondary/15 rounded-2xl border border-dashed border-border/70">
         No workout data logged yet for Personal Records.
       </div>
     )
   }
 
   return (
-    <>
+    <div className="space-y-4">
+      {/* Celebration Spotlight Banner */}
+      {spotlightPR && (
+        <div className="rounded-2xl border border-amber-500/30 bg-gradient-to-r from-amber-500/10 via-[#181512] to-amber-500/5 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/30">
+              <AnimatedTrophy className="h-5 w-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                  Latest Milestone
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {new Date(spotlightPR.prDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                </span>
+              </div>
+              <h4 className="text-base font-bold text-foreground mt-0.5">
+                {spotlightPR.name}
+              </h4>
+            </div>
+          </div>
+
+          <div className="flex items-baseline gap-2 self-start sm:self-auto font-mono">
+            <span className="text-2xl font-black text-amber-400">
+              {spotlightPR.isTimer
+                ? formatTime(spotlightPR.maxTimeSeconds)
+                : `${spotlightPR.maxReps} reps`}
+            </span>
+            {spotlightPR.maxWeight > 0 && (
+              <span className="text-xs font-bold text-muted-foreground">
+                (+{spotlightPR.maxWeight} kg)
+              </span>
+            )}
+            {spotlightPR.improvement > 0 && (
+              <span className="text-xs font-bold text-emerald-400">
+                +{spotlightPR.improvement}%
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Controls: Search + Exercise Config */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-3 border-b border-border/40">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2 border-b border-border/40">
         <div className="relative w-full sm:max-w-xs">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Search PR records..."
+            placeholder="Filter records..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-secondary/40 border border-border/60 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/60"
+            className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-[#16171f] border border-border/60 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/60"
           />
         </div>
 
@@ -190,12 +234,12 @@ export function PersonalRecords({ workouts }: { workouts: Workout[] }) {
           className="self-end sm:self-auto flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-secondary/50 border border-border/60 text-xs font-semibold text-muted-foreground hover:text-foreground hover:border-border transition-all cursor-pointer"
         >
           <Settings className="h-3.5 w-3.5" />
-          <span>Customize PRs</span>
+          <span>Customize PRs ({selectedExercises.length})</span>
         </button>
       </div>
 
-      {/* PR List Cards */}
-      <div className="space-y-2 pt-1">
+      {/* PR Cards List */}
+      <div className="space-y-2">
         {displayedPRs.map((pr) => {
           const isExpanded = expandedExercise === pr.name
 
@@ -204,129 +248,116 @@ export function PersonalRecords({ workouts }: { workouts: Workout[] }) {
               key={pr.name}
               className={`rounded-2xl border transition-all ${
                 isExpanded
-                  ? "bg-secondary/40 border-primary/40 shadow-sm"
-                  : "bg-secondary/20 border-border/50 hover:bg-secondary/30 hover:border-border"
+                  ? "bg-[#181922] border-amber-500/40 shadow-sm"
+                  : "bg-[#14151b] border-border/50 hover:bg-[#181920] hover:border-border/80"
               }`}
             >
-              {/* PR Row */}
               <button
                 onClick={() => toggleExpand(pr.name)}
                 className="w-full p-3.5 sm:p-4 flex items-center justify-between gap-3 text-left cursor-pointer"
               >
-                {/* Left: Exercise Name & Date */}
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="h-9 w-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                    <AnimatedTrophy className="h-4.5 w-4.5" />
+                  <div className="h-9 w-9 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/20">
+                    <Award className="h-4.5 w-4.5" />
                   </div>
                   <div className="min-w-0">
                     <span className="font-bold text-sm text-foreground block truncate">
                       {pr.name}
                     </span>
-                    <span className="text-[11px] text-muted-foreground block">
+                    <span className="text-[11px] text-muted-foreground block font-mono">
                       Set on {new Date(pr.prDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                     </span>
                   </div>
                 </div>
 
-                {/* Middle: PR Metric */}
                 <div className="text-right shrink-0">
-                  <div className="flex items-center gap-1.5 justify-end">
+                  <div className="flex items-baseline gap-1.5 justify-end font-mono">
                     {pr.isTimer ? (
-                      <span className="text-lg font-black text-primary">
+                      <span className="text-lg font-black text-amber-400">
                         {formatTime(pr.maxTimeSeconds)}
                       </span>
                     ) : (
-                      <span className="text-lg font-black text-primary">
-                        {pr.maxReps} <span className="text-xs font-bold text-muted-foreground">reps</span>
+                      <span className="text-lg font-black text-amber-400">
+                        {pr.maxReps} <span className="text-xs font-normal text-muted-foreground">reps</span>
+                      </span>
+                    )}
+                    {pr.maxWeight > 0 && (
+                      <span className="text-xs font-bold text-muted-foreground">
+                        +{pr.maxWeight}kg
                       </span>
                     )}
                   </div>
+
                   {!pr.isTimer && pr.estimated1RM > 0 ? (
-                    <span className="text-[10px] font-bold text-muted-foreground block">
+                    <span className="text-[10px] font-bold text-muted-foreground block font-mono">
                       ~{pr.estimated1RM} kg 1RM
                     </span>
                   ) : pr.improvement > 0 ? (
-                    <span className="text-[10px] font-bold text-emerald-400 flex items-center gap-0.5 justify-end">
+                    <span className="text-[10px] font-bold text-emerald-400 flex items-center gap-0.5 justify-end font-mono">
                       <TrendingUp className="h-2.5 w-2.5" />
                       +{pr.improvement}% growth
                     </span>
                   ) : null}
                 </div>
 
-                {/* Right: Expand Toggle */}
                 <div className="pl-1 shrink-0 text-muted-foreground">
-                  {isExpanded ? (
-                    <ChevronUp className="h-4 w-4" />
-                  ) : (
-                    <ChevronDown className="h-4 w-4" />
-                  )}
+                  {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                 </div>
               </button>
 
-              {/* Expandable Graph Area - Slides Down */}
-              <div
-                className="overflow-hidden transition-all duration-300 ease-in-out"
-                style={{
-                  maxHeight: isExpanded ? '300px' : '0px',
-                  opacity: isExpanded ? 1 : 0,
-                }}
-              >
-                <div className="pt-2 pb-6 px-2">
-                  <div className="h-64">
+              {/* Expandable History Area */}
+              {isExpanded && (
+                <div className="pt-1 pb-5 px-3 border-t border-border/30">
+                  <p className="text-[11px] text-muted-foreground font-semibold mb-2">Historical Record Trend:</p>
+                  <div className="h-48">
                     <ResponsiveContainer width="100%" height="100%">
-                      <LineChart 
-                        data={pr.history} 
-                        margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
-                      >
-                        <XAxis 
-                          dataKey="date" 
+                      <LineChart data={pr.history} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                        <XAxis
+                          dataKey="date"
                           stroke="currentColor"
                           className="stroke-muted-foreground/40 text-muted-foreground"
-                          tick={{ fontSize: 11, fill: 'currentColor' }}
+                          tick={{ fontSize: 10, fill: "currentColor" }}
                           tickLine={false}
-                          tickFormatter={(value) => {
-                            const date = new Date(value)
-                            return `${date.getMonth() + 1}/${date.getDate()}`
+                          tickFormatter={(val) => {
+                            const d = new Date(val)
+                            return `${d.getMonth() + 1}/${d.getDate()}`
                           }}
                         />
-                        <YAxis 
+                        <YAxis
                           stroke="currentColor"
                           className="stroke-muted-foreground/40 text-muted-foreground"
-                          tick={{ fontSize: 11, fill: 'currentColor' }}
+                          tick={{ fontSize: 10, fill: "currentColor" }}
                           tickLine={false}
-                          domain={[0, 'dataMax + 2']}
+                          domain={[0, "dataMax + 2"]}
                           tickFormatter={pr.isTimer ? (val) => formatTime(val) : undefined}
                         />
                         <Tooltip
                           contentStyle={{
-                            backgroundColor: '#0a0a0c',
-                            border: '1px solid #1c1c20',
-                            borderRadius: '10px',
-                            fontSize: '12px',
-                            color: '#FFFFFF',
+                            backgroundColor: "#14151b",
+                            border: "1px solid rgba(255, 255, 255, 0.1)",
+                            borderRadius: "12px",
+                            fontSize: "12px",
+                            color: "#FFFFFF",
                           }}
                           formatter={(value: any) => [
                             pr.isTimer ? formatTime(Number(value)) : `${value} reps`,
-                            pr.isTimer ? "Duration" : "Reps"
+                            pr.isTimer ? "Hold" : "Reps",
                           ]}
-                          labelFormatter={(label: any) => {
-                            const date = new Date(label || Date.now())
-                            return date.toLocaleDateString()
-                          }}
+                          labelFormatter={(label: any) => new Date(label || Date.now()).toLocaleDateString()}
                         />
                         <Line
                           type="monotone"
                           dataKey={pr.isTimer ? "timeSeconds" : "reps"}
-                          stroke="hsl(var(--primary))"
+                          stroke="#f59e0b"
                           strokeWidth={2.5}
-                          dot={{ fill: "hsl(var(--primary))", r: 4 }}
-                          activeDot={{ r: 6, fill: "hsl(var(--primary))" }}
+                          dot={{ fill: "#f59e0b", r: 3 }}
+                          activeDot={{ r: 5, fill: "#f59e0b" }}
                         />
                       </LineChart>
                     </ResponsiveContainer>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           )
         })}
@@ -334,17 +365,17 @@ export function PersonalRecords({ workouts }: { workouts: Workout[] }) {
 
       {/* Settings Dialog */}
       <Dialog open={showSettings} onOpenChange={setShowSettings}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md bg-[#121318] border-border text-foreground">
           <DialogHeader>
-            <DialogTitle>Select Exercises to Track</DialogTitle>
+            <DialogTitle className="text-foreground">Select Exercises to Track</DialogTitle>
           </DialogHeader>
           <div className="mt-4 space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Choose exercises to display on your dashboard. Your selections will be saved.
+            <p className="text-xs text-muted-foreground">
+              Choose which personal record milestones to display on your progress dashboard.
             </p>
-            <div className="space-y-3 max-h-[400px] overflow-y-auto">
+            <div className="space-y-2.5 max-h-[360px] overflow-y-auto pr-1">
               {allExercises.map((exercise) => (
-                <div key={exercise.name} className="flex items-center space-x-3">
+                <div key={exercise.name} className="flex items-center space-x-3 p-2 rounded-xl bg-secondary/30">
                   <Checkbox
                     id={exercise.name}
                     checked={selectedExercises.includes(exercise.name)}
@@ -352,29 +383,29 @@ export function PersonalRecords({ workouts }: { workouts: Workout[] }) {
                   />
                   <Label
                     htmlFor={exercise.name}
-                    className="flex-1 cursor-pointer text-sm font-normal"
+                    className="flex-1 cursor-pointer text-xs font-medium"
                   >
                     <div className="flex items-center justify-between">
-                      <span>{exercise.name}</span>
-                      <span className="text-xs text-muted-foreground ml-2">
-                        PR: {exercise.isTimer ? formatTime(exercise.maxTimeSeconds) : `${exercise.maxReps} reps`}
+                      <span className="text-foreground">{exercise.name}</span>
+                      <span className="text-xs text-amber-400 font-mono font-bold ml-2">
+                        {exercise.isTimer ? formatTime(exercise.maxTimeSeconds) : `${exercise.maxReps} reps`}
                       </span>
                     </div>
                   </Label>
                 </div>
               ))}
             </div>
-            <div className="flex justify-end gap-2 pt-4">
-              <Button variant="outline" onClick={() => setShowSettings(false)}>
+            <div className="flex justify-end gap-2 pt-3 border-t border-border/40">
+              <Button variant="outline" size="sm" onClick={() => setShowSettings(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleSaveSettings}>
+              <Button size="sm" onClick={handleSaveSettings}>
                 Save Selection
               </Button>
             </div>
           </div>
         </DialogContent>
       </Dialog>
-    </>
+    </div>
   )
 }
