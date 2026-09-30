@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react"
 import type { Workout } from "@/lib/types"
 import { useExercises } from "@/hooks/use-local-data"
-import { Trophy } from "lucide-react"
+import { Trophy, ChevronDown, ChevronUp } from "lucide-react"
 import soundManager from "@/lib/sounds"
 import { DetailBottomSheet } from "./detail-bottom-sheet"
 
@@ -20,6 +20,7 @@ export const formatTime = (sec: number) => {
 export function PersonalRecords({ workouts }: { workouts: Workout[] }) {
   const { exercises } = useExercises()
   const [selectedRecordName, setSelectedRecordName] = useState<string | null>(null)
+  const [expanded, setExpanded] = useState(false)
 
   const records = useMemo(() => {
     const timerExerciseNames = new Set(
@@ -129,7 +130,6 @@ export function PersonalRecords({ workouts }: { workouts: Workout[] }) {
         (w.name && w.name.toLowerCase() === selectedPR.name.toLowerCase())
     )
 
-    // Group by date
     const byDate = new Map<string, { date: string; maxReps: number; maxWeight: number; maxTime: number; sets: number }>()
 
     matching.forEach((w) => {
@@ -176,85 +176,81 @@ export function PersonalRecords({ workouts }: { workouts: Workout[] }) {
 
   if (records.length === 0) {
     return (
-      <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4 sm:p-6 shadow-sm space-y-4">
-        <div className="flex items-center gap-2.5 pb-3 border-b border-zinc-800">
-          <div className="p-2 rounded-xl bg-zinc-800 border border-zinc-700/60 text-white">
+      <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-5 shadow-xs space-y-3">
+        <div className="flex items-center gap-2.5 pb-2 border-b border-zinc-800">
+          <div className="p-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400">
             <Trophy className="h-4 w-4" />
           </div>
-          <div>
-            <h2 className="text-base font-semibold text-white tracking-tight font-display">Personal Records</h2>
-            <p className="text-xs text-zinc-400 font-body">Peak milestones across all exercises</p>
-          </div>
+          <h2 className="text-base font-semibold text-white font-display">Personal Records</h2>
         </div>
-        <p className="text-xs text-zinc-500 py-3 font-body">No personal records logged yet.</p>
+        <p className="text-xs text-zinc-500 font-body">No personal records logged yet.</p>
       </div>
     )
   }
 
-  const latestPR = records[0]
+  const displayedRecords = expanded ? records : records.slice(0, 4)
 
   return (
-    <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4 sm:p-6 shadow-sm space-y-5">
-      {/* ─── Section Header (Monochrome Icon + Title) ─── */}
-      <div className="flex items-center justify-between gap-4 pb-4 border-b border-zinc-800">
+    <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-5 shadow-xs space-y-4">
+      {/* ─── Header: Trophy Icon with restrained warm amber accent + Title ─── */}
+      <div className="flex items-center justify-between pb-1 border-b border-zinc-800">
         <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-xl bg-zinc-800 border border-zinc-700/60 text-white">
+          <div className="p-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400">
             <Trophy className="h-4 w-4" />
           </div>
           <div>
-            <h2 className="text-base font-semibold text-white tracking-tight font-display">Personal Records</h2>
-            <p className="text-xs text-zinc-400 font-body">Peak milestones across all exercises</p>
+            <h2 className="text-base font-semibold text-white font-display">Personal Records</h2>
+            <p className="text-xs text-zinc-400 font-body">
+              {records.length} {records.length === 1 ? "milestone" : "milestones"} tracked
+            </p>
           </div>
         </div>
       </div>
 
-      {/* ─── Hero Metric: Total PRs Tracked ─── */}
-      <div className="pb-1">
-        <span className="text-[11px] font-body uppercase tracking-wider text-zinc-400 block mb-1">
-          Milestones Reached
-        </span>
-        <div className="flex items-baseline gap-2">
-          <span className="text-3xl sm:text-4xl font-bold tracking-tight text-white font-display tabular-nums">
-            {records.length}
-          </span>
-          <span className="text-sm font-medium text-zinc-400 font-body">personal bests</span>
-        </div>
-        {latestPR && (
-          <p className="text-xs text-zinc-400 font-body mt-1">
-            Latest: <strong className="text-zinc-200 font-medium font-body">{latestPR.name}</strong> · <span className="font-display font-bold tabular-nums text-white">{latestPR.valueDisplay}</span> on {latestPR.dateDisplay}
-          </p>
-        )}
-      </div>
-
-      {/* ─── Minimal List: Tap opens Bottom Sheet Modal (No inline clutter) ─── */}
-      <div className="divide-y divide-zinc-800/80 pt-1">
-        {records.map((r) => (
+      {/* ─── Clean Minimal Cards: 2-column grid on desktop, single on mobile ─── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+        {displayedRecords.map((r) => (
           <div
             key={r.name}
             onClick={() => {
-              soundManager.play("click", 0.25)
+              soundManager.play("click", 0.2)
               setSelectedRecordName(r.name)
             }}
-            className="py-3 px-2 -mx-2 rounded-xl flex items-center justify-between text-xs gap-3 min-h-[48px] cursor-pointer hover:bg-zinc-850 transition-colors"
+            className="p-3.5 rounded-xl border border-zinc-800 bg-zinc-950/70 hover:bg-zinc-850 hover:border-zinc-700 transition-all cursor-pointer flex items-center justify-between gap-3 min-h-[48px]"
           >
-            <span className="font-medium text-sm text-zinc-100 truncate min-w-0 font-body">
-              {r.name}
-            </span>
-            <div className="flex items-center gap-4 shrink-0 font-display">
-              <span className="font-bold text-sm sm:text-base text-white tabular-nums">
-                {r.valueDisplay}
+            <div className="min-w-0">
+              <span className="font-medium text-xs sm:text-sm text-zinc-200 block truncate font-body">
+                {r.name}
               </span>
-              <span className="text-xs text-zinc-500 min-w-[75px] text-right font-body">
+              <span className="text-[11px] text-zinc-500 font-mono block mt-0.5">
                 {r.dateDisplay}
               </span>
             </div>
+            <span className="font-bold text-sm sm:text-base text-white tabular-nums font-display shrink-0">
+              {r.valueDisplay}
+            </span>
           </div>
         ))}
       </div>
 
-      {/* ─── Bottom-Sheet Modal for PR History Drilldown (Single, Focused) ─── */}
+      {/* ─── Expand / Collapse if more than 4 records ─── */}
+      {records.length > 4 && (
+        <button
+          type="button"
+          onClick={() => {
+            soundManager.play("click", 0.15)
+            setExpanded(!expanded)
+          }}
+          className="w-full py-2 text-xs font-medium text-zinc-400 hover:text-white flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+        >
+          <span>{expanded ? "Show less" : `View all ${records.length} records`}</span>
+          {expanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+        </button>
+      )}
+
+      {/* ─── Bottom-Sheet Modal for PR History Drilldown ─── */}
       <DetailBottomSheet
-        isOpen={!!selectedPR}
+        isOpen={Boolean(selectedPR)}
         onClose={() => setSelectedRecordName(null)}
         title={selectedPR?.name || "Record Milestone"}
         badge="Personal Best"

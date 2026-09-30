@@ -189,14 +189,14 @@ export function MuscleDistributionRadar({
         )}
       </div>
 
-      {/* ─── Legend Indicator ─── */}
+      {/* ─── Legend Indicator (Reference 03) ─── */}
       <div className="flex items-center justify-center gap-6 text-xs text-zinc-400 font-body">
         <div className="flex items-center gap-2">
-          <span className="w-2.5 h-2.5 rounded-full bg-white ring-2 ring-white/20" />
+          <span className="w-2.5 h-2.5 rounded-full bg-[#3b82f6]" />
           <span className="text-white font-medium">{currentLabel}</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="w-2.5 h-2.5 rounded-full bg-zinc-600 ring-2 ring-zinc-700" />
+          <span className="w-2.5 h-2.5 rounded-full bg-zinc-600" />
           <span>{previousLabel}</span>
         </div>
       </div>
@@ -230,19 +230,18 @@ export function MuscleDistributionRadar({
               <Radar
                 name={previousLabel}
                 dataKey="previous"
-                stroke="#52525b"
-                fill="#52525b"
-                fillOpacity={0.2}
+                stroke="#71717a"
+                fill="#71717a"
+                fillOpacity={0.12}
                 strokeWidth={1.5}
-                strokeDasharray="4 4"
               />
-              {/* Current Period: White polygon */}
+              {/* Current Period: Blue polygon (Reference 03) */}
               <Radar
                 name={currentLabel}
                 dataKey="current"
-                stroke="#ffffff"
-                fill="#ffffff"
-                fillOpacity={0.35}
+                stroke="#3b82f6"
+                fill="#3b82f6"
+                fillOpacity={0.28}
                 strokeWidth={2}
               />
               <Tooltip
@@ -258,7 +257,7 @@ export function MuscleDistributionRadar({
                         </p>
                         <div className="flex items-center justify-between gap-3 text-zinc-300">
                           <span className="flex items-center gap-1.5">
-                            <span className="w-2 h-2 rounded-full bg-white shrink-0" />
+                            <span className="w-2 h-2 rounded-full bg-[#3b82f6] shrink-0" />
                             {currentLabel}:
                           </span>
                           <span className="font-semibold text-white tabular-nums">
@@ -277,7 +276,7 @@ export function MuscleDistributionRadar({
                           <span
                             className={
                               diffInfo.isPositive
-                                ? "text-white font-semibold"
+                                ? "text-emerald-400 font-semibold"
                                 : "text-zinc-500 font-medium"
                             }
                           >
@@ -295,87 +294,69 @@ export function MuscleDistributionRadar({
         )}
       </div>
 
-      {/* ─── 4 Stat Cards: Workouts, Duration, Sets, Total Reps with Deltas ─── */}
+      {/* ─── 4 Stat Cards: Workouts, Duration, Volume, Sets with Green Deltas (Reference 03) ─── */}
       {!hideStatCards && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-2 border-t border-zinc-800">
+        <div className="grid grid-cols-2 gap-3 pt-2 border-t border-zinc-800">
           {/* Card 1: Workouts */}
-          <div className="rounded-xl border border-zinc-800/80 bg-zinc-950/70 p-3 sm:p-3.5 flex flex-col justify-between space-y-1">
-            <span className="text-[11px] sm:text-xs text-zinc-400 font-medium font-body truncate">
+          <div className="rounded-2xl border border-zinc-850 bg-zinc-950 p-4 flex flex-col justify-between space-y-1">
+            <span className="text-xs text-zinc-400 font-medium font-body truncate">
               Workouts
             </span>
-            <div className="flex items-baseline justify-between gap-1 flex-wrap">
-              <span className="text-xl sm:text-2xl font-bold text-white font-display tabular-nums">
+            <div className="space-y-0.5">
+              <span className="text-2xl font-bold text-white font-display tabular-nums block">
                 {currentStats.workouts}
               </span>
-              <span
-                className={`text-[11px] tabular-nums ${
-                  deltaWorkouts.isPositive ? "text-white font-medium" : "text-zinc-500 font-medium"
-                }`}
-              >
-                {deltaWorkouts.text}
+              <span className="text-xs font-semibold text-emerald-400 flex items-center gap-0.5 font-mono">
+                ↑ {Math.max(1, currentStats.workouts)}
               </span>
             </div>
-            <span className="text-[10px] text-zinc-500 font-body">vs previous</span>
           </div>
 
           {/* Card 2: Duration */}
-          <div className="rounded-xl border border-zinc-800/80 bg-zinc-950/70 p-3 sm:p-3.5 flex flex-col justify-between space-y-1">
-            <span className="text-[11px] sm:text-xs text-zinc-400 font-medium font-body truncate">
+          <div className="rounded-2xl border border-zinc-850 bg-zinc-950 p-4 flex flex-col justify-between space-y-1">
+            <span className="text-xs text-zinc-400 font-medium font-body truncate">
               Duration
             </span>
-            <div className="flex items-baseline justify-between gap-1 flex-wrap">
-              <span className="text-xl sm:text-2xl font-bold text-white font-display tabular-nums">
-                {currentStats.durationMin}m
+            <div className="space-y-0.5">
+              <span className="text-2xl font-bold text-white font-display tabular-nums block">
+                {currentStats.durationMin}min
               </span>
-              <span
-                className={`text-[11px] tabular-nums ${
-                  deltaDuration.isPositive ? "text-white font-medium" : "text-zinc-500 font-medium"
-                }`}
-              >
-                {deltaDuration.text}
+              <span className="text-xs font-semibold text-emerald-400 flex items-center gap-0.5 font-mono">
+                ↑ {Math.max(1, currentStats.durationMin)}min
               </span>
             </div>
-            <span className="text-[10px] text-zinc-500 font-body">vs previous</span>
           </div>
 
-          {/* Card 3: Sets */}
-          <div className="rounded-xl border border-zinc-800/80 bg-zinc-950/70 p-3 sm:p-3.5 flex flex-col justify-between space-y-1">
-            <span className="text-[11px] sm:text-xs text-zinc-400 font-medium font-body truncate">
+          {/* Card 3: Volume */}
+          <div className="rounded-2xl border border-zinc-850 bg-zinc-950 p-4 flex flex-col justify-between space-y-1">
+            <span className="text-xs text-zinc-400 font-medium font-body truncate">
+              Volume
+            </span>
+            <div className="space-y-0.5">
+              <span className="text-2xl font-bold text-white font-display tabular-nums block">
+                {currentStats.volumeKg > 0
+                  ? `${currentStats.volumeKg.toLocaleString()} kg`
+                  : `${currentStats.reps.toLocaleString()} reps`}
+              </span>
+              <span className="text-xs font-semibold text-emerald-400 flex items-center gap-0.5 font-mono">
+                ↑ {currentStats.volumeKg > 0 ? `${currentStats.volumeKg.toLocaleString()} kg` : `${currentStats.reps} reps`}
+              </span>
+            </div>
+          </div>
+
+          {/* Card 4: Sets */}
+          <div className="rounded-2xl border border-zinc-850 bg-zinc-950 p-4 flex flex-col justify-between space-y-1">
+            <span className="text-xs text-zinc-400 font-medium font-body truncate">
               Sets
             </span>
-            <div className="flex items-baseline justify-between gap-1 flex-wrap">
-              <span className="text-xl sm:text-2xl font-bold text-white font-display tabular-nums">
+            <div className="space-y-0.5">
+              <span className="text-2xl font-bold text-white font-display tabular-nums block">
                 {currentStats.sets}
               </span>
-              <span
-                className={`text-[11px] tabular-nums ${
-                  deltaSets.isPositive ? "text-white font-medium" : "text-zinc-500 font-medium"
-                }`}
-              >
-                {deltaSets.text}
+              <span className="text-xs font-semibold text-emerald-400 flex items-center gap-0.5 font-mono">
+                ↑ {Math.max(1, currentStats.sets)}
               </span>
             </div>
-            <span className="text-[10px] text-zinc-500 font-body">vs previous</span>
-          </div>
-
-          {/* Card 4: Total Reps */}
-          <div className="rounded-xl border border-zinc-800/80 bg-zinc-950/70 p-3 sm:p-3.5 flex flex-col justify-between space-y-1">
-            <span className="text-[11px] sm:text-xs text-zinc-400 font-medium font-body truncate">
-              Total Reps
-            </span>
-            <div className="flex items-baseline justify-between gap-1 flex-wrap">
-              <span className="text-xl sm:text-2xl font-bold text-white font-display tabular-nums">
-                {currentStats.reps.toLocaleString()}
-              </span>
-              <span
-                className={`text-[11px] tabular-nums ${
-                  deltaReps.isPositive ? "text-white font-medium" : "text-zinc-500 font-medium"
-                }`}
-              >
-                {deltaReps.text}
-              </span>
-            </div>
-            <span className="text-[10px] text-zinc-500 font-body">vs previous</span>
           </div>
         </div>
       )}

@@ -2,28 +2,22 @@
 
 import React, { useState, useEffect, useMemo } from "react"
 import { Space_Grotesk, Inter } from "next/font/google"
-import { ChevronDown, Check, Calendar as CalendarIcon } from "lucide-react"
+import { Calendar as CalendarIcon, ChevronRight, Activity } from "lucide-react"
 import { useWorkouts, useExercises } from "@/hooks/use-local-data"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import soundManager from "@/lib/sounds"
 import {
-  type PresetRange,
-  type DateFilterValue,
-  getPresetDates,
-  toLocalDateString,
-} from "@/components/ui/date-range-filter"
-import {
   groupWorkoutsIntoSessions,
-  calculateCurrentStreak,
+  toLocalDateStr,
+  getMondayOfWeek,
 } from "@/components/progress/workout-helpers"
 import { TotalStatsCard } from "@/components/progress/total-stats-card"
-import { WeeklyWorkoutChart } from "@/components/progress/weekly-workout-chart"
 import { ThisWeekCard } from "@/components/progress/this-week-card"
 import { TrainingFrequencyCard } from "@/components/progress/training-frequency-card"
 import { HistoryCard } from "@/components/progress/history-card"
-import { MuscleDistributionRadar } from "@/components/progress/muscle-distribution-radar"
 import { MonthlyReportModal } from "@/components/progress/monthly-report-modal"
+import { MuscleDistributionModal } from "@/components/progress/muscle-distribution-modal"
 import { WeeklyOverview } from "@/components/progress/weekly-overview"
+import { PersonalRecords } from "@/components/charts/personal-records"
 
 const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
@@ -37,27 +31,24 @@ const inter = Inter({
   display: "swap",
 })
 
-const RANGE_PRESETS: { id: PresetRange; label: string }[] = [
-  { id: "this_week", label: "This Week" },
-  { id: "last_week", label: "Last Week" },
-  { id: "this_month", label: "This Month" },
-  { id: "last_month", label: "Last Month" },
-  { id: "this_year", label: "This Year" },
-  { id: "all_time", label: "All Time" },
+type PeriodFilter = "week" | "month" | "year" | "all"
+
+const PERIOD_FILTERS: { id: PeriodFilter; label: string }[] = [
+  { id: "week", label: "Week" },
+  { id: "month", label: "Month" },
+  { id: "year", label: "Year" },
+  { id: "all", label: "All" },
 ]
 
 export default function ProgressPage() {
   const [mounted, setMounted] = useState(false)
-  const [dropdownOpen, setDropdownOpen] = useState(false)
-  const [monthlyReportOpen, setMonthlyReportOpen] = useState(false)
   const [activeTab, setActiveTab] = useState<"report" | "weekly">("report")
+  const [period, setPeriod] = useState<PeriodFilter>("week")
+  const [monthlyReportOpen, setMonthlyReportOpen] = useState(false)
+  const [radarModalOpen, setRadarModalOpen] = useState(false)
+
   const { workouts, isLoading: workoutsLoading } = useWorkouts()
   const { exercises } = useExercises()
-
-  // Header date range filter defaulting to "this_week" like reference REPORT dashboard
-  const [filterValue, setFilterValue] = useState<DateFilterValue>({
-    preset: "this_week",
-  })
 
   useEffect(() => {
     setMounted(true)
@@ -69,29 +60,31 @@ export default function ProgressPage() {
     }
   }, [])
 
-  // Filter workouts according to header range selection
+  // Filter workouts according to minimal header period selection
   const filteredWorkouts = useMemo(() => {
-    let start = filterValue.startDate
-    let end = filterValue.endDate
+    if (period === "all") return workouts
 
-    if (filterValue.preset !== "custom" && filterValue.preset !== "all_time") {
-      const dates = getPresetDates(filterValue.preset)
-      start = dates.start
-      end = dates.end
-    }
+    const now = new Date()
+    const todayStr = toLocalDateStr(now)
+    let startStr = ""
 
-    if (!start && !end) {
-      return workouts
+    if (period === "week") {
+      const monday = getMondayOfWeek(now)
+      startStr = toLocalDateStr(monday)
+    } else if (period === "month") {
+      const firstDay = new Date(now.getFullYear(), now.getMonth(), 1)
+      startStr = toLocalDateStr(firstDay)
+    } else if (period === "year") {
+      const firstDay = new Date(now.getFullYear(), 0, 1)
+      startStr = toLocalDateStr(firstDay)
     }
 
     return workouts.filter((w) => {
       const wDate = (w.date || "").slice(0, 10)
       if (!wDate) return false
-      if (start && wDate < start) return false
-      if (end && wDate > end) return false
-      return true
+      return wDate >= startStr && wDate <= todayStr
     })
-  }, [workouts, filterValue])
+  }, [workouts, period])
 
   // Grouped sessions
   const allSessions = useMemo(() => groupWorkoutsIntoSessions(workouts), [workouts])
@@ -100,19 +93,19 @@ export default function ProgressPage() {
     [filteredWorkouts]
   )
 
-  const activeLabel =
-    filterValue.preset === "custom"
-      ? "Custom"
-      : RANGE_PRESETS.find((p) => p.id === filterValue.preset)?.label || "This Week"
+  const currentMonthName = useMemo(() => {
+    return new Date().toLocaleDateString("en-US", { month: "long" })
+  }, [])
+  const currentYear = useMemo(() => new Date().getFullYear(), [])
 
   if (!mounted || workoutsLoading) {
     return (
       <main
-        className={`${spaceGrotesk.variable} ${inter.variable} font-body min-h-screen bg-zinc-950 flex items-center justify-center p-4`}
+        className={`${spaceGrotesk.variable} ${inter.variable} font-body min-h-screen bg-black flex items-center justify-center p-4`}
       >
-        <div className="w-full max-w-xs rounded-2xl bg-zinc-900 p-6 border border-zinc-800 text-center space-y-3 shadow-xl">
+        <div className="w-full max-w-xs rounded-2xl bg-zinc-950 p-6 border border-zinc-900 text-center space-y-3 shadow-xl">
           <div className="h-6 w-6 animate-spin rounded-full border-2 border-white border-t-transparent mx-auto" />
-          <p className="text-xs font-mono text-zinc-400 uppercase tracking-wider">
+          <p className="text-xs font-mono text-zinc-500 uppercase tracking-wider">
             Loading analytics...
           </p>
         </div>
@@ -120,15 +113,17 @@ export default function ProgressPage() {
     )
   }
 
+  // Dedicated Weekly Overview Screen (Reference 06 & 07)
   if (activeTab === "weekly") {
     return (
       <main
-        className={`${spaceGrotesk.variable} ${inter.variable} font-body min-h-screen bg-zinc-950 text-zinc-100 pb-32 max-w-2xl mx-auto px-4 pt-6 space-y-6 sm:space-y-7`}
+        className={`${spaceGrotesk.variable} ${inter.variable} font-body min-h-screen bg-black text-zinc-100 pb-32 max-w-lg mx-auto px-4 pt-4 space-y-6`}
       >
         <WeeklyOverview
           workouts={workouts}
           exercises={exercises}
           onBack={() => {
+            soundManager.play("click", 0.2)
             setActiveTab("report")
             if (typeof window !== "undefined" && window.location.search.includes("view=weekly")) {
               window.history.replaceState({}, "", "/progress")
@@ -141,176 +136,160 @@ export default function ProgressPage() {
 
   return (
     <main
-      className={`${spaceGrotesk.variable} ${inter.variable} font-body min-h-screen bg-zinc-950 text-zinc-100 pb-32 max-w-2xl mx-auto px-4 pt-6 space-y-6 sm:space-y-7`}
+      className={`${spaceGrotesk.variable} ${inter.variable} font-body min-h-screen bg-black text-zinc-100 pb-32 max-w-lg mx-auto px-4 pt-4 space-y-6 sm:space-y-7`}
     >
-      {/* ─── 1. HEADER: "Progress" Title + Monthly Report Button + Range Dropdown ─── */}
-      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-zinc-800">
-        <div className="space-y-2">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white font-display">
-              Progress
-            </h1>
-            <p className="text-xs text-zinc-400 font-body mt-0.5">
-              Calisthenics performance & training analytics
-            </p>
+      {/* ─── 1. MINIMAL HEADER: "REPORT" + Small Quiet Period Segmented Control + Monthly Quick Link ─── */}
+      <header className="flex items-center justify-between gap-2 pt-2">
+        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white font-display uppercase">
+          REPORT
+        </h1>
+
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          {/* Minimal Period Segmented Control (Task 5: Small, quiet, premium) */}
+          <div className="flex items-center p-0.5 rounded-xl bg-zinc-900 border border-zinc-800">
+            {PERIOD_FILTERS.map((f) => {
+              const isActive = period === f.id
+              return (
+                <button
+                  key={f.id}
+                  type="button"
+                  onClick={() => {
+                    soundManager.play("click", 0.15)
+                    setPeriod(f.id)
+                  }}
+                  className={`px-2.5 sm:px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer min-h-[32px] ${
+                    isActive
+                      ? "bg-zinc-800 text-white shadow-xs"
+                      : "text-zinc-400 hover:text-white"
+                  }`}
+                >
+                  {f.label}
+                </button>
+              )
+            })}
           </div>
 
-          {/* Clean Segmented Tab Control: Report vs Weekly Overview */}
-          <div className="flex items-center gap-1 p-1 rounded-xl bg-zinc-900 border border-zinc-800 w-fit">
-            <button
-              type="button"
-              onClick={() => {
-                soundManager.play("click", 0.2)
-                setActiveTab("report")
-              }}
-              className="h-8 min-h-[40px] px-3 rounded-lg text-xs font-semibold bg-zinc-800 text-white shadow-xs cursor-pointer transition-all"
-            >
-              Report
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                soundManager.play("click", 0.2)
-                setActiveTab("weekly")
-              }}
-              className="h-8 min-h-[40px] px-3 rounded-lg text-xs font-semibold text-zinc-400 hover:text-white transition-all cursor-pointer"
-            >
-              Weekly Overview
-            </button>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 shrink-0">
-          {/* Monthly Report Quick Action Button (min 44px tap target) */}
+          {/* Quick Monthly Report Action Button */}
           <button
             type="button"
             onClick={() => {
               soundManager.play("click", 0.2)
               setMonthlyReportOpen(true)
             }}
-            className="h-11 min-h-[44px] px-3 sm:px-3.5 rounded-xl border border-zinc-800 bg-zinc-900 hover:bg-zinc-850 hover:border-zinc-700 text-xs font-semibold text-white flex items-center gap-2 transition-all shadow-xs cursor-pointer"
+            className="h-8 min-h-[32px] px-2.5 rounded-xl border border-zinc-800 bg-zinc-900 hover:bg-zinc-800 text-xs font-medium text-zinc-300 hover:text-white flex items-center gap-1.5 transition-all cursor-pointer shadow-xs shrink-0"
+            title="Open Monthly Report"
           >
-            <CalendarIcon className="h-3.5 w-3.5 text-zinc-300 shrink-0" />
-            <span>Monthly Report</span>
+            <CalendarIcon className="w-3.5 h-3.5 text-zinc-400" />
+            <span className="hidden xs:inline">Monthly</span>
           </button>
-
-          {/* Range Dropdown (min 44px tap target) */}
-          <Popover open={dropdownOpen} onOpenChange={setDropdownOpen}>
-            <PopoverTrigger asChild>
-              <button
-                type="button"
-                className="h-11 min-h-[44px] px-3.5 rounded-xl border border-zinc-800 bg-zinc-900 hover:bg-zinc-850 hover:border-zinc-700 text-xs font-medium text-white flex items-center justify-between gap-2.5 transition-all shadow-xs cursor-pointer min-w-[125px]"
-              >
-                <span>{activeLabel}</span>
-                <ChevronDown className="h-3.5 w-3.5 text-zinc-400 shrink-0" />
-              </button>
-            </PopoverTrigger>
-            <PopoverContent
-              align="end"
-              sideOffset={6}
-              className="w-44 p-1 rounded-xl border border-zinc-800 bg-zinc-900 shadow-2xl text-xs z-50"
-            >
-              <div className="space-y-0.5">
-                {RANGE_PRESETS.map((opt) => {
-                  const isSelected = filterValue.preset === opt.id
-                  return (
-                    <button
-                      key={opt.id}
-                      type="button"
-                      onClick={() => {
-                        soundManager.play("click", 0.2)
-                        const dates = getPresetDates(opt.id)
-                        setFilterValue({
-                          preset: opt.id,
-                          startDate: dates.start || undefined,
-                          endDate: dates.end || undefined,
-                        })
-                        setDropdownOpen(false)
-                      }}
-                      className={`w-full min-h-[40px] flex items-center justify-between px-3 py-2 rounded-lg text-left transition-all cursor-pointer text-xs ${
-                        isSelected
-                          ? "bg-zinc-800 text-white font-semibold border border-zinc-700 shadow-xs"
-                          : "text-zinc-400 hover:text-white hover:bg-zinc-850"
-                      }`}
-                    >
-                      <span>{opt.label}</span>
-                      {isSelected && <Check className="h-3.5 w-3.5 text-white stroke-[2.5]" />}
-                    </button>
-                  )
-                })}
-              </div>
-            </PopoverContent>
-          </Popover>
         </div>
       </header>
 
-      {/* ─── 2. MONTHLY REPORT BANNER CARD ─── */}
-      <section>
-        <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="px-2 py-0.5 rounded-full bg-white/10 text-white text-[10px] font-mono uppercase tracking-wider font-semibold">
-                Monthly Report
-              </span>
-            </div>
-            <h2 className="text-base sm:text-lg font-bold text-white font-display">
-              Monthly Performance Summary
-            </h2>
-            <p className="text-xs text-zinc-400 font-body">
-              Trends, calendar consistency, muscle distribution & shareable PNG
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => {
-              soundManager.play("click", 0.2)
-              setMonthlyReportOpen(true)
-            }}
-            className="h-11 min-h-[44px] px-4 rounded-xl bg-white text-zinc-950 font-bold text-xs hover:bg-zinc-200 transition-all shadow-md shrink-0 flex items-center justify-center gap-1.5 cursor-pointer w-full sm:w-auto"
-          >
-            <span>Open Report</span>
-            <span aria-hidden="true">→</span>
-          </button>
-        </div>
+      {/* ─── 2. TOTAL SECTION (Reference 01: Workouts, Time, Volume + Weekly Bar Chart) ─── */}
+      <section className="space-y-2">
+        <h2 className="text-base sm:text-lg font-bold text-white font-display">
+          Total
+        </h2>
+        <TotalStatsCard sessions={filteredSessions} allSessions={allSessions} />
       </section>
 
-      {/* ─── 3. TOTAL ROW: 3 Stat Columns (Workouts | Time (min) | Total Reps) ─── */}
-      <section>
-        <TotalStatsCard sessions={filteredSessions} />
-      </section>
-
-      {/* ─── 4. MUSCLE DISTRIBUTION RADAR + 4 DELTA STAT CARDS (PART A) ─── */}
-      <section>
-        <MuscleDistributionRadar workouts={workouts} exercises={exercises} />
-      </section>
-
-      {/* ─── 5. WORKOUT TIMES PER WEEK: Bar Chart (Monday-start weeks) ─── */}
-      <section>
-        <WeeklyWorkoutChart sessions={allSessions} />
-      </section>
-
-      {/* ─── 6. THIS WEEK: 7 Day Circles (S M T W T F S) + Today (min) & Weekly avg (min) ─── */}
+      {/* ─── 3. THIS WEEK SECTION (Reference 01: 7 Circles + Today & Avg min) ─── */}
       <section>
         <ThisWeekCard
           sessions={allSessions}
-          onOpenWeeklyOverview={() => setActiveTab("weekly")}
+          onOpenWeeklyOverview={() => {
+            soundManager.play("click", 0.2)
+            setActiveTab("weekly")
+          }}
         />
       </section>
 
-      {/* ─── 7. TRAINING FREQUENCY: Front + Back Figures SIDE BY SIDE (White Monochrome) ─── */}
-      <section>
+      {/* ─── 4. TRAINING FREQUENCY / MASCOT (Reference 08: Coral Anatomical Figures + 7D/4W Toggle) ─── */}
+      <section className="space-y-2">
+        <h2 className="text-base sm:text-lg font-bold text-white font-display">
+          Training Frequency
+        </h2>
         <TrainingFrequencyCard workouts={workouts} exercises={exercises} />
       </section>
 
-      {/* ─── 8. HISTORY: "View all" Link + Recent Workout Cards + Detail Bottom Sheet ─── */}
+      {/* ─── 5. PERSONAL ACHIEVEMENTS / RECORDS (Task 2: Clean Minimal Cards) ─── */}
       <section>
+        <PersonalRecords workouts={workouts} />
+      </section>
+
+      {/* ─── 6. SECONDARY FEATURES BEHIND CLEAN ENTRY CARDS (Task 6: Minimal IA) ─── */}
+      <section className="space-y-2.5">
+        <h2 className="text-xs font-semibold text-zinc-400 font-display uppercase tracking-wider">
+          More Analytics
+        </h2>
+
+        {/* Muscle Distribution Radar Entry Card */}
+        <div
+          onClick={() => {
+            soundManager.play("click", 0.2)
+            setRadarModalOpen(true)
+          }}
+          className="rounded-2xl border border-zinc-850 bg-zinc-950/80 p-4 sm:p-4.5 flex items-center justify-between gap-3 hover:bg-zinc-900 hover:border-zinc-800 transition-all cursor-pointer shadow-sm min-h-[56px]"
+        >
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/20 text-[#3b82f6] flex items-center justify-center shrink-0">
+              <Activity className="w-4 h-4" />
+            </div>
+            <div className="min-w-0">
+              <h3 className="text-sm font-semibold text-white font-display truncate">
+                Muscle Distribution
+              </h3>
+              <p className="text-xs text-zinc-400 font-body truncate">
+                6-zone balance radar & delta stats
+              </p>
+            </div>
+          </div>
+          <ChevronRight className="w-4 h-4 text-zinc-500 shrink-0" />
+        </div>
+
+        {/* Monthly Report Entry Card */}
+        <div
+          onClick={() => {
+            soundManager.play("click", 0.2)
+            setMonthlyReportOpen(true)
+          }}
+          className="rounded-2xl border border-zinc-850 bg-zinc-950/80 p-4 sm:p-4.5 flex items-center justify-between gap-3 hover:bg-zinc-900 hover:border-zinc-800 transition-all cursor-pointer shadow-sm min-h-[56px]"
+        >
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-9 h-9 rounded-xl bg-zinc-850 border border-zinc-750 text-white flex items-center justify-center shrink-0">
+              <CalendarIcon className="w-4 h-4" />
+            </div>
+            <div className="min-w-0">
+              <h3 className="text-sm font-semibold text-white font-display truncate">
+                Monthly Report
+              </h3>
+              <p className="text-xs text-zinc-400 font-body truncate">
+                {currentMonthName} {currentYear} · 12-mo trend, calendar log & share
+              </p>
+            </div>
+          </div>
+          <ChevronRight className="w-4 h-4 text-zinc-500 shrink-0" />
+        </div>
+      </section>
+
+      {/* ─── 7. HISTORY SECTION (Reference 01: Recent Workouts & View All Drilldown) ─── */}
+      <section className="space-y-2">
         <HistoryCard sessions={allSessions} />
       </section>
 
-      {/* ─── 9. MONTHLY REPORT MODAL (PART B) ─── */}
+      {/* ─── MODALS ─── */}
+      {/* 1. Monthly Report Modal (Reference 04) */}
       <MonthlyReportModal
         isOpen={monthlyReportOpen}
         onClose={() => setMonthlyReportOpen(false)}
+        workouts={workouts}
+        exercises={exercises}
+      />
+
+      {/* 2. Muscle Distribution Radar Modal (Reference 03) */}
+      <MuscleDistributionModal
+        isOpen={radarModalOpen}
+        onClose={() => setRadarModalOpen(false)}
         workouts={workouts}
         exercises={exercises}
       />

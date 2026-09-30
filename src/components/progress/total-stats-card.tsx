@@ -1,48 +1,192 @@
 "use client"
 
-import React from "react"
-import type { AggregatedWorkoutSession } from "./workout-helpers"
+import React, { useMemo } from "react"
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Cell,
+} from "recharts"
+import {
+  type AggregatedWorkoutSession,
+  getMondayOfWeek,
+  formatWeekLabel,
+  toLocalDateStr,
+} from "./workout-helpers"
 
 interface TotalStatsCardProps {
   sessions: AggregatedWorkoutSession[]
+  allSessions?: AggregatedWorkoutSession[]
 }
 
-export function TotalStatsCard({ sessions }: TotalStatsCardProps) {
+export function TotalStatsCard({ sessions, allSessions }: TotalStatsCardProps) {
+  // Stats calculation
   const workoutCount = sessions.length
   const totalTimeMin = sessions.reduce((acc, s) => acc + s.durationMin, 0)
-  const totalReps = sessions.reduce((acc, s) => acc + s.totalReps, 0)
+
+  // Calculate volume in kg or total reps
+  const totalVolume = useMemo(() => {
+    let vol = 0
+    sessions.forEach((s) => {
+      s.rawWorkouts.forEach((w) => {
+        const wt = w.weight || 0
+        const r = w.reps || 0
+        const sets = Math.max(1, w.sets || 1)
+        if (wt > 0) {
+          vol += wt * (r > 0 ? r : sets)
+        } else if (w.volume && w.volume > 0) {
+          vol += w.volume
+        } else {
+          vol += r * sets
+        }
+      })
+    })
+    return Math.round(vol)
+  }, [sessions])
+
+  // Weekly bar chart (8 weeks like reference 01: 9 AUG ... 27 SEP)
+  const chartSessions = allSessions || sessions
+  const chartData = useMemo(() => {
+    const now = new Date()
+    const currentMonday = getMondayOfWeek(now)
+
+    const weeks: {
+      monday: Date
+      label: string
+      startStr: string
+      endStr: string
+      count: number
+      isCurrent: boolean
+    }[] = []
+
+    for (let i = 7; i >= 0; i--) {
+      const m = new Date(currentMonday)
+      m.setDate(m.getDate() - i * 7)
+
+      const sunday = new Date(m)
+      sunday.setDate(sunday.getDate() + 6)
+
+      weeks.push({
+        monday: m,
+        label: formatWeekLabel(m).toUpperCase(),
+        startStr: toLocalDateStr(m),
+        endStr: toLocalDateStr(sunday),
+        count: 0,
+        isCurrent: i === 0,
+      })
+    }
+
+    // Count workout sessions falling within each week bucket
+    chartSessions.forEach((s) => {
+      const sDate = s.date.slice(0, 10)
+      for (const w of weeks) {
+        if (sDate >= w.startStr && sDate <= w.endStr) {
+          w.count++
+          break
+        }
+      }
+    })
+
+    return weeks
+  }, [chartSessions])
+
+  const maxCount = useMemo(() => {
+    const maxVal = Math.max(0, ...chartData.map((d) => d.count))
+    return Math.max(1, maxVal)
+  }, [chartData])
 
   return (
-    <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-5 sm:p-6 shadow-xs">
-      <div className="grid grid-cols-3 divide-x divide-zinc-800">
-        {/* Column 1: Workouts */}
-        <div className="px-2 sm:px-4 py-1 flex flex-col items-center justify-center text-center">
-          <span className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-white font-display tabular-nums">
+    <div className="rounded-3xl border border-zinc-800/90 bg-[#121316] p-5 sm:p-6 shadow-xl space-y-6">
+      {/* ─── Top Stats: Workout | Time(min) | Volume(kg) (Reference 01) ─── */}
+      <div className="grid grid-cols-3 gap-2">
+        {/* Workout */}
+        <div>
+          <span className="text-xs text-zinc-400 font-medium block">Workout</span>
+          <span className="text-2xl sm:text-3xl font-extrabold text-[#2563eb] font-display tabular-nums mt-1 block">
             {workoutCount}
           </span>
-          <span className="text-[11px] sm:text-xs text-zinc-400 font-medium font-body mt-1">
-            Workouts
-          </span>
         </div>
 
-        {/* Column 2: Time (min) */}
-        <div className="px-2 sm:px-4 py-1 flex flex-col items-center justify-center text-center">
-          <span className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-white font-display tabular-nums">
+        {/* Time(min) */}
+        <div>
+          <span className="text-xs text-zinc-400 font-medium block">Time(min)</span>
+          <span className="text-2xl sm:text-3xl font-extrabold text-[#2563eb] font-display tabular-nums mt-1 block">
             {totalTimeMin}
           </span>
-          <span className="text-[11px] sm:text-xs text-zinc-400 font-medium font-body mt-1">
-            Time (min)
-          </span>
         </div>
 
-        {/* Column 3: Total Reps */}
-        <div className="px-2 sm:px-4 py-1 flex flex-col items-center justify-center text-center">
-          <span className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-white font-display tabular-nums">
-            {totalReps.toLocaleString()}
+        {/* Volume(kg) */}
+        <div>
+          <span className="text-xs text-zinc-400 font-medium block">Volume(kg)</span>
+          <span className="text-2xl sm:text-3xl font-extrabold text-[#2563eb] font-display tabular-nums mt-1 block">
+            {totalVolume.toLocaleString()}
           </span>
-          <span className="text-[11px] sm:text-xs text-zinc-400 font-medium font-body mt-1">
-            Total Reps
-          </span>
+        </div>
+      </div>
+
+      {/* ─── Workout times per week: Bar chart (Reference 01) ─── */}
+      <div className="space-y-3 pt-2">
+        <h3 className="text-xs sm:text-sm font-semibold text-zinc-300 font-display">
+          Workout times per week
+        </h3>
+
+        <div className="w-full h-44 sm:h-48 pt-1">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={chartData}
+              margin={{ top: 12, right: 4, left: -25, bottom: 0 }}
+            >
+              <XAxis
+                dataKey="label"
+                axisLine={false}
+                tickLine={false}
+                tick={{
+                  fill: "#71717a",
+                  fontSize: 9,
+                  fontFamily: "var(--font-mono), monospace",
+                }}
+                dy={6}
+              />
+              <YAxis
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: "#52525b", fontSize: 10 }}
+                allowDecimals={false}
+                domain={[0, maxCount]}
+                tickCount={maxCount <= 2 ? 2 : 4}
+              />
+              <Tooltip
+                cursor={{ fill: "rgba(255, 255, 255, 0.04)" }}
+                content={({ active, payload }) => {
+                  if (active && payload && payload.length) {
+                    const data = payload[0].payload
+                    return (
+                      <div className="rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2 shadow-2xl text-xs space-y-0.5">
+                        <span className="text-[11px] text-zinc-400 block font-body">
+                          Week of {data.label}
+                        </span>
+                        <span className="text-white font-bold font-display tabular-nums text-sm">
+                          {data.count} {data.count === 1 ? "workout" : "workouts"}
+                        </span>
+                      </div>
+                    )
+                  }
+                  return null
+                }}
+              />
+              <Bar dataKey="count" radius={[6, 6, 0, 0]} maxBarSize={22}>
+                {chartData.map((entry, index) => (
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={entry.count > 0 ? (entry.isCurrent ? "#2563eb" : "#3b82f6") : "#22242a"}
+                  />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
         </div>
       </div>
     </div>

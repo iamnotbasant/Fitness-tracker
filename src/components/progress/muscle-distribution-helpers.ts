@@ -27,6 +27,7 @@ export interface PeriodStats {
   durationMin: number
   sets: number
   reps: number
+  volumeKg: number
 }
 
 export interface DeltaInfo {
@@ -326,11 +327,22 @@ export function calculatePeriodStats(workouts: Workout[]): PeriodStats {
   const sets = sessions.reduce((acc, s) => acc + s.totalSets, 0)
   const reps = sessions.reduce((acc, s) => acc + s.totalReps, 0)
 
+  let vol = 0
+  workouts.forEach((w) => {
+    const s = Math.max(1, w.sets || 1)
+    const r = w.reps || 0
+    const wt = w.weight || 0
+    if (wt > 0) vol += wt * (r > 0 ? r : s)
+    else if (w.volume && w.volume > 0) vol += w.volume
+    else vol += s * r
+  })
+
   return {
     workouts: workoutsCount,
     durationMin,
     sets,
     reps,
+    volumeKg: Math.round(vol),
   }
 }
 

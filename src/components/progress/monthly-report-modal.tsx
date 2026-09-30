@@ -3,23 +3,21 @@
 import React, { useState, useMemo, useRef, useEffect } from "react"
 import type { Workout, Exercise } from "@/lib/types"
 import {
-  X,
-  Share2,
-  Download,
-  Flame,
   ChevronLeft,
   ChevronRight,
-  Calendar as CalendarIcon,
+  Share2,
+  Flame,
   Loader2,
-  Check,
+  Calendar as CalendarIcon,
 } from "lucide-react"
 import {
-  AreaChart,
-  Area,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   ResponsiveContainer,
   Tooltip,
+  Cell,
 } from "recharts"
 import { toast } from "sonner"
 import { toPng } from "html-to-image"
@@ -32,7 +30,6 @@ import {
 import {
   getMonthAndPrecedingPeriod,
   calculatePeriodStats,
-  formatMonochromeDelta,
 } from "./muscle-distribution-helpers"
 import { MuscleDistributionRadar } from "./muscle-distribution-radar"
 
@@ -45,9 +42,9 @@ interface MonthlyReportModalProps {
   initialMonthIndex?: number // 0-11
 }
 
-type MetricTab = "workouts" | "duration" | "reps"
+type MetricTab = "workouts" | "duration" | "volume"
 
-const DAY_OF_WEEK_LABELS = ["S", "M", "T", "W", "T", "F", "S"]
+const CALENDAR_HEADERS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 
 export function MonthlyReportModal({
   isOpen,
@@ -94,7 +91,7 @@ export function MonthlyReportModal({
 
   // Month navigation
   const handlePrevMonth = () => {
-    soundManager.play("click", 0.2)
+    soundManager.play("click", 0.15)
     if (monthIndex === 0) {
       setMonthIndex(11)
       setYear((y) => y - 1)
@@ -104,7 +101,7 @@ export function MonthlyReportModal({
   }
 
   const handleNextMonth = () => {
-    soundManager.play("click", 0.2)
+    soundManager.play("click", 0.15)
     if (monthIndex === 11) {
       setMonthIndex(0)
       setYear((y) => y + 1)
@@ -113,99 +110,114 @@ export function MonthlyReportModal({
     }
   }
 
-  // Periods calculation
+  // Current & preceding month period info
   const periodInfo = useMemo(() => {
     return getMonthAndPrecedingPeriod(year, monthIndex)
   }, [year, monthIndex])
 
   // Filter workouts for current and previous month
-  const { currentMonthWorkouts, previousMonthWorkouts, currentMonthSessions } = useMemo(() => {
-    const curr = workouts.filter((w) => {
-      const d = (w.date || "").slice(0, 10)
-      return d >= periodInfo.currentStart && d <= periodInfo.currentEnd
-    })
-    const prev = workouts.filter((w) => {
-      const d = (w.date || "").slice(0, 10)
-      return d >= periodInfo.previousStart && d <= periodInfo.previousEnd
-    })
-    const sessions = groupWorkoutsIntoSessions(curr)
+  const { currentMonthWorkouts, previousMonthWorkouts, currentMonthSessions, previousMonthSessions } =
+    useMemo(() => {
+      const curr = workouts.filter((w) => {
+        const d = (w.date || "").slice(0, 10)
+        return d >= periodInfo.currentStart && d <= periodInfo.currentEnd
+      })
+      const prev = workouts.filter((w) => {
+        const d = (w.date || "").slice(0, 10)
+        return d >= periodInfo.previousStart && d <= periodInfo.previousEnd
+      })
+      return {
+        currentMonthWorkouts: curr,
+        previousMonthWorkouts: prev,
+        currentMonthSessions: groupWorkoutsIntoSessions(curr),
+        previousMonthSessions: groupWorkoutsIntoSessions(prev),
+      }
+    }, [workouts, periodInfo])
 
-    return {
-      currentMonthWorkouts: curr,
-      previousMonthWorkouts: prev,
-      currentMonthSessions: sessions,
+  // 12-Month Bar Chart Data (Reference 04: "S O N D J F M A M J J A")
+  const twelveMonthsData = useMemo(() => {
+    const result: {
+      key: string
+      label: string
+      letter: string
+      workouts: number
+      durationMin: number
+      volumeKg: number
+      isCurrent: boolean
+    }[] = []
+
+    for (let offset = 11; offset >= 0; offset--) {
+      let m = monthIndex - offset
+      let y = year
+      while (m < 0) {
+        m += 12
+        y -= 1
+      }
+      const d = new Date(y, m, 1)
+      const monthShort = d.toLocaleDateString("en-US", { month: "short" })
+      const letter = monthShort.charAt(0).toUpperCase()
+      const mStr = String(m + 1).padStart(2, "0")
+      const lastDay = new Date(y, m + 1, 0).getDate()
+      const startStr = `${y}-${mStr}-01`
+      const endStr = `${y}-${mStr}-${String(lastDay).padStart(2, "0")}`
+
+      const mWorkouts = workouts.filter((w) => {
+        const wDate = (w.date || "").slice(0, 10)
+        return wDate >= startStr && wDate <= endStr
+      })
+      const mSessions = groupWorkoutsIntoSessions(mWorkouts)
+      const count = mSessions.length
+      const duration = mSessions.reduce((acc, s) => acc + s.durationMin, 0)
+      let vol = 0
+      mWorkouts.forEach((w) => {
+        const s = Math.max(1, w.sets || 1)
+        const r = w.reps || 0
+        const wt = w.weight || 0
+        if (wt > 0) vol += wt * (r > 0 ? r : s)
+        else if (w.volume && w.volume > 0) vol += w.volume
+        else vol += s * r
+      })
+
+      result.push({
+        key: `${y}-${m}`,
+        label: `${monthShort} ${y}`,
+        letter,
+        workouts: count,
+        durationMin: duration,
+        volumeKg: Math.round(vol),
+        isCurrent: offset === 0,
+      })
     }
-  }, [workouts, periodInfo])
 
-  // Summary stats with deltas vs previous month
-  const { currentStats, deltaWorkouts, deltaDuration, deltaSets, deltaReps } = useMemo(() => {
+    return result
+  }, [workouts, year, monthIndex])
+
+  // Summary stats (2x2 grid)
+  const summary = useMemo(() => {
     const curr = calculatePeriodStats(currentMonthWorkouts)
     const prev = calculatePeriodStats(previousMonthWorkouts)
 
     return {
-      currentStats: curr,
-      deltaWorkouts: formatMonochromeDelta(curr.workouts - prev.workouts),
-      deltaDuration: formatMonochromeDelta(curr.durationMin - prev.durationMin, "m"),
-      deltaSets: formatMonochromeDelta(curr.sets - prev.sets),
-      deltaReps: formatMonochromeDelta(curr.reps - prev.reps),
+      workouts: { curr: currentMonthSessions.length, prev: previousMonthSessions.length },
+      duration: { curr: curr.durationMin, prev: prev.durationMin },
+      volume: { curr: curr.volumeKg, prev: prev.volumeKg },
+      sets: { curr: curr.sets, prev: prev.sets },
     }
-  }, [currentMonthWorkouts, previousMonthWorkouts])
+  }, [currentMonthWorkouts, previousMonthWorkouts, currentMonthSessions, previousMonthSessions])
 
-  // Metric area chart data (daily breakdown across the month)
-  const chartData = useMemo(() => {
-    const daysCount = periodInfo.daysInCurrentMonth
-    const data: { day: string; fullDate: string; value: number }[] = []
-
-    const dailySessionsMap = new Map<string, typeof currentMonthSessions>()
-    currentMonthSessions.forEach((s) => {
-      if (!dailySessionsMap.has(s.date)) {
-        dailySessionsMap.set(s.date, [])
-      }
-      dailySessionsMap.get(s.date)!.push(s)
-    })
-
-    for (let dayNum = 1; dayNum <= daysCount; dayNum++) {
-      const dayStr = String(dayNum).padStart(2, "0")
-      const monthStr = String(monthIndex + 1).padStart(2, "0")
-      const dateKey = `${year}-${monthStr}-${dayStr}`
-      const daySessions = dailySessionsMap.get(dateKey) || []
-
-      let val = 0
-      if (activeMetric === "workouts") {
-        val = daySessions.length
-      } else if (activeMetric === "duration") {
-        val = daySessions.reduce((acc, s) => acc + s.durationMin, 0)
-      } else if (activeMetric === "reps") {
-        val = daySessions.reduce((acc, s) => acc + s.totalReps, 0)
-      }
-
-      data.push({
-        day: String(dayNum),
-        fullDate: dateKey,
-        value: val,
-      })
-    }
-
-    return data
-  }, [periodInfo, currentMonthSessions, monthIndex, year, activeMetric])
-
-  // Calendar Log data
+  // Calendar Workout Days Log
   const calendarLog = useMemo(() => {
     const daysInMonth = periodInfo.daysInCurrentMonth
-    const firstDay = periodInfo.firstDayOfWeek // 0 = Sun, ..., 6 = Sat
-    const todayStr = toLocalDateStr(new Date())
-
+    const firstDay = periodInfo.firstDayOfWeek // 0 = Sun ... 6 = Sat
     const trainedDates = new Set(
       currentMonthSessions.map((s) => s.date).filter(Boolean)
     )
 
-    // Preceding empty slots
     const slots: {
       type: "empty" | "day"
       dayNum?: number
       dateStr?: string
       hasWorkout?: boolean
-      isToday?: boolean
     }[] = []
 
     for (let i = 0; i < firstDay; i++) {
@@ -221,19 +233,19 @@ export function MonthlyReportModal({
         dayNum: d,
         dateStr,
         hasWorkout: trainedDates.has(dateStr),
-        isToday: dateStr === todayStr,
       })
     }
 
-    // Current Streak using Sunday-skipping logic from commit f3bcae6
+    // Streak calculation with Sunday skipping (commit f3bcae6)
     const allWorkoutDates = workouts.map((w) => (w.date || "").slice(0, 10))
-    const currentStreak = calculateCurrentStreak(allWorkoutDates)
+    const currentStreakDays = calculateCurrentStreak(allWorkoutDates)
+    const weekStreak = Math.floor(currentStreakDays / 6) // Roughly weeks count or 0
 
     return {
       slots,
       activeDaysCount: trainedDates.size,
       totalDays: daysInMonth,
-      currentStreak,
+      weekStreak,
     }
   }, [periodInfo, currentMonthSessions, monthIndex, year, workouts])
 
@@ -243,20 +255,19 @@ export function MonthlyReportModal({
     soundManager.play("click", 0.25)
     setIsExporting(true)
 
-    const loadingToast = toast.loading("Generating monochrome report image...")
+    const loadingToast = toast.loading("Generating report image...")
 
     try {
-      // Capture element as PNG with 2x retina clarity
       const dataUrl = await toPng(reportCardRef.current, {
         quality: 0.98,
         pixelRatio: 2,
-        backgroundColor: "#09090b",
+        backgroundColor: "#000000",
         cacheBust: true,
       })
 
       const fileName = `${periodInfo.currentMonthName.toLowerCase()}-${year}-fitness-report.png`
 
-      // On mobile / supported browsers, attempt native Web Share API with File
+      // Mobile Native Share
       if (typeof navigator !== "undefined" && navigator.share && navigator.canShare) {
         try {
           const res = await fetch(dataUrl)
@@ -267,7 +278,7 @@ export function MonthlyReportModal({
             toast.dismiss(loadingToast)
             await navigator.share({
               title: `${periodInfo.currentMonthName} ${year} Workout Report`,
-              text: `Check out my ${periodInfo.currentMonthName} calisthenics performance report!`,
+              text: `Check out my ${periodInfo.currentMonthName} ${year} performance report!`,
               files: [file],
             })
             toast.success("Report shared successfully!")
@@ -276,16 +287,14 @@ export function MonthlyReportModal({
           }
         } catch (shareErr: any) {
           if (shareErr.name === "AbortError") {
-            // User cancelled share dialog
             toast.dismiss(loadingToast)
             setIsExporting(false)
             return
           }
-          // If share failed, fall through to direct download
         }
       }
 
-      // Desktop or fallback: direct download
+      // Desktop direct download fallback
       toast.dismiss(loadingToast)
       const link = document.createElement("a")
       link.download = fileName
@@ -303,341 +312,288 @@ export function MonthlyReportModal({
 
   if (!isOpen) return null
 
+  // Delta line under title (Reference 04: "0 -> 0")
+  const currentMetricVal =
+    activeMetric === "workouts"
+      ? summary.workouts.curr
+      : activeMetric === "duration"
+      ? `${summary.duration.curr}m`
+      : `${summary.volume.curr}kg`
+
+  const prevMetricVal =
+    activeMetric === "workouts"
+      ? summary.workouts.prev
+      : activeMetric === "duration"
+      ? `${summary.duration.prev}m`
+      : `${summary.volume.prev}kg`
+
   return (
-    <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex justify-center overflow-y-auto">
-      <div className="w-full max-w-2xl min-h-screen bg-zinc-950 text-zinc-100 flex flex-col px-4 pt-4 pb-32 sm:px-6">
-        {/* ─── Top Floating Bar: Close & Share Action ─── */}
-        <div className="sticky top-0 z-40 -mx-4 px-4 py-3 bg-zinc-950/90 backdrop-blur-md border-b border-zinc-800 flex items-center justify-between gap-3 mb-4">
+    <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex justify-center overflow-y-auto">
+      <div className="w-full max-w-lg min-h-screen bg-black text-zinc-100 flex flex-col px-4 pt-3 pb-32 sm:px-6">
+        {/* ─── Top Bar: Back button, Month Report Title, Month Switcher ─── */}
+        <div className="sticky top-0 z-40 -mx-4 px-4 py-3 bg-black/95 backdrop-blur-md border-b border-zinc-900 flex items-center justify-between mb-4">
           <button
             type="button"
             onClick={() => {
               soundManager.play("click", 0.2)
               onClose()
             }}
-            className="h-11 min-h-[44px] min-w-[44px] px-3 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white flex items-center gap-1.5 transition-all cursor-pointer text-xs font-medium"
-            aria-label="Close report"
+            className="w-10 h-10 rounded-full flex items-center justify-center text-zinc-300 hover:text-white hover:bg-zinc-900 transition-all cursor-pointer"
+            aria-label="Back"
           >
-            <X className="h-4 w-4" />
-            <span className="hidden sm:inline">Close</span>
+            <ChevronLeft className="w-6 h-6" />
           </button>
 
-          {/* Month Title & Prev/Next Switcher */}
-          <div className="flex items-center gap-1 sm:gap-2">
+          <span className="text-base font-semibold text-white font-display">
+            {periodInfo.currentMonthName} Report
+          </span>
+
+          {/* Month Stepper */}
+          <div className="flex items-center gap-1">
             <button
               type="button"
               onClick={handlePrevMonth}
-              className="h-11 w-11 min-h-[44px] min-w-[44px] rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white flex items-center justify-center transition-all cursor-pointer"
+              className="w-8 h-8 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white flex items-center justify-center transition-all cursor-pointer"
               aria-label="Previous month"
             >
-              <ChevronLeft className="h-4 w-4" />
+              <ChevronLeft className="w-4 h-4" />
             </button>
-            <div className="px-2 text-center">
-              <span className="text-sm sm:text-base font-bold text-white font-display whitespace-nowrap block">
-                {periodInfo.currentMonthName} {year}
-              </span>
-              <span className="text-[10px] text-zinc-500 font-mono block">
-                vs {periodInfo.previousMonthName}
-              </span>
-            </div>
             <button
               type="button"
               onClick={handleNextMonth}
-              className="h-11 w-11 min-h-[44px] min-w-[44px] rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white flex items-center justify-center transition-all cursor-pointer"
+              className="w-8 h-8 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white flex items-center justify-center transition-all cursor-pointer"
               aria-label="Next month"
             >
-              <ChevronRight className="h-4 w-4" />
+              <ChevronRight className="w-4 h-4" />
             </button>
           </div>
-
-          {/* Download / Share Button (min 44px tap target) */}
-          <button
-            type="button"
-            onClick={handleShareOrDownload}
-            disabled={isExporting}
-            className="h-11 min-h-[44px] px-3 sm:px-4 rounded-xl bg-white text-zinc-950 font-semibold hover:bg-zinc-200 transition-all flex items-center gap-2 text-xs shadow-md cursor-pointer disabled:opacity-50"
-          >
-            {isExporting ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span className="hidden sm:inline">Exporting...</span>
-              </>
-            ) : (
-              <>
-                <Share2 className="h-4 w-4 shrink-0 sm:hidden" />
-                <Download className="h-4 w-4 shrink-0 hidden sm:inline" />
-                <span>Share / Save</span>
-              </>
-            )}
-          </button>
         </div>
 
-        {/* ─── Exportable Report Area ─── */}
-        <div
-          ref={reportCardRef}
-          className="bg-zinc-950 rounded-3xl border border-zinc-800/90 p-4 sm:p-6 space-y-6 shadow-2xl"
-        >
-          {/* ─── 1. Report Title Header ─── */}
-          <div className="border-b border-zinc-800 pb-4 flex items-center justify-between">
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-300 text-[10px] font-mono uppercase tracking-wider">
-                  Monthly Performance Report
-                </span>
-              </div>
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-white font-display tracking-tight mt-1.5">
-                {periodInfo.currentMonthName} {year}
-              </h1>
-              <p className="text-xs text-zinc-400 font-body mt-0.5">
-                Calisthenics workout volume, consistency & muscle distribution
-              </p>
-            </div>
-            <div className="text-right hidden sm:block">
-              <span className="text-xs text-zinc-500 font-mono">FITNESS TRACKER</span>
-            </div>
+        {/* ─── Exportable Report Area (Exact layout from 04-monthly-report.jpg) ─── */}
+        <div ref={reportCardRef} className="bg-black text-white space-y-6 pb-6">
+          {/* 1. Header: Month Year + Delta (e.g. "August 2026", "0 -> 0") */}
+          <div className="space-y-1">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-white font-display tracking-tight">
+              {periodInfo.currentMonthName} {year}
+            </h1>
+            <p className="text-xs text-zinc-400 font-mono">
+              {prevMetricVal} → {currentMetricVal}
+            </p>
           </div>
 
-          {/* ─── 2. Metric Tabs & Area Chart ─── */}
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4 sm:p-5 space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <h2 className="text-sm font-semibold text-white font-display uppercase tracking-wider">
-                  Monthly Trend
-                </h2>
-                <span className="text-xs text-zinc-400 font-body">
-                  Daily distribution across {periodInfo.currentMonthName}
-                </span>
-              </div>
-
-              {/* Metric Toggle Tabs (tap target >= 44px) */}
-              <div className="grid grid-cols-3 p-1 rounded-xl bg-zinc-950 border border-zinc-800">
-                {(["workouts", "duration", "reps"] as MetricTab[]).map((tab) => {
-                  const isActive = activeMetric === tab
-                  return (
-                    <button
-                      key={tab}
-                      type="button"
-                      onClick={() => {
-                        soundManager.play("click", 0.15)
-                        setActiveMetric(tab)
-                      }}
-                      className={`h-9 min-h-[36px] sm:h-8 px-3 rounded-lg text-xs font-medium capitalize transition-all cursor-pointer ${
-                        isActive
-                          ? "bg-white text-zinc-950 font-bold shadow-xs"
-                          : "text-zinc-400 hover:text-white"
-                      }`}
-                    >
-                      {tab}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-
-            {/* Metric Area Chart */}
-            <div className="w-full h-48 sm:h-52 pt-2">
+          {/* 2. 12-Month Bar Chart (S O N D J F M A M J J A) */}
+          <div className="space-y-3">
+            <div className="w-full h-44 sm:h-48 pt-1">
               {!mounted ? (
-                <div className="h-full flex items-center justify-center text-xs text-zinc-500 font-mono">
+                <div className="h-full flex items-center justify-center text-xs text-zinc-600 font-mono">
                   Loading trend...
                 </div>
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={chartData} margin={{ top: 8, right: 8, left: -22, bottom: 0 }}>
-                    <defs>
-                      <linearGradient id="reportMonochromeGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#ffffff" stopOpacity={0.35} />
-                        <stop offset="95%" stopColor="#ffffff" stopOpacity={0.0} />
-                      </linearGradient>
-                    </defs>
+                  <BarChart
+                    data={twelveMonthsData}
+                    margin={{ top: 8, right: 4, left: -25, bottom: 0 }}
+                  >
                     <XAxis
-                      dataKey="day"
-                      stroke="#3f3f46"
-                      tick={{ fill: "#a1a1aa", fontSize: 10 }}
-                      interval="preserveStartEnd"
+                      dataKey="letter"
+                      axisLine={false}
                       tickLine={false}
+                      tick={{ fill: "#71717a", fontSize: 11, fontFamily: "var(--font-mono), monospace" }}
                     />
                     <YAxis
-                      stroke="#3f3f46"
-                      tick={{ fill: "#a1a1aa", fontSize: 10 }}
-                      allowDecimals={false}
+                      axisLine={false}
                       tickLine={false}
+                      tick={{ fill: "#52525b", fontSize: 10 }}
+                      allowDecimals={false}
+                      domain={[0, "auto"]}
                     />
                     <Tooltip
+                      cursor={{ fill: "rgba(255, 255, 255, 0.05)" }}
                       content={({ active, payload }) => {
                         if (active && payload && payload.length) {
                           const d = payload[0].payload
-                          const suffix =
-                            activeMetric === "duration"
-                              ? " min"
-                              : activeMetric === "workouts"
-                              ? " workouts"
-                              : " reps"
+                          const val =
+                            activeMetric === "workouts"
+                              ? `${d.workouts} workouts`
+                              : activeMetric === "duration"
+                              ? `${d.durationMin} min`
+                              : `${d.volumeKg} kg`
                           return (
-                            <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-2.5 shadow-2xl text-xs space-y-1">
-                              <p className="text-zinc-400 font-mono text-[10px]">
-                                {d.fullDate} (Day {d.day})
-                              </p>
-                              <p className="text-sm font-bold text-white tabular-nums font-display">
-                                {d.value.toLocaleString()}
-                                {suffix}
-                              </p>
+                            <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-2 text-xs shadow-xl space-y-0.5">
+                              <p className="text-[10px] text-zinc-400 font-mono">{d.label}</p>
+                              <p className="text-white font-bold font-display">{val}</p>
                             </div>
                           )
                         }
                         return null
                       }}
                     />
-                    <Area
-                      type="monotone"
-                      dataKey="value"
-                      stroke="#ffffff"
-                      strokeWidth={2}
-                      fill="url(#reportMonochromeGrad)"
-                      activeDot={{ r: 4, fill: "#ffffff", stroke: "#09090b", strokeWidth: 2 }}
-                    />
-                  </AreaChart>
+                    <Bar
+                      dataKey={
+                        activeMetric === "workouts"
+                          ? "workouts"
+                          : activeMetric === "duration"
+                          ? "durationMin"
+                          : "volumeKg"
+                      }
+                      radius={[4, 4, 0, 0]}
+                      maxBarSize={24}
+                    >
+                      {twelveMonthsData.map((entry, index) => (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={entry.isCurrent ? "#3b82f6" : "#27272a"}
+                        />
+                      ))}
+                    </Bar>
+                  </BarChart>
                 </ResponsiveContainer>
               )}
             </div>
-          </div>
 
-          {/* ─── 3. Summary Cards with Monochrome Deltas ─── */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-            {/* Card 1: Workouts */}
-            <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4 space-y-1">
-              <span className="text-xs text-zinc-400 font-medium font-body block truncate">
+            {/* 3 Metric Pills (Workouts | Duration | Volume) */}
+            <div className="flex items-center gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => {
+                  soundManager.play("click", 0.15)
+                  setActiveMetric("workouts")
+                }}
+                className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                  activeMetric === "workouts"
+                    ? "bg-[#2563eb] text-white shadow-sm"
+                    : "bg-zinc-900 text-zinc-300 hover:text-white"
+                }`}
+              >
                 Workouts
-              </span>
-              <div className="flex items-baseline justify-between gap-1 flex-wrap">
-                <span className="text-2xl font-bold text-white font-display tabular-nums">
-                  {currentStats.workouts}
-                </span>
-                <span
-                  className={`text-xs tabular-nums ${
-                    deltaWorkouts.isPositive ? "text-white font-medium" : "text-zinc-500 font-medium"
-                  }`}
-                >
-                  {deltaWorkouts.text}
-                </span>
-              </div>
-              <span className="text-[10px] text-zinc-500 font-body">vs {periodInfo.previousMonthName}</span>
-            </div>
-
-            {/* Card 2: Duration */}
-            <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4 space-y-1">
-              <span className="text-xs text-zinc-400 font-medium font-body block truncate">
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  soundManager.play("click", 0.15)
+                  setActiveMetric("duration")
+                }}
+                className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                  activeMetric === "duration"
+                    ? "bg-[#2563eb] text-white shadow-sm"
+                    : "bg-zinc-900 text-zinc-300 hover:text-white"
+                }`}
+              >
                 Duration
-              </span>
-              <div className="flex items-baseline justify-between gap-1 flex-wrap">
-                <span className="text-2xl font-bold text-white font-display tabular-nums">
-                  {currentStats.durationMin}m
-                </span>
-                <span
-                  className={`text-xs tabular-nums ${
-                    deltaDuration.isPositive ? "text-white font-medium" : "text-zinc-500 font-medium"
-                  }`}
-                >
-                  {deltaDuration.text}
-                </span>
-              </div>
-              <span className="text-[10px] text-zinc-500 font-body">vs {periodInfo.previousMonthName}</span>
-            </div>
-
-            {/* Card 3: Sets */}
-            <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4 space-y-1">
-              <span className="text-xs text-zinc-400 font-medium font-body block truncate">
-                Sets
-              </span>
-              <div className="flex items-baseline justify-between gap-1 flex-wrap">
-                <span className="text-2xl font-bold text-white font-display tabular-nums">
-                  {currentStats.sets}
-                </span>
-                <span
-                  className={`text-xs tabular-nums ${
-                    deltaSets.isPositive ? "text-white font-medium" : "text-zinc-500 font-medium"
-                  }`}
-                >
-                  {deltaSets.text}
-                </span>
-              </div>
-              <span className="text-[10px] text-zinc-500 font-body">vs {periodInfo.previousMonthName}</span>
-            </div>
-
-            {/* Card 4: Total Reps */}
-            <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4 space-y-1">
-              <span className="text-xs text-zinc-400 font-medium font-body block truncate">
-                Total Reps
-              </span>
-              <div className="flex items-baseline justify-between gap-1 flex-wrap">
-                <span className="text-2xl font-bold text-white font-display tabular-nums">
-                  {currentStats.reps.toLocaleString()}
-                </span>
-                <span
-                  className={`text-xs tabular-nums ${
-                    deltaReps.isPositive ? "text-white font-medium" : "text-zinc-500 font-medium"
-                  }`}
-                >
-                  {deltaReps.text}
-                </span>
-              </div>
-              <span className="text-[10px] text-zinc-500 font-body">vs {periodInfo.previousMonthName}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  soundManager.play("click", 0.15)
+                  setActiveMetric("volume")
+                }}
+                className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                  activeMetric === "volume"
+                    ? "bg-[#2563eb] text-white shadow-sm"
+                    : "bg-zinc-900 text-zinc-300 hover:text-white"
+                }`}
+              >
+                Volume
+              </button>
             </div>
           </div>
 
-          {/* ─── 4. Workout Days Log (Streak Flame + Monthly Calendar Grid) ─── */}
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4 sm:p-5 space-y-4">
-            <div className="flex items-center justify-between pb-1 flex-wrap gap-2">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center text-white">
-                  <Flame className="h-4 w-4 fill-white text-white" />
+          {/* 3. Section: "Summary" (2x2 grid cards matching Reference 04) */}
+          <div className="space-y-3 pt-2">
+            <h2 className="text-sm font-semibold text-white font-display">
+              Summary
+            </h2>
+            <div className="grid grid-cols-2 gap-3">
+              {/* Card 1: Workouts */}
+              <div className="rounded-2xl border border-zinc-850 bg-zinc-950 p-4 space-y-1">
+                <span className="text-xs text-zinc-400 font-medium block">Workouts</span>
+                <div className="text-2xl font-bold text-white font-display tabular-nums">
+                  {summary.workouts.curr}
                 </div>
-                <div>
-                  <h3 className="text-sm font-semibold text-white font-display">
-                    Workout Days Log
-                  </h3>
-                  <span className="text-xs text-zinc-400 font-body">
-                    {calendarLog.activeDaysCount} of {calendarLog.totalDays} days trained
-                  </span>
+                <div className="text-xs text-zinc-500 font-mono">
+                  → {summary.workouts.prev}
                 </div>
               </div>
 
-              {/* Sunday-Preserving Streak Callout */}
-              <div className="px-3 py-1.5 rounded-xl border border-zinc-800 bg-zinc-950 flex items-center gap-2">
-                <Flame className="h-3.5 w-3.5 text-white" />
-                <span className="text-xs font-semibold text-white font-display tabular-nums">
-                  {calendarLog.currentStreak} day streak
-                </span>
+              {/* Card 2: Duration */}
+              <div className="rounded-2xl border border-zinc-850 bg-zinc-950 p-4 space-y-1">
+                <span className="text-xs text-zinc-400 font-medium block">Duration</span>
+                <div className="text-2xl font-bold text-white font-display tabular-nums">
+                  {summary.duration.curr}min
+                </div>
+                <div className="text-xs text-zinc-500 font-mono">
+                  → {summary.duration.prev}min
+                </div>
+              </div>
+
+              {/* Card 3: Volume */}
+              <div className="rounded-2xl border border-zinc-850 bg-zinc-950 p-4 space-y-1">
+                <span className="text-xs text-zinc-400 font-medium block">Volume</span>
+                <div className="text-2xl font-bold text-white font-display tabular-nums">
+                  {summary.volume.curr} kg
+                </div>
+                <div className="text-xs text-zinc-500 font-mono">
+                  → {summary.volume.prev} kg
+                </div>
+              </div>
+
+              {/* Card 4: Sets */}
+              <div className="rounded-2xl border border-zinc-850 bg-zinc-950 p-4 space-y-1">
+                <span className="text-xs text-zinc-400 font-medium block">Sets</span>
+                <div className="text-2xl font-bold text-white font-display tabular-nums">
+                  {summary.sets.curr}
+                </div>
+                <div className="text-xs text-zinc-500 font-mono">
+                  → {summary.sets.prev}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 4. Section: "Workout Days Log" (Flame + Streak + Calendar Grid) */}
+          <div className="space-y-4 pt-2">
+            <h2 className="text-sm font-semibold text-white font-display">
+              Workout Days Log
+            </h2>
+
+            {/* Streak Hero (Amber flame + streak label) */}
+            <div className="flex flex-col items-center justify-center py-2 space-y-1">
+              <Flame className="w-8 h-8 text-orange-500 fill-orange-500" />
+              <div className="text-sm font-bold text-white font-display">
+                {calendarLog.weekStreak} Week Streak
               </div>
             </div>
 
-            {/* Calendar Grid: S M T W T F S */}
+            {/* Calendar Table */}
             <div className="space-y-2">
-              <div className="grid grid-cols-7 gap-1 text-center">
-                {DAY_OF_WEEK_LABELS.map((label, idx) => (
-                  <span key={idx} className="text-[11px] font-medium text-zinc-500">
-                    {label}
+              <div className="grid grid-cols-7 text-center">
+                {CALENDAR_HEADERS.map((h, i) => (
+                  <span key={i} className="text-xs text-zinc-400 font-medium py-1">
+                    {h}
                   </span>
                 ))}
               </div>
 
-              <div className="grid grid-cols-7 gap-1 sm:gap-1.5">
-                {calendarLog.slots.map((slot, index) => {
+              <div className="grid grid-cols-7 gap-y-2 text-center">
+                {calendarLog.slots.map((slot, idx) => {
                   if (slot.type === "empty") {
-                    return <div key={`empty-${index}`} className="h-9 sm:h-10" />
+                    return <div key={`empty-${idx}`} className="h-8" />
                   }
 
                   return (
                     <div
                       key={`day-${slot.dayNum}`}
-                      className={`h-9 sm:h-10 rounded-xl flex flex-col items-center justify-center font-display tabular-nums text-xs transition-all relative ${
-                        slot.hasWorkout
-                          ? "bg-white text-zinc-950 font-bold shadow-xs"
-                          : "bg-zinc-950/60 text-zinc-500 border border-zinc-850/60"
-                      } ${slot.isToday ? "ring-2 ring-white/40" : ""}`}
+                      className="h-8 flex items-center justify-center relative"
                     >
-                      <span>{slot.dayNum}</span>
-                      {slot.hasWorkout && (
-                        <span className="w-1 h-1 rounded-full bg-zinc-950 absolute bottom-1" />
-                      )}
+                      <span
+                        className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-display tabular-nums ${
+                          slot.hasWorkout
+                            ? "bg-white text-zinc-950 font-bold"
+                            : "text-zinc-300 font-normal"
+                        }`}
+                      >
+                        {slot.dayNum}
+                      </span>
                     </div>
                   )
                 })}
@@ -645,46 +601,46 @@ export function MonthlyReportModal({
             </div>
           </div>
 
-          {/* ─── 5. Muscle Distribution Radar (This Month vs Last Month) ─── */}
-          <MuscleDistributionRadar
-            workouts={workouts}
-            exercises={exercises}
-            customCurrentWorkouts={currentMonthWorkouts}
-            customPreviousWorkouts={previousMonthWorkouts}
-            currentLabel={`${periodInfo.currentMonthName} (This Month)`}
-            previousLabel={`${periodInfo.previousMonthName} (Last Month)`}
-            hidePeriodSelector={true}
-            hideStatCards={true}
-            title="Muscle Distribution"
-            subtitle={`${periodInfo.currentMonthName} vs ${periodInfo.previousMonthName}`}
-            className="border-zinc-800 bg-zinc-900"
-          />
-
-          {/* Footer in export */}
-          <div className="pt-2 text-center border-t border-zinc-800/60">
-            <p className="text-[11px] text-zinc-500 font-mono">
-              FITNESS TRACKER · MONOCHROME PERFORMANCE ANALYTICS
-            </p>
+          {/* 5. Section: "Muscle Distribution" (Hexagon Radar with 2 Month Comparison) */}
+          <div className="space-y-3 pt-2">
+            <h2 className="text-sm font-semibold text-white font-display">
+              Muscle Distribution
+            </h2>
+            <MuscleDistributionRadar
+              workouts={workouts}
+              exercises={exercises}
+              customCurrentWorkouts={currentMonthWorkouts}
+              customPreviousWorkouts={previousMonthWorkouts}
+              currentLabel={`${periodInfo.currentMonthName} ${year}`}
+              previousLabel={`${periodInfo.previousMonthName} ${
+                monthIndex === 0 ? year - 1 : year
+              }`}
+              hidePeriodSelector={true}
+              hideStatCards={true}
+              title=""
+              subtitle=""
+              className="border-none bg-transparent p-0 shadow-none"
+            />
           </div>
         </div>
 
-        {/* ─── Bottom Share / Download Button Bar ─── */}
-        <div className="mt-5 flex items-center justify-center">
+        {/* ─── 6. Bottom Sticky Full-width Blue Share Button ─── */}
+        <div className="sticky bottom-0 z-40 -mx-4 px-4 py-3 bg-black/95 backdrop-blur-md border-t border-zinc-900 mt-auto">
           <button
             type="button"
             onClick={handleShareOrDownload}
             disabled={isExporting}
-            className="w-full sm:w-auto min-h-[48px] px-8 py-3 rounded-2xl bg-white text-zinc-950 font-bold text-sm hover:bg-zinc-200 transition-all flex items-center justify-center gap-2.5 shadow-xl cursor-pointer disabled:opacity-50"
+            className="w-full h-12 rounded-2xl bg-[#2563eb] hover:bg-blue-600 text-white font-semibold text-sm flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg disabled:opacity-50"
           >
             {isExporting ? (
               <>
-                <Loader2 className="h-5 w-5 animate-spin" />
+                <Loader2 className="w-4 h-4 animate-spin" />
                 <span>Generating Image...</span>
               </>
             ) : (
               <>
-                <Share2 className="h-5 w-5" />
-                <span>Download / Share Monthly Report</span>
+                <Share2 className="w-4 h-4" />
+                <span>Share</span>
               </>
             )}
           </button>
