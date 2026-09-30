@@ -88,20 +88,31 @@ export default function ProgressPage() {
       return `${year}-${month}-${day}`
     }
 
-    // Calculate current streak with local timezone accuracy
+    // Calculate current streak with local timezone accuracy (ignoring Sundays)
     const dates = new Set(workouts.map((w) => w.date))
     let currentStreak = 0
     const today = new Date()
     const todayStr = toLocalDateStr(today)
     const yesterday = new Date(today)
     yesterday.setDate(today.getDate() - 1)
+    if (yesterday.getDay() === 0 && !dates.has(toLocalDateStr(yesterday))) {
+      yesterday.setDate(yesterday.getDate() - 1)
+    }
     const yesterdayStr = toLocalDateStr(yesterday)
 
     if (dates.has(todayStr) || dates.has(yesterdayStr)) {
       const check = new Date(dates.has(todayStr) ? today : yesterday)
-      while (dates.has(toLocalDateStr(check))) {
-        currentStreak++
-        check.setDate(check.getDate() - 1)
+      while (true) {
+        if (check.getDay() === 0) {
+          check.setDate(check.getDate() - 1)
+          continue
+        }
+        if (dates.has(toLocalDateStr(check))) {
+          currentStreak++
+          check.setDate(check.getDate() - 1)
+        } else {
+          break
+        }
       }
     }
 

@@ -211,7 +211,7 @@ export default function DashboardPage() {
     )
   }, [filteredWorkouts])
   
-  // Accurate streak calculation with yesterday fallback
+  // Accurate streak calculation with yesterday fallback (ignoring Sundays)
   const streak = useMemo(() => {
     const workoutDates = new Set(workouts.map((w) => w.date))
     if (workoutDates.size === 0) return 0
@@ -225,8 +225,16 @@ export default function DashboardPage() {
     if (!workoutDates.has(todayStr)) {
       checkDate.setDate(checkDate.getDate() - 1)
     }
+    // If check date is Sunday, move back to Saturday (skip Sunday)
+    if (checkDate.getDay() === 0) {
+      checkDate.setDate(checkDate.getDate() - 1)
+    }
     
     while (true) {
+      if (checkDate.getDay() === 0) {
+        checkDate.setDate(checkDate.getDate() - 1)
+        continue
+      }
       const dateStr = toLocalDateString(checkDate)
       if (workoutDates.has(dateStr)) {
         streakCount++

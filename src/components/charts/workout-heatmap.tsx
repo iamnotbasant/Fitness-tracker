@@ -115,7 +115,7 @@ export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
     const minWeeks = range === "4w" || range === "all" ? 4 : range === "12w" ? 12 : range === "26w" ? 26 : 52
 
     let currentDate = new Date(startDate)
-    const allDays: { dateStr: string; hasWorkout: boolean }[] = []
+    const allDays: { dateStr: string; hasWorkout: boolean; isSunday: boolean }[] = []
 
     while (currentDate <= today || weeks.length < minWeeks) {
       const week: DayData[] = []
@@ -134,7 +134,7 @@ export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
         })
 
         if (!isFuture) {
-          allDays.push({ dateStr, hasWorkout })
+          allDays.push({ dateStr, hasWorkout, isSunday: currentDate.getDay() === 0 })
         }
         currentDate.setDate(currentDate.getDate() + 1)
       }
@@ -142,26 +142,29 @@ export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
       if (weeks.length >= 60) break
     }
 
-    // Calculate Streaks
+    // Calculate Streaks (ignoring Sundays)
     let currentStreak = 0
     let longestStreak = 0
     let tempStreak = 0
     let activeDays = 0
 
     const todayStr = toLocalDateStr(today)
-    let checkDate = new Date(today)
-
     const hasToday = dataByDate.has(todayStr)
     const yesterday = new Date(today)
     yesterday.setDate(today.getDate() - 1)
+    if (yesterday.getDay() === 0 && !dataByDate.has(toLocalDateStr(yesterday))) {
+      yesterday.setDate(yesterday.getDate() - 1)
+    }
     const yesterdayStr = toLocalDateStr(yesterday)
     const hasYesterday = dataByDate.has(yesterdayStr)
 
     if (hasToday || hasYesterday) {
-      if (!hasToday) {
-        checkDate.setDate(checkDate.getDate() - 1)
-      }
+      let checkDate = new Date(hasToday ? today : yesterday)
       while (true) {
+        if (checkDate.getDay() === 0) {
+          checkDate.setDate(checkDate.getDate() - 1)
+          continue
+        }
         const dStr = toLocalDateStr(checkDate)
         if (dataByDate.has(dStr)) {
           currentStreak++
@@ -172,9 +175,15 @@ export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
       }
     }
 
-    allDays.forEach(({ hasWorkout }) => {
+    allDays.forEach(({ hasWorkout, isSunday }) => {
       if (hasWorkout) {
         activeDays++
+      }
+      if (isSunday) {
+        // Sundays are fully ignored in streak math (neither increment nor break streak)
+        return
+      }
+      if (hasWorkout) {
         tempStreak++
         if (tempStreak > longestStreak) {
           longestStreak = tempStreak
