@@ -184,18 +184,20 @@ export function TrainingFrequencyCard({ workouts, exercises = [] }: TrainingFreq
   const [selectedMuscle, setSelectedMuscle] = useState<string | null>(null)
   const [hoveredMuscle, setHoveredMuscle] = useState<string | null>(null)
 
-  // Filter workouts for chosen range (7 days or 28 days)
+  // Filter workouts for chosen range (last 7 days or last 28 days / 4 weeks)
   const { filteredWorkouts, totalSets, totalVolumeKg, totalReps } = useMemo(() => {
     const today = new Date()
-    const days = range === "7d" ? 7 : 28
-    const cutoffDate = new Date(today.getTime() - days * 24 * 60 * 60 * 1000)
-    const cutoffStr = toLocalDateStr(cutoffDate)
-    const todayStr = toLocalDateStr(today)
+    // 7 days: today + 6 days prior (7 total calendar days)
+    // 4 weeks: today + 27 days prior (28 total calendar days)
+    const cutoff = new Date(today.getFullYear(), today.getMonth(), today.getDate() - (range === "7d" ? 6 : 27))
+    const cutoffStr = toLocalDateStr(cutoff)
+    const tomorrow = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1)
+    const maxStr = toLocalDateStr(tomorrow)
 
     const list = workouts.filter((w) => {
       const d = (w.date || "").slice(0, 10)
       if (!d) return false
-      return d >= cutoffStr && d <= todayStr
+      return d >= cutoffStr && d <= maxStr
     })
 
     let setsCount = 0
@@ -368,6 +370,72 @@ export function TrainingFrequencyCard({ workouts, exercises = [] }: TrainingFreq
     }
   }
 
+// Heat map color generator for anatomical muscle groups
+// Matches Reference 08:
+// - Untrained: dark sculpted slate (#26282e) with crisp contour stroke (#383c46)
+// - Neutral: dark background charcoal (#18191d) with stroke (#22242a)
+// - Trained: rich coral/crimson heat scale mapped from faintest deep crimson (lowest sets)
+//   to bright radiant coral (highest sets), normalized against maxSets in the current period.
+function getMuscleColors(
+  intensity: number,
+  isTrained: boolean,
+  isNeutral: boolean,
+  isSelected: boolean,
+  isHovered: boolean
+) {
+  if (isSelected) {
+    return {
+      fill: "#ffffff",
+      stroke: "#ffffff",
+      strokeWidth: 2.2,
+    }
+  }
+
+  if (isHovered && !isNeutral) {
+    return {
+      fill: isTrained ? "#fb7185" : "#3f434d",
+      stroke: "#ffffff",
+      strokeWidth: 1.8,
+    }
+  }
+
+  if (isNeutral) {
+    return {
+      fill: "#18191d",
+      stroke: "#22242a",
+      strokeWidth: 0.9,
+    }
+  }
+
+  if (!isTrained || intensity <= 0) {
+    return {
+      fill: "#26282e",
+      stroke: "#383c46",
+      strokeWidth: 1.0,
+    }
+  }
+
+  // Trained: intensity is in (0, 1] normalized to max sets in period.
+  // Effective factor t in [0.20, 1.00] ensures even a 1-set group has a distinct deep red fill,
+  // while the top group (t=1) reaches bright radiant coral.
+  const t = 0.20 + 0.80 * Math.max(0, Math.min(1, intensity))
+
+  // Fill: deep crimson rgb(120, 23, 29) -> hot coral-red rgb(242, 72, 79)
+  const r = Math.round(120 + t * (242 - 120))
+  const g = Math.round(23 + t * (72 - 23))
+  const b = Math.round(29 + t * (79 - 29))
+  const fill = `rgb(${r}, ${g}, ${b})`
+
+  // Contour stroke: bright definition between muscle boundaries
+  const sr = Math.round(155 + t * (255 - 155))
+  const sg = Math.round(38 + t * (155 - 38))
+  const sb = Math.round(45 + t * (160 - 45))
+  const stroke = `rgb(${sr}, ${sg}, ${sb})`
+  const strokeWidth = 1.1 + t * 0.4
+
+  return { fill, stroke, strokeWidth }
+}
+
   // Render muscle part SVG with reference 08 coral/crimson styling & sculpted anatomy
   const renderPart = (part: BodyPartPaths, index: number, view: "front" | "back") => {
     const isNeutral = NEUTRAL_SLUGS.has(part.slug)
@@ -376,33 +444,19 @@ export function TrainingFrequencyCard({ workouts, exercises = [] }: TrainingFreq
     const isTrained = Boolean(stat && stat.sets > 0)
     const isSelected = Boolean(muscleKey && selectedMuscle === muscleKey)
     const isHovered = Boolean(muscleKey && hoveredMuscle === muscleKey)
+    const intensity = stat?.intensity ?? 0
 
-    // Fill & Stroke styling matching Reference 08:
-    // Untrained body parts: dark sculpted slate/charcoal (#26282e) with contoured stroke (#373a43)
-    // Trained body parts: rich coral/crimson (#e0484c / #ef4444) with warm highlight stroke
-    let fill = isNeutral ? "#18191d" : "#26282e"
-    let stroke = isNeutral ? "#22242a" : "#383c46"
-    let strokeWidth = 1.1
-
-    if (isTrained) {
-      fill = "url(#trainedCoralGrad)"
-      stroke = "#f87171"
-      strokeWidth = 1.4
-    }
-
-    if (isSelected) {
-      fill = "#ffffff"
-      stroke = "#ffffff"
-      strokeWidth = 2.2
-    } else if (isHovered && !isNeutral) {
-      fill = isTrained ? "#fb7185" : "#3f434d"
-      stroke = "#ffffff"
-      strokeWidth = 1.8
-    }
+    const { fill, stroke, strokeWidth } = getMuscleColors(
+      intensity,
+      isTrained,
+      isNeutral,
+      isSelected,
+      isHovered
+    )
 
     return (
       <g
-        key={`${part.slug}-${index}`}
+        key={`${part.slug}-${index}-${view}`}
         className={`${isNeutral ? "pointer-events-none" : "cursor-pointer"} transition-all duration-150`}
         onClick={() => {
           if (muscleKey) {
@@ -426,6 +480,7 @@ export function TrainingFrequencyCard({ workouts, exercises = [] }: TrainingFreq
             strokeWidth={strokeWidth}
             strokeLinejoin="round"
             strokeLinecap="round"
+            className="transition-colors duration-200"
           />
         ))}
       </g>
@@ -464,8 +519,9 @@ export function TrainingFrequencyCard({ workouts, exercises = [] }: TrainingFreq
               onClick={() => {
                 soundManager.play("click", 0.15)
                 setRange("7d")
+                setSelectedMuscle(null)
               }}
-              className={`px-3 py-1 sm:px-3.5 sm:py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+              className={`min-h-[36px] px-3.5 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer select-none ${
                 range === "7d"
                   ? "bg-white text-zinc-950 shadow-xs"
                   : "text-zinc-400 hover:text-white"
@@ -478,8 +534,9 @@ export function TrainingFrequencyCard({ workouts, exercises = [] }: TrainingFreq
               onClick={() => {
                 soundManager.play("click", 0.15)
                 setRange("4w")
+                setSelectedMuscle(null)
               }}
-              className={`px-3 py-1 sm:px-3.5 sm:py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+              className={`min-h-[36px] px-3.5 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer select-none ${
                 range === "4w"
                   ? "bg-white text-zinc-950 shadow-xs"
                   : "text-zinc-400 hover:text-white"
@@ -503,17 +560,6 @@ export function TrainingFrequencyCard({ workouts, exercises = [] }: TrainingFreq
 
       {/* ─── 2. Front & Back Anatomical Figures (Side-by-side, Reference 08 style) ─── */}
       <div className="w-full flex items-center justify-center gap-4 sm:gap-8 py-3">
-        {/* SVG Defs for anatomical gradient & coral highlight */}
-        <svg width="0" height="0" className="absolute hidden">
-          <defs>
-            {/* Rich Coral / Crimson Gradient for trained muscles (Matching ref 08) */}
-            <linearGradient id="trainedCoralGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#f87171" />
-              <stop offset="35%" stopColor="#ef4444" />
-              <stop offset="100%" stopColor="#b91c1c" />
-            </linearGradient>
-          </defs>
-        </svg>
 
         {/* Front Figure */}
         <div className="flex-1 max-w-[155px] sm:max-w-[195px] flex flex-col items-center">
@@ -546,14 +592,26 @@ export function TrainingFrequencyCard({ workouts, exercises = [] }: TrainingFreq
                 type="button"
                 onClick={() => {
                   soundManager.play("click", 0.2)
-                  setSelectedMuscle(m.key)
+                  setSelectedMuscle((prev) => (prev === m.key ? null : m.key))
                 }}
-                className="px-3.5 py-1.5 rounded-full bg-zinc-850 hover:bg-zinc-800 border border-zinc-700/60 flex items-center gap-1.5 transition-all cursor-pointer shadow-xs"
+                className={`min-h-[36px] px-3.5 py-1.5 rounded-full border flex items-center gap-1.5 transition-all cursor-pointer shadow-xs ${
+                  selectedMuscle === m.key
+                    ? "bg-white border-white text-zinc-950"
+                    : "bg-zinc-850 hover:bg-zinc-800 border-zinc-700/60 text-white"
+                }`}
               >
-                <span className="font-bold text-white text-xs font-display tabular-nums">
+                <span
+                  className={`font-bold text-xs font-display tabular-nums ${
+                    selectedMuscle === m.key ? "text-zinc-950" : "text-white"
+                  }`}
+                >
                   {m.sets}
                 </span>
-                <span className="text-zinc-300 font-medium text-xs font-body">
+                <span
+                  className={`font-medium text-xs font-body ${
+                    selectedMuscle === m.key ? "text-zinc-800" : "text-zinc-300"
+                  }`}
+                >
                   {m.name}
                 </span>
               </button>

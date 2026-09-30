@@ -13,7 +13,6 @@ import {
 import { TotalStatsCard } from "@/components/progress/total-stats-card"
 import { ThisWeekCard } from "@/components/progress/this-week-card"
 import { TrainingFrequencyCard } from "@/components/progress/training-frequency-card"
-import { HistoryCard } from "@/components/progress/history-card"
 import { MonthlyReportModal } from "@/components/progress/monthly-report-modal"
 import { MuscleDistributionModal } from "@/components/progress/muscle-distribution-modal"
 import { WeeklyOverview } from "@/components/progress/weekly-overview"
@@ -212,12 +211,7 @@ export default function ProgressPage() {
         <TrainingFrequencyCard workouts={workouts} exercises={exercises} />
       </section>
 
-      {/* ─── 5. PERSONAL ACHIEVEMENTS / RECORDS (Task 2: Clean Minimal Cards) ─── */}
-      <section>
-        <PersonalRecords workouts={workouts} />
-      </section>
-
-      {/* ─── 6. SECONDARY FEATURES BEHIND CLEAN ENTRY CARDS (Task 6: Minimal IA) ─── */}
+      {/* ─── 5. SECONDARY FEATURES BEHIND CLEAN ENTRY CARDS (Task 6: Minimal IA) ─── */}
       <section className="space-y-2.5">
         <h2 className="text-xs font-semibold text-zinc-400 font-display uppercase tracking-wider">
           More Analytics
@@ -272,9 +266,12 @@ export default function ProgressPage() {
         </div>
       </section>
 
-      {/* ─── 7. HISTORY SECTION (Reference 01: Recent Workouts & View All Drilldown) ─── */}
+      {/* ─── 6. PERSONAL PR RECORDS (Ultra-minimal: Exercise name + PR only) ─── */}
       <section className="space-y-2">
-        <HistoryCard sessions={allSessions} />
+        <h2 className="text-base sm:text-lg font-bold text-white font-display">
+          Personal Records
+        </h2>
+        <PersonalRecords workouts={workouts} />
       </section>
 
       {/* ─── MODALS ─── */}
