@@ -515,25 +515,25 @@ export default function ExerciseDetailPage() {
   }
 
   const TimePeriodFilter = () => (
-    <div className="flex items-center gap-2">
-      <div className="flex items-center gap-1 rounded-lg border bg-card px-2 py-1.5">
+    <div className="flex items-center gap-1.5 sm:gap-2 w-full sm:w-auto justify-between sm:justify-end">
+      <div className="flex items-center gap-1 rounded-lg border bg-card px-1.5 sm:px-2 py-1 sm:py-1.5 flex-1 sm:flex-none justify-between sm:justify-start">
         <button
           onClick={handlePrevious}
           disabled={timePeriod === "all"}
-          className="p-0.5 hover:bg-muted rounded disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          className="p-1 sm:p-0.5 hover:bg-muted rounded disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
           aria-label="Previous period"
         >
           <ChevronLeft className="h-3.5 w-3.5" />
         </button>
         
-        <div className="min-w-[140px] text-center text-xs font-medium px-1">
+        <div className="min-w-[90px] sm:min-w-[140px] text-center text-xs font-medium px-1 truncate">
           {dateRange.label}
         </div>
         
         <button
           onClick={handleNext}
           disabled={timePeriod === "all"}
-          className="p-0.5 hover:bg-muted rounded disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          className="p-1 sm:p-0.5 hover:bg-muted rounded disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
           aria-label="Next period"
         >
           <ChevronRight className="h-3.5 w-3.5" />
@@ -546,7 +546,7 @@ export default function ExerciseDetailPage() {
           setTimePeriod(e.target.value as any)
           setCurrentDate(new Date())
         }}
-        className="rounded-lg border bg-card px-2 py-1.5 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-ring"
+        className="rounded-lg border bg-card px-2 py-1.5 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-ring cursor-pointer shrink-0"
       >
         <option value="all">All Time</option>
         <option value="weekly">Weekly</option>
@@ -897,7 +897,7 @@ export default function ExerciseDetailPage() {
   }
 
   return (
-    <main className="mx-auto max-w-4xl px-3 pb-16 md:px-4">
+    <main className="mx-auto max-w-4xl px-3 pb-32 md:pb-16 md:px-4">
       <header className="sticky top-0 z-20 bg-background/70 backdrop-blur supports-[backdrop-filter]:bg-background/50 md:border-b">
         <div className="flex items-center justify-between py-3 md:py-4">
           <Link href="/exercises" className="text-sm text-muted-foreground hover:underline">
@@ -988,60 +988,60 @@ export default function ExerciseDetailPage() {
                     Personal Records
                   </h2>
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3">
                   {isTimerExercise ? (
                     <>
-                      <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 backdrop-blur-sm">
-                        <div className="flex items-center gap-2 mb-1">
-                          <Award className="h-4 w-4 text-amber-500" />
-                          <div className="text-xs font-semibold text-amber-600 dark:text-amber-400">Best Time</div>
+                      <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 sm:p-4 backdrop-blur-sm">
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <Award className="h-4 w-4 text-amber-500 shrink-0" />
+                          <div className="text-xs font-semibold text-amber-600 dark:text-amber-400 truncate">Best Time</div>
                         </div>
-                        <div className="text-2xl font-bold text-foreground">{formatTime(personalRecords.bestTime || 0)}</div>
+                        <div className="text-xl sm:text-2xl font-bold text-foreground">{formatTime(personalRecords.bestTime || 0)}</div>
                       </div>
                       
-                      <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4 backdrop-blur-sm">
-                        <div className="flex items-center gap-2 mb-1">
-                          <Award className="h-4 w-4 text-emerald-500" />
-                          <div className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">Total Volume</div>
+                      <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3 sm:p-4 backdrop-blur-sm">
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <Award className="h-4 w-4 text-emerald-500 shrink-0" />
+                          <div className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 truncate">Total Volume</div>
                         </div>
-                        <div className="text-2xl font-bold text-foreground">{formatTime(personalRecords.bestVolume || 0)}</div>
+                        <div className="text-xl sm:text-2xl font-bold text-foreground">{formatTime(personalRecords.bestVolume || 0)}</div>
                       </div>
                     </>
                   ) : (
                     <>
-                      <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 backdrop-blur-sm">
-                        <div className="flex items-center gap-2 mb-1">
-                          <Award className="h-4 w-4 text-amber-500" />
-                          <div className="text-xs font-semibold text-amber-600 dark:text-amber-400">Best Reps</div>
+                      <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 sm:p-4 backdrop-blur-sm">
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <Award className="h-4 w-4 text-amber-500 shrink-0" />
+                          <div className="text-xs font-semibold text-amber-600 dark:text-amber-400 truncate">Best Reps</div>
                         </div>
-                        <div className="text-2xl font-bold text-foreground">{personalRecords.bestReps}</div>
+                        <div className="text-xl sm:text-2xl font-bold text-foreground">{personalRecords.bestReps}</div>
                       </div>
                       
                       {personalRecords.bestWeight && (
-                        <div className="rounded-xl border border-rose-500/20 bg-rose-500/5 p-4 backdrop-blur-sm">
-                          <div className="flex items-center gap-2 mb-1">
-                            <Award className="h-4 w-4 text-rose-500" />
-                            <div className="text-xs font-semibold text-rose-600 dark:text-rose-400">Best Weight</div>
+                        <div className="rounded-xl border border-rose-500/20 bg-rose-500/5 p-3 sm:p-4 backdrop-blur-sm">
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <Award className="h-4 w-4 text-rose-500 shrink-0" />
+                            <div className="text-xs font-semibold text-rose-600 dark:text-rose-400 truncate">Best Weight</div>
                           </div>
-                          <div className="text-2xl font-bold text-foreground">{personalRecords.bestWeight} kg</div>
+                          <div className="text-xl sm:text-2xl font-bold text-foreground">{personalRecords.bestWeight} kg</div>
                         </div>
                       )}
                       
-                      <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4 backdrop-blur-sm">
-                        <div className="flex items-center gap-2 mb-1">
-                          <Award className="h-4 w-4 text-emerald-500" />
-                          <div className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">Best Volume</div>
+                      <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3 sm:p-4 backdrop-blur-sm">
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <Award className="h-4 w-4 text-emerald-500 shrink-0" />
+                          <div className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 truncate">Best Volume</div>
                         </div>
-                        <div className="text-2xl font-bold text-foreground">{personalRecords.bestVolume}</div>
+                        <div className="text-xl sm:text-2xl font-bold text-foreground">{personalRecords.bestVolume}</div>
                       </div>
                       
                       {personalRecords.best1RM && (
-                        <div className="rounded-xl border border-purple-500/20 bg-purple-500/5 p-4 backdrop-blur-sm">
-                          <div className="flex items-center gap-2 mb-1">
-                            <Award className="h-4 w-4 text-purple-500" />
-                            <div className="text-xs font-semibold text-purple-600 dark:text-purple-400">Best 1RM</div>
+                        <div className="rounded-xl border border-purple-500/20 bg-purple-500/5 p-3 sm:p-4 backdrop-blur-sm">
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <Award className="h-4 w-4 text-purple-500 shrink-0" />
+                            <div className="text-xs font-semibold text-purple-600 dark:text-purple-400 truncate">Best 1RM</div>
                           </div>
-                          <div className="text-2xl font-bold text-foreground">{personalRecords.best1RM} kg</div>
+                          <div className="text-xl sm:text-2xl font-bold text-foreground">{personalRecords.best1RM} kg</div>
                         </div>
                       )}
                     </>
@@ -1051,20 +1051,20 @@ export default function ExerciseDetailPage() {
             )}
 
             {sessionPoints.length > 0 && (
-              <div className="grid grid-cols-3 gap-3">
-                <div className="rounded-xl border bg-card p-4 shadow-sm">
-                  <div className="text-xs text-muted-foreground">Total Sessions</div>
-                  <div className="mt-1 text-2xl font-semibold text-foreground">{stats.total}</div>
+              <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                <div className="rounded-xl border bg-card p-2.5 sm:p-4 shadow-sm text-center">
+                  <div className="text-[11px] sm:text-xs text-muted-foreground truncate">Total Sessions</div>
+                  <div className="mt-1 text-lg sm:text-2xl font-semibold text-foreground">{stats.total}</div>
                 </div>
-                <div className="rounded-xl border bg-card p-4 shadow-sm">
-                  <div className="text-xs text-muted-foreground">{stats.isTime ? "Best Time" : "Best Reps"}</div>
-                  <div className="mt-1 text-2xl font-semibold text-foreground">
+                <div className="rounded-xl border bg-card p-2.5 sm:p-4 shadow-sm text-center">
+                  <div className="text-[11px] sm:text-xs text-muted-foreground truncate">{stats.isTime ? "Best Time" : "Best Reps"}</div>
+                  <div className="mt-1 text-lg sm:text-2xl font-semibold text-foreground">
                     {stats.isTime ? formatTime(stats.best) : stats.best}
                   </div>
                 </div>
-                <div className="rounded-xl border bg-card p-4 shadow-sm">
-                  <div className="text-xs text-muted-foreground">{stats.isTime ? "Avg Time" : "Avg Reps"}</div>
-                  <div className="mt-1 text-2xl font-semibold text-foreground">
+                <div className="rounded-xl border bg-card p-2.5 sm:p-4 shadow-sm text-center">
+                  <div className="text-[11px] sm:text-xs text-muted-foreground truncate">{stats.isTime ? "Avg Time" : "Avg Reps"}</div>
+                  <div className="mt-1 text-lg sm:text-2xl font-semibold text-foreground">
                     {stats.isTime ? formatTime(stats.avg) : stats.avg}
                   </div>
                 </div>
@@ -1084,7 +1084,7 @@ export default function ExerciseDetailPage() {
                     <p className="text-xs text-muted-foreground mb-4">
                       Track your progress over time
                     </p>
-                    <div className="h-72">
+                    <div className="h-60 sm:h-72">
                       <ResponsiveContainer width="100%" height="100%">
                         <AreaChart data={volumeProgression} margin={{ left: -20, right: 10, top: 10, bottom: 0 }}>
                           <defs>
@@ -1138,7 +1138,7 @@ export default function ExerciseDetailPage() {
                     <p className="text-xs text-muted-foreground mb-4">
                       Hover over bars to see set-by-set breakdown
                     </p>
-                    <div className="h-72">
+                    <div className="h-60 sm:h-72">
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={volumeProgression} margin={{ left: -20, right: 10, top: 10, bottom: 0 }}>
                           <defs>
@@ -1190,7 +1190,7 @@ export default function ExerciseDetailPage() {
                 </div>
                 <div className="rounded-xl border bg-card p-6 shadow-sm">
                   <p className="text-xs text-muted-foreground mb-4">Estimated using Epley formula: 1RM = Weight × (1 + Reps/30)</p>
-                  <div className="h-72">
+                  <div className="h-60 sm:h-72">
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart data={oneRMProgression} margin={{ left: -20, right: 10, top: 10, bottom: 0 }}>
                         <defs>

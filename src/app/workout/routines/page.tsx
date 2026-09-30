@@ -5,6 +5,7 @@ import { authClient, useSession } from "@/lib/auth-client"
 import { useRoutines, useActiveSession } from "@/hooks/use-local-data"
 import { ArrowLeft, Plus, Play, Trash2, Calendar, Edit } from "lucide-react"
 import { useState, useEffect } from "react"
+import { toast } from "sonner"
 
 export default function RoutinesPage() {
   const router = useRouter()
@@ -73,9 +74,9 @@ export default function RoutinesPage() {
         </div>
       </header>
 
-      <div className="mx-auto max-w-3xl px-4 pt-6 pb-20">
+      <div className="mx-auto max-w-3xl px-4 pt-6 pb-32 md:pb-16">
         {routines.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-border/80 bg-card/60 p-12 text-center">
+          <div className="rounded-2xl border border-dashed border-border/80 bg-card/60 p-8 sm:p-12 text-center">
             <div className="max-w-sm mx-auto space-y-4">
               <div className="rounded-full bg-primary/10 w-16 h-16 flex items-center justify-center mx-auto text-primary">
                 <Plus className="h-8 w-8" />
@@ -94,17 +95,17 @@ export default function RoutinesPage() {
             </div>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-3.5">
             {routines.map((routine) => (
-              <div key={routine.id} className="rounded-2xl border border-border/70 bg-card p-5 hover:border-zinc-700 transition-all shadow-xs">
-                <div className="flex items-start gap-4">
+              <div key={routine.id} className="rounded-2xl border border-border/70 bg-card p-4 sm:p-5 hover:border-zinc-700 transition-all shadow-xs">
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-lg text-foreground mb-1 tracking-tight">{routine.name}</h3>
+                    <h3 className="font-semibold text-base sm:text-lg text-foreground mb-1 tracking-tight">{routine.name}</h3>
                     {routine.description && (
-                      <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{routine.description}</p>
+                      <p className="text-xs sm:text-sm text-muted-foreground mb-2.5 line-clamp-2">{routine.description}</p>
                     )}
                     
-                    <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground mb-3.5">
+                    <div className="flex flex-wrap items-center gap-2.5 text-xs text-muted-foreground mb-3">
                       <span className="flex items-center gap-1 font-medium text-foreground">
                         {routine.exercises?.length || 0} exercises
                       </span>
@@ -130,25 +131,25 @@ export default function RoutinesPage() {
                     </div>
                   </div>
 
-                  <div className="flex flex-col gap-2 shrink-0">
+                  <div className="flex items-center gap-2 sm:flex-col shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-border/40">
                     <button
                       onClick={() => handleStartRoutine(routine.id)}
                       disabled={starting === routine.id}
-                      className="px-4 py-2 bg-primary text-primary-foreground rounded-xl text-xs font-semibold hover:bg-primary/90 flex items-center gap-1.5 whitespace-nowrap disabled:opacity-50 cursor-pointer shadow-xs"
+                      className="flex-1 sm:flex-none px-4 py-2 bg-primary text-primary-foreground rounded-xl text-xs font-semibold hover:bg-primary/90 flex items-center justify-center gap-1.5 whitespace-nowrap disabled:opacity-50 cursor-pointer shadow-xs min-h-[38px]"
                     >
                       <Play className="h-3.5 w-3.5 fill-current" />
                       {starting === routine.id ? "Starting..." : "Start"}
                     </button>
                     <button
                       onClick={() => router.push(`/workout/routines/${routine.id}/edit`)}
-                      className="px-4 py-2 hover:bg-muted border border-border/60 rounded-xl text-xs font-medium flex items-center gap-1.5 whitespace-nowrap cursor-pointer transition-colors"
+                      className="px-3.5 py-2 hover:bg-muted border border-border/60 rounded-xl text-xs font-medium flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer transition-colors min-h-[38px]"
                     >
                       <Edit className="h-3.5 w-3.5" />
-                      Edit
+                      <span>Edit</span>
                     </button>
                     <button
                       onClick={() => setDeleting(deleting === routine.id ? null : routine.id)}
-                      className="p-2 hover:bg-destructive/10 rounded-xl text-muted-foreground hover:text-destructive cursor-pointer transition-colors flex items-center justify-center"
+                      className="p-2 hover:bg-destructive/10 rounded-xl text-muted-foreground hover:text-destructive cursor-pointer transition-colors flex items-center justify-center min-h-[38px] min-w-[38px]"
                       title="Delete routine"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -157,9 +158,9 @@ export default function RoutinesPage() {
                 </div>
 
                 {deleting === routine.id && (
-                  <div className="mt-4 pt-4 border-t border-border/60 flex items-center justify-between">
+                  <div className="mt-4 pt-3 border-t border-border/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                     <p className="text-xs font-medium text-destructive">Delete this routine permanently?</p>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 self-end sm:self-auto">
                       <button
                         onClick={() => setDeleting(null)}
                         className="px-3 py-1.5 text-xs hover:bg-muted rounded-lg font-medium cursor-pointer"

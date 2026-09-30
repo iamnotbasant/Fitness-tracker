@@ -285,18 +285,18 @@ export default function ProfilePage() {
                 </span>
               </div>
 
-              <div className="grid grid-cols-3 gap-3 text-center">
-                <div className="p-2.5 rounded-lg bg-card border border-border/50">
-                  <div className="text-[11px] text-muted-foreground">BMI</div>
-                  <div className="text-base font-bold text-foreground mt-0.5">{bmiInfo.bmi}</div>
+              <div className="grid grid-cols-3 gap-2 sm:gap-3 text-center">
+                <div className="p-2 sm:p-2.5 rounded-lg bg-card border border-border/50">
+                  <div className="text-[10px] sm:text-[11px] text-muted-foreground">BMI</div>
+                  <div className="text-sm sm:text-base font-bold text-foreground mt-0.5">{bmiInfo.bmi}</div>
                 </div>
-                <div className="p-2.5 rounded-lg bg-card border border-border/50">
-                  <div className="text-[11px] text-muted-foreground">BMR / Base</div>
-                  <div className="text-base font-bold text-foreground mt-0.5">{bmiInfo.bmr} kcal</div>
+                <div className="p-2 sm:p-2.5 rounded-lg bg-card border border-border/50">
+                  <div className="text-[10px] sm:text-[11px] text-muted-foreground truncate">BMR / Base</div>
+                  <div className="text-sm sm:text-base font-bold text-foreground mt-0.5 truncate">{bmiInfo.bmr} kcal</div>
                 </div>
-                <div className="p-2.5 rounded-lg bg-primary/10 border border-primary/20">
-                  <div className="text-[11px] text-primary font-medium">Daily Target</div>
-                  <div className="text-base font-bold text-primary mt-0.5">{bmiInfo.targetCalories} kcal</div>
+                <div className="p-2 sm:p-2.5 rounded-lg bg-primary/10 border border-primary/20">
+                  <div className="text-[10px] sm:text-[11px] text-primary font-medium truncate">Daily Target</div>
+                  <div className="text-sm sm:text-base font-bold text-primary mt-0.5 truncate">{bmiInfo.targetCalories} kcal</div>
                 </div>
               </div>
             </div>
@@ -307,7 +307,7 @@ export default function ProfilePage() {
             <select
               value={goalType}
               onChange={(e) => setGoalType(e.target.value as "strength" | "endurance" | "skill")}
-              className="rounded-lg border bg-card px-3 py-2"
+              className="rounded-lg border bg-card px-3 py-2 cursor-pointer"
             >
               <option value="strength">Strength (Muscle Building Surplus)</option>
               <option value="endurance">Endurance (Performance Maintenance)</option>
@@ -320,7 +320,7 @@ export default function ProfilePage() {
             {goals.map((g, idx) => {
               const exercise = exercises.find((e) => e.id === g.exerciseId)
               return (
-                <div key={idx} className="grid grid-cols-3 items-end gap-3">
+                <div key={idx} className="grid grid-cols-1 sm:grid-cols-3 items-end gap-2.5 sm:gap-3 pb-3 border-b sm:border-b-0 border-border/40">
                   <div>
                     <label className="text-xs text-muted-foreground">Exercise</label>
                     <select
@@ -329,7 +329,7 @@ export default function ProfilePage() {
                         const v = e.target.value
                         setGoals((arr) => arr.map((x, i) => (i === idx ? { ...x, exerciseId: v } : x)))
                       }}
-                      className="mt-1 w-full rounded-lg border bg-card px-3 py-2"
+                      className="mt-1 w-full rounded-lg border bg-card px-3 py-2 text-sm"
                     >
                       {exercises.map((ex) => (
                         <option key={ex.id} value={ex.id}>
@@ -348,7 +348,7 @@ export default function ProfilePage() {
                           arr.map((x, i) => (i === idx ? { ...x, targetReps: Number(e.target.value) } : x)),
                         )
                       }
-                      className="mt-1 w-full rounded-lg border bg-card px-3 py-2"
+                      className="mt-1 w-full rounded-lg border bg-card px-3 py-2 text-sm"
                     />
                   </div>
                   <div>
@@ -361,7 +361,7 @@ export default function ProfilePage() {
                           arr.map((x, i) => (i === idx ? { ...x, targetVolume: Number(e.target.value) } : x)),
                         )
                       }
-                      className="mt-1 w-full rounded-lg border bg-card px-3 py-2"
+                      className="mt-1 w-full rounded-lg border bg-card px-3 py-2 text-sm"
                     />
                   </div>
                 </div>

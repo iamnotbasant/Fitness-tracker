@@ -103,10 +103,10 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center px-4 bg-background">
+    <main className="min-h-screen flex items-center justify-center px-4 py-8 pb-32 md:pb-12 bg-background">
       <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold mb-2">Fitness Tracker</h1>
+        <div className="text-center mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold mb-2">Fitness Tracker</h1>
           <p className="text-muted-foreground">
             {mode === "login"
               ? "Sign in to track your workouts"

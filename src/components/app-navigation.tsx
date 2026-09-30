@@ -10,6 +10,8 @@ import { Menu, Sun, Moon, WifiOff, Play, User, RefreshCw } from "lucide-react"
 import { AnimatedFlame, AnimatedDumbbell, AnimatedActivity } from "@/components/ui/animated-icons"
 import { useOfflineStatus } from "@/hooks/use-local-data"
 
+import { cn } from "@/lib/utils"
+
 export function AppNavigation() {
   const [mounted, setMounted] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -134,8 +136,8 @@ export function AppNavigation() {
       </header>
 
       {/* Mobile Bottom Navigation (5 core tabs) */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-background/95 backdrop-blur border-t px-2 py-1.5 shadow-lg">
-        <div className="flex items-center justify-around gap-1">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-background/90 backdrop-blur-lg border-t border-border/80 px-1 pt-1 pb-[max(0.375rem,env(safe-area-inset-bottom))] shadow-lg">
+        <div className="flex items-center justify-around">
           {navItems.map((item) => (
             <NavItem key={item.href} {...item} />
           ))}
@@ -147,21 +149,36 @@ export function AppNavigation() {
 
 function NavItem({ href, icon, label }: { href: string; icon: React.ReactNode; label: string }) {
   const pathname = usePathname()
-  const router = useRouter()
   const active = href === "/" ? pathname === "/" : (pathname === href || pathname.startsWith(`${href}/`))
   
   return (
     <Link
       href={href}
       prefetch={true}
-      className={`flex flex-col items-center gap-1 px-1.5 py-1.5 rounded-xl transition-all min-w-0 flex-1 cursor-pointer select-none ${
-        active 
-          ? "text-white font-semibold bg-white/10 shadow-xs" 
-          : "text-zinc-400 hover:text-white"
-      }`}
+      className="group flex flex-col items-center justify-center min-h-[48px] py-1 flex-1 min-w-0 transition-colors cursor-pointer select-none"
     >
-      <div className={`h-4 w-4 flex items-center justify-center shrink-0 ${active ? "text-white" : "text-white/80"}`}>{icon}</div>
-      <span className="text-[11px] font-medium truncate w-full text-center leading-none">{label}</span>
+      <div
+        className={cn(
+          "w-12 h-7 rounded-full flex items-center justify-center transition-all duration-200",
+          active
+            ? "bg-zinc-900 text-white dark:bg-white/15 dark:text-white shadow-xs"
+            : "text-zinc-500 dark:text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-white group-hover:bg-zinc-200/50 dark:group-hover:bg-white/5"
+        )}
+      >
+        <div className="h-4 w-4 flex items-center justify-center shrink-0">
+          {icon}
+        </div>
+      </div>
+      <span
+        className={cn(
+          "mt-1 text-[10px] tracking-tight leading-none text-center select-none whitespace-nowrap transition-colors",
+          active
+            ? "font-semibold text-zinc-900 dark:text-white"
+            : "font-medium text-zinc-500 dark:text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-zinc-200"
+        )}
+      >
+        {label}
+      </span>
     </Link>
   )
 }

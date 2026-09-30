@@ -108,26 +108,26 @@ export function TodayWorkoutCard({
     <>
       <article className="group rounded-xl border bg-card shadow-sm overflow-hidden transition-shadow hover:shadow-md">
         {/* Header */}
-        <div className="bg-muted/30 px-4 py-3 border-b">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-1.5 text-sm font-medium">
-                <Calendar className="h-4 w-4 text-muted-foreground" />
+        <div className="bg-muted/30 px-3.5 sm:px-4 py-2.5 sm:py-3 border-b">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs sm:text-sm">
+              <div className="flex items-center gap-1.5 font-medium">
+                <Calendar className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                 <span>{dateLabel}</span>
               </div>
               <span className="text-muted-foreground">•</span>
-              <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                <Clock className="h-4 w-4" />
+              <div className="flex items-center gap-1.5 text-muted-foreground">
+                <Clock className="h-3.5 w-3.5 shrink-0" />
                 <span>{workout.time ? timeLabel : "00:00"}</span>
               </div>
               <span className="text-muted-foreground">•</span>
-              <span className="text-sm text-muted-foreground">{durationMin} min</span>
+              <span className="text-muted-foreground">{durationMin} min</span>
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 shrink-0">
               {onEdit && (
                 <button
                   onClick={() => setShowEditDialog(true)}
-                  className="rounded-lg p-1.5 text-muted-foreground opacity-0 transition-all hover:text-primary hover:bg-primary/10 group-hover:opacity-100"
+                  className="rounded-lg p-2 sm:p-1.5 text-muted-foreground opacity-80 sm:opacity-0 transition-all hover:text-primary hover:bg-primary/10 group-hover:opacity-100 cursor-pointer"
                   aria-label="Edit workout"
                 >
                   <Edit className="h-4 w-4" />
@@ -136,7 +136,7 @@ export function TodayWorkoutCard({
               {onDelete && (
                 <button
                   onClick={handleDelete}
-                  className="rounded-lg p-1.5 text-muted-foreground opacity-0 transition-all hover:text-destructive hover:bg-destructive/10 group-hover:opacity-100"
+                  className="rounded-lg p-2 sm:p-1.5 text-muted-foreground opacity-80 sm:opacity-0 transition-all hover:text-destructive hover:bg-destructive/10 group-hover:opacity-100 cursor-pointer"
                   aria-label="Delete workout"
                 >
                   <Trash2 className="h-4 w-4" />

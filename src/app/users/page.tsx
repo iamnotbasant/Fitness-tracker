@@ -107,7 +107,7 @@ export default function UsersPage() {
 
   if (isPending || !session) {
     return (
-      <main className="pb-24 md:pb-8">
+      <main className="pb-32 md:pb-12">
         <section className="w-full px-4 lg:px-8 pt-4">
           <div className="mx-auto max-w-7xl flex items-center justify-center py-20">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -118,7 +118,7 @@ export default function UsersPage() {
   }
 
   return (
-    <main className="pb-24 md:pb-8">
+    <main className="pb-32 md:pb-12">
       <section className="w-full px-4 lg:px-8 pt-4">
         <div className="mx-auto max-w-4xl">
           {/* Header */}
@@ -282,10 +282,11 @@ export default function UsersPage() {
                     {user.name !== "basant" && (
                       <button
                         onClick={() => handleDeleteUser(user.id, user.name)}
-                        className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-destructive hover:bg-destructive/10 border border-destructive/20 transition-colors ml-3"
+                        className="flex items-center gap-1 sm:gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium text-destructive hover:bg-destructive/10 border border-destructive/20 transition-colors ml-2 shrink-0 cursor-pointer"
+                        title={`Delete user ${user.name}`}
                       >
                         <Trash2 className="h-4 w-4" />
-                        Delete
+                        <span className="hidden sm:inline">Delete</span>
                       </button>
                     )}
                   </div>

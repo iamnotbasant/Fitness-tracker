@@ -69,15 +69,15 @@ export function ExerciseCard({ ex, onDelete }: ExerciseCardProps) {
         {/* Subtle dark gradient overlay on hover for crisp contrast */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
 
-        {/* Floating Action Buttons - Gracefully revealed on hover */}
+        {/* Floating Action Buttons - Visible on mobile touch, graceful reveal on desktop hover */}
         {mounted && canEdit && (
           <div
-            className="absolute top-3 right-3 flex items-center gap-1.5 opacity-0 -translate-y-1.5 pointer-events-none group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto transition-all duration-250 ease-out z-20"
+            className="absolute top-2.5 right-2.5 sm:top-3 sm:right-3 flex items-center gap-1.5 opacity-90 sm:opacity-0 sm:-translate-y-1.5 pointer-events-auto sm:pointer-events-none group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto transition-all duration-250 ease-out z-20"
             onClick={(e) => e.stopPropagation()}
           >
             <button
               onClick={handleEdit}
-              className="p-2 rounded-xl bg-background/90 backdrop-blur-md border border-border/80 text-foreground shadow-lg hover:bg-primary hover:text-primary-foreground hover:scale-110 active:scale-95 transition-all duration-150 cursor-pointer"
+              className="p-2 sm:p-2 rounded-xl bg-background/90 backdrop-blur-md border border-border/80 text-foreground shadow-lg hover:bg-primary hover:text-primary-foreground hover:scale-110 active:scale-95 transition-all duration-150 cursor-pointer min-h-[36px] min-w-[36px] flex items-center justify-center"
               title="Edit Exercise"
               aria-label="Edit Exercise"
             >
@@ -85,7 +85,7 @@ export function ExerciseCard({ ex, onDelete }: ExerciseCardProps) {
             </button>
             <button
               onClick={handleDelete}
-              className="p-2 rounded-xl bg-background/90 backdrop-blur-md border border-border/80 text-muted-foreground shadow-lg hover:bg-destructive hover:text-destructive-foreground hover:border-destructive hover:scale-110 active:scale-95 transition-all duration-150 cursor-pointer"
+              className="p-2 sm:p-2 rounded-xl bg-background/90 backdrop-blur-md border border-border/80 text-muted-foreground shadow-lg hover:bg-destructive hover:text-destructive-foreground hover:border-destructive hover:scale-110 active:scale-95 transition-all duration-150 cursor-pointer min-h-[36px] min-w-[36px] flex items-center justify-center"
               title="Delete Exercise"
               aria-label="Delete Exercise"
             >

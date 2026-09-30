@@ -628,11 +628,11 @@ function SummaryCard({
   value: number
 }) {
   return (
-    <div className="rounded-2xl border border-border/80 bg-card p-5 md:p-6 flex flex-col items-center justify-center text-center transition-all hover:border-border">
-      <span className="text-xs md:text-sm font-medium text-muted-foreground mb-1.5">
+    <div className="rounded-2xl border border-border/80 bg-card p-3.5 sm:p-5 md:p-6 flex flex-col items-center justify-center text-center transition-all hover:border-border min-w-0">
+      <span className="text-xs md:text-sm font-medium text-muted-foreground mb-1 sm:mb-1.5 truncate max-w-full">
         {label}
       </span>
-      <span className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">
+      <span className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight text-foreground truncate max-w-full">
         {value.toLocaleString()}
       </span>
     </div>

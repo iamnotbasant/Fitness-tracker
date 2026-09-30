@@ -173,8 +173,8 @@ export function PersonalRecords({ workouts }: { workouts: Workout[] }) {
   return (
     <>
       {/* Controls: Search + Exercise Config */}
-      <div className="flex items-center justify-between gap-3 pb-3 border-b border-border/40 flex-wrap">
-        <div className="relative flex-1 max-w-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-3 border-b border-border/40">
+        <div className="relative w-full sm:max-w-xs">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
           <input
             type="text"
@@ -187,7 +187,7 @@ export function PersonalRecords({ workouts }: { workouts: Workout[] }) {
 
         <button
           onClick={() => setShowSettings(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-secondary/50 border border-border/60 text-xs font-semibold text-muted-foreground hover:text-foreground hover:border-border transition-all cursor-pointer"
+          className="self-end sm:self-auto flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-secondary/50 border border-border/60 text-xs font-semibold text-muted-foreground hover:text-foreground hover:border-border transition-all cursor-pointer"
         >
           <Settings className="h-3.5 w-3.5" />
           <span>Customize PRs</span>

@@ -157,7 +157,7 @@ export default function EditRoutinePage() {
   }
 
   return (
-    <main className="min-h-screen bg-background pb-20">
+    <main className="min-h-screen bg-background pb-32 md:pb-16">
       <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
         <div className="mx-auto max-w-3xl px-4 py-4 flex items-center gap-3">
           <button onClick={() => router.back()} className="p-1 hover:bg-muted rounded-lg cursor-pointer">
@@ -175,7 +175,7 @@ export default function EditRoutinePage() {
 
       <div className="mx-auto max-w-3xl px-4 pt-6 space-y-4">
         {/* Routine Info */}
-        <div className="rounded-2xl border bg-card p-6 space-y-4">
+        <div className="rounded-2xl border bg-card p-4 sm:p-6 space-y-4">
           <div>
             <label className="block text-sm font-medium mb-2">Routine Name</label>
             <input
@@ -183,7 +183,7 @@ export default function EditRoutinePage() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g., Push Day, Full Body A"
-              className="w-full px-4 py-3 rounded-xl border bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-full px-4 py-3 rounded-xl border bg-background focus:outline-none focus:ring-2 focus:ring-ring text-sm"
             />
           </div>
           <div>
@@ -193,13 +193,13 @@ export default function EditRoutinePage() {
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Add notes about this routine..."
               rows={3}
-              className="w-full px-4 py-3 rounded-xl border bg-background focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+              className="w-full px-4 py-3 rounded-xl border bg-background focus:outline-none focus:ring-2 focus:ring-ring resize-none text-sm"
             />
           </div>
         </div>
 
         {/* Exercise List */}
-        <div className="rounded-2xl border bg-card p-6">
+        <div className="rounded-2xl border bg-card p-4 sm:p-6">
           <h2 className="text-lg font-semibold mb-4">Exercises ({routineExercises.length})</h2>
 
           {routineExercises.length === 0 ? (
@@ -226,7 +226,7 @@ export default function EditRoutinePage() {
                   ex.exerciseName.toLowerCase().includes("pull up") || 
                   ex.exerciseName.toLowerCase().includes("dip") || 
                   ex.exerciseName.toLowerCase().includes("squat") || 
-                  ex.exerciseName.toLowerCase().includes("lunge") ||
+                  ex.exerciseName.toLowerCase().includes("lunge") || 
                   ex.exerciseName.toLowerCase().includes("glute bridge")
                 const isWeighted = (!isBodyweight && String(effectiveType).toLowerCase().includes("weighted")) || (ex.defaultWeight !== undefined && Number(ex.defaultWeight) > 0)
 
@@ -236,14 +236,14 @@ export default function EditRoutinePage() {
                 const weightVal = (ex.defaultWeight && ex.defaultWeight > 0) ? ex.defaultWeight : ""
 
                 return (
-                  <div key={index} className="rounded-xl border bg-background p-4 space-y-3">
+                  <div key={index} className="rounded-xl border bg-background p-3.5 sm:p-4 space-y-3">
                     <div className="flex items-start gap-3">
                       <div className="p-1 cursor-grab hover:bg-muted rounded">
                         <GripVertical className="h-4 w-4 text-muted-foreground" />
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
-                          <h3 className="font-semibold text-foreground">{ex.exerciseName}</h3>
+                          <h3 className="font-semibold text-sm sm:text-base text-foreground">{ex.exerciseName}</h3>
                           <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-secondary text-muted-foreground uppercase tracking-wide">
                             {isTimer ? "Timer" : isWeighted ? "Weighted" : isBodyweight ? "Bodyweight" : "Reps"}
                           </span>
@@ -251,14 +251,14 @@ export default function EditRoutinePage() {
                       </div>
                       <button
                         onClick={() => removeExercise(index)}
-                        className="p-1 hover:bg-muted rounded text-muted-foreground hover:text-destructive cursor-pointer"
+                        className="p-1.5 hover:bg-muted rounded text-muted-foreground hover:text-destructive cursor-pointer"
                         title="Remove exercise"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </div>
 
-                    <div className={`grid ${isWeighted ? "grid-cols-4" : "grid-cols-3"} gap-3`}>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5 sm:gap-3">
                       <div>
                         <label className="block text-xs font-medium text-muted-foreground mb-1">Sets</label>
                         <input
@@ -267,7 +267,7 @@ export default function EditRoutinePage() {
                           onChange={(e) => updateExercise(index, { defaultSets: e.target.value ? parseInt(e.target.value) : undefined })}
                           min={1}
                           placeholder="Sets (e.g. 3)"
-                          className="w-full px-3 py-2 rounded-lg border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                          className="w-full px-3 py-2 rounded-lg border bg-card text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                         />
                       </div>
 
@@ -280,7 +280,7 @@ export default function EditRoutinePage() {
                             onChange={(e) => updateExercise(index, { defaultTimeSeconds: e.target.value ? parseInt(e.target.value) : undefined, defaultReps: undefined })}
                             min={1}
                             placeholder="Seconds (e.g. 30)"
-                            className="w-full px-3 py-2 rounded-lg border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                            className="w-full px-3 py-2 rounded-lg border bg-card text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                           />
                         </div>
                       ) : (
@@ -292,7 +292,7 @@ export default function EditRoutinePage() {
                             onChange={(e) => updateExercise(index, { defaultReps: e.target.value ? parseInt(e.target.value) : undefined, defaultTimeSeconds: undefined })}
                             min={1}
                             placeholder="Reps (optional)"
-                            className="w-full px-3 py-2 rounded-lg border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                            className="w-full px-3 py-2 rounded-lg border bg-card text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                           />
                         </div>
                       )}
@@ -307,7 +307,7 @@ export default function EditRoutinePage() {
                             min={0}
                             step="0.5"
                             placeholder="kg (optional)"
-                            className="w-full px-3 py-2 rounded-lg border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                            className="w-full px-3 py-2 rounded-lg border bg-card text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                           />
                         </div>
                       )}
@@ -321,7 +321,7 @@ export default function EditRoutinePage() {
                           min={0}
                           step={15}
                           placeholder="60"
-                          className="w-full px-3 py-2 rounded-lg border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                          className="w-full px-3 py-2 rounded-lg border bg-card text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                         />
                       </div>
                     </div>
@@ -333,7 +333,7 @@ export default function EditRoutinePage() {
                         value={ex.notes || ""}
                         onChange={(e) => updateExercise(index, { notes: e.target.value })}
                         placeholder="Add exercise notes..."
-                        className="w-full px-3 py-2 rounded-lg border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                        className="w-full px-3 py-2 rounded-lg border bg-card text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                       />
                     </div>
                   </div>

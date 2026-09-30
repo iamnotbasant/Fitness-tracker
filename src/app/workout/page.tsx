@@ -776,28 +776,28 @@ export default function WorkoutHub() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 50, scale: 0.95 }}
               transition={{ type: "spring", stiffness: 450, damping: 32 }}
-              className="fixed bottom-20 md:bottom-6 left-4 right-4 max-w-md mx-auto z-50 pointer-events-auto"
+              className="fixed bottom-20 md:bottom-6 left-2.5 right-2.5 sm:left-4 sm:right-4 max-w-md mx-auto z-50 pointer-events-auto"
             >
-              <div className="rounded-2xl border border-primary/30 bg-card/95 backdrop-blur-2xl p-4 shadow-2xl shadow-primary/10 ring-1 ring-border/50">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/25 via-primary/15 to-primary/5 text-primary border border-primary/30 shadow-inner">
-                      <Timer className={`h-6 w-6 stroke-[2.2] ${restRemaining <= 5 ? "text-amber-500 animate-bounce" : "animate-pulse"}`} />
-                      <span className="absolute -top-1 -right-1 flex h-3 w-3">
+              <div className="rounded-2xl border border-primary/30 bg-card/95 backdrop-blur-2xl p-3 sm:p-4 shadow-2xl shadow-primary/10 ring-1 ring-border/50">
+                <div className="flex items-center justify-between gap-2 sm:gap-3">
+                  <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                    <div className="relative flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/25 via-primary/15 to-primary/5 text-primary border border-primary/30 shadow-inner">
+                      <Timer className={`h-5 w-5 sm:h-6 sm:w-6 stroke-[2.2] ${restRemaining <= 5 ? "text-amber-500 animate-bounce" : "animate-pulse"}`} />
+                      <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5 sm:h-3 sm:w-3">
                         <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${restRemaining <= 5 ? "bg-amber-500" : "bg-primary"}`} />
-                        <span className={`relative inline-flex rounded-full h-3 w-3 ${restRemaining <= 5 ? "bg-amber-500" : "bg-primary"}`} />
+                        <span className={`relative inline-flex rounded-full h-2.5 w-2.5 sm:h-3 sm:w-3 ${restRemaining <= 5 ? "bg-amber-500" : "bg-primary"}`} />
                       </span>
                     </div>
-                    <div>
-                      <div className="flex items-center gap-1.5 mb-1">
-                        <span className="text-[10px] font-black uppercase tracking-widest text-primary bg-primary/15 px-1.5 py-0.5 rounded-md">
-                          Resting
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5 mb-0.5 sm:mb-1">
+                        <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-primary bg-primary/15 px-1.5 py-0.5 rounded-md">
+                          Rest
                         </span>
-                        <span className="text-xs font-semibold text-muted-foreground truncate max-w-[120px] sm:max-w-[160px]">
+                        <span className="text-[11px] sm:text-xs font-semibold text-muted-foreground truncate max-w-[90px] sm:max-w-[160px]">
                           {activeRest.exerciseName}
                         </span>
                       </div>
-                      <div className={`text-3xl sm:text-4xl font-black tracking-tight font-mono tabular-nums leading-none ${
+                      <div className={`text-2xl sm:text-4xl font-black tracking-tight font-mono tabular-nums leading-none ${
                         restRemaining <= 5 ? "text-amber-500 dark:text-amber-400" : "text-foreground"
                       }`}>
                         {Math.floor(restRemaining / 60)}:{String(restRemaining % 60).padStart(2, "0")}
@@ -805,31 +805,29 @@ export default function WorkoutHub() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
                     <button
                       type="button"
                       onClick={() => handleAddRestTime(30)}
-                      className="inline-flex items-center gap-0.5 rounded-xl bg-secondary/80 hover:bg-secondary px-2.5 py-2 text-xs font-bold text-secondary-foreground hover:text-foreground border border-border/60 transition-all active:scale-90 cursor-pointer shadow-xs"
+                      className="inline-flex items-center justify-center rounded-xl bg-secondary/80 hover:bg-secondary px-2 sm:px-2.5 py-1.5 sm:py-2 text-xs font-bold text-secondary-foreground hover:text-foreground border border-border/60 transition-all active:scale-90 cursor-pointer shadow-xs"
                       title="Add 30 seconds"
                     >
-                      <Plus className="h-3 w-3" />
-                      <span>30s</span>
+                      <span>+30s</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => handleAddRestTime(-15)}
-                      className="inline-flex items-center gap-0.5 rounded-xl bg-secondary/80 hover:bg-secondary px-2 py-2 text-xs font-bold text-secondary-foreground hover:text-foreground border border-border/60 transition-all active:scale-90 cursor-pointer shadow-xs"
+                      className="inline-flex items-center justify-center rounded-xl bg-secondary/80 hover:bg-secondary px-2 sm:px-2.5 py-1.5 sm:py-2 text-xs font-bold text-secondary-foreground hover:text-foreground border border-border/60 transition-all active:scale-90 cursor-pointer shadow-xs"
                       title="Subtract 15 seconds"
                     >
-                      <Minus className="h-3 w-3" />
-                      <span>15s</span>
+                      <span>-15s</span>
                     </button>
                     <button
                       type="button"
                       onClick={handleSkipRest}
-                      className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3.5 py-2 text-xs font-bold text-primary-foreground hover:bg-primary/90 transition-all active:scale-90 cursor-pointer shadow-md shadow-primary/20"
+                      className="inline-flex items-center gap-1 rounded-xl bg-primary px-3 sm:px-3.5 py-1.5 sm:py-2 text-xs font-bold text-primary-foreground hover:bg-primary/90 transition-all active:scale-90 cursor-pointer shadow-md shadow-primary/20"
                     >
-                      <FastForward className="h-3.5 w-3.5 fill-current" />
+                      <FastForward className="h-3 w-3 sm:h-3.5 sm:w-3.5 fill-current" />
                       <span>Skip</span>
                     </button>
                   </div>
