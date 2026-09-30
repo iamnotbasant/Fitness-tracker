@@ -13,7 +13,6 @@ import {
   MALE_BACK_VIEWBOX,
   type BodyPartPaths,
 } from "@/components/charts/muscle-map-data"
-import { toLocalDateStr } from "./workout-helpers"
 
 export interface MuscleActivationData {
   key: string
@@ -171,40 +170,27 @@ const ORDERED_MUSCLE_GROUPS: { key: string; name: string; category: "push" | "pu
   { key: "calves", name: "Calves", category: "legs" },
 ]
 
-export type MascotRange = "7d" | "4w"
-
 interface TrainingFrequencyCardProps {
   workouts: Workout[]
   exercises?: Exercise[]
+  periodLabel?: string
 }
 
-export function TrainingFrequencyCard({ workouts, exercises = [] }: TrainingFrequencyCardProps) {
-  // Mascot toggle: "7 days" vs "4 weeks" (reference 08)
-  const [range, setRange] = useState<MascotRange>("7d")
+export function TrainingFrequencyCard({
+  workouts,
+  exercises = [],
+  periodLabel = "This Week",
+}: TrainingFrequencyCardProps) {
   const [selectedMuscle, setSelectedMuscle] = useState<string | null>(null)
   const [hoveredMuscle, setHoveredMuscle] = useState<string | null>(null)
 
-  // Filter workouts for chosen range (last 7 days or last 28 days / 4 weeks)
-  const { filteredWorkouts, totalSets, totalVolumeKg, totalReps } = useMemo(() => {
-    const today = new Date()
-    // 7 days: today + 6 days prior (7 total calendar days)
-    // 4 weeks: today + 27 days prior (28 total calendar days)
-    const cutoff = new Date(today.getFullYear(), today.getMonth(), today.getDate() - (range === "7d" ? 6 : 27))
-    const cutoffStr = toLocalDateStr(cutoff)
-    const tomorrow = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1)
-    const maxStr = toLocalDateStr(tomorrow)
-
-    const list = workouts.filter((w) => {
-      const d = (w.date || "").slice(0, 10)
-      if (!d) return false
-      return d >= cutoffStr && d <= maxStr
-    })
-
+  // Calculate total sets, volume, and reps directly from period-filtered workouts
+  const { totalSets, totalVolumeKg, totalReps } = useMemo(() => {
     let setsCount = 0
     let weightVolume = 0
     let repsCount = 0
 
-    list.forEach((w) => {
+    workouts.forEach((w) => {
       const s = Math.max(1, w.sets || 1)
       const r = w.reps || 0
       const wt = w.weight || 0
@@ -218,12 +204,11 @@ export function TrainingFrequencyCard({ workouts, exercises = [] }: TrainingFreq
     })
 
     return {
-      filteredWorkouts: list,
       totalSets: setsCount,
       totalVolumeKg: Math.round(weightVolume),
       totalReps: repsCount,
     }
-  }, [workouts, range])
+  }, [workouts])
 
   // Calculate muscle stats
   const { muscleStats, trainedMuscles, untrainedMuscleNames } = useMemo(() => {
@@ -248,7 +233,7 @@ export function TrainingFrequencyCard({ workouts, exercises = [] }: TrainingFreq
       if (ex.name) exNameMap.set(ex.name.toLowerCase().trim(), ex)
     })
 
-    filteredWorkouts.forEach((w) => {
+    workouts.forEach((w) => {
       const ex =
         exIdMap.get(String(w.exerciseId)) ||
         (w.exerciseName ? exNameMap.get(w.exerciseName.toLowerCase().trim()) : undefined)
@@ -330,7 +315,7 @@ export function TrainingFrequencyCard({ workouts, exercises = [] }: TrainingFreq
       trainedMuscles: trained,
       untrainedMuscleNames: untrainedNames,
     }
-  }, [filteredWorkouts, exercises])
+  }, [workouts, exercises])
 
   const frontParts = useMemo(
     () => MALE_FRONT_PARTS.filter((p) => !SUBGROUP_SLUGS.has(p.slug)),
@@ -344,10 +329,9 @@ export function TrainingFrequencyCard({ workouts, exercises = [] }: TrainingFreq
   // Handle Share button tap (Native share or clipboard copy)
   const handleShare = async () => {
     soundManager.play("click", 0.2)
-    const rangeLabel = range === "7d" ? "7 days" : "4 weeks"
     const trainedSummary =
       trainedMuscles.map((m) => `${m.sets} ${m.name}`).join(", ") || "None logged"
-    const shareText = `🏋️ Training Frequency (${rangeLabel})\n• ${totalSets} sets · ${
+    const shareText = `🏋️ Training Frequency (${periodLabel})\n• ${totalSets} sets · ${
       totalVolumeKg > 0 ? `${totalVolumeKg.toLocaleString()} kg lifted` : `${totalReps.toLocaleString()} reps`
     }\n• Trained: ${trainedSummary}`
 
@@ -488,7 +472,6 @@ function getMuscleColors(
   }
 
   const activeMuscleModal = selectedMuscle ? muscleStats[selectedMuscle] : null
-  const rangeLabel = range === "7d" ? "7 days" : "4 weeks"
 
   // Volume text display: e.g. "380 kg lifted" (matching reference 08) or "250 reps"
   const volumeDisplay =
@@ -510,52 +493,15 @@ function getMuscleColors(
           </div>
         </div>
 
-        {/* Center / Right: 7 days / 4 weeks toggle + Share button */}
-        <div className="flex items-center gap-2">
-          {/* Segmented Toggle Capsule */}
-          <div className="flex items-center p-1 rounded-full bg-zinc-900 border border-zinc-800">
-            <button
-              type="button"
-              onClick={() => {
-                soundManager.play("click", 0.15)
-                setRange("7d")
-                setSelectedMuscle(null)
-              }}
-              className={`min-h-[36px] px-3.5 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer select-none ${
-                range === "7d"
-                  ? "bg-white text-zinc-950 shadow-xs"
-                  : "text-zinc-400 hover:text-white"
-              }`}
-            >
-              7 days
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                soundManager.play("click", 0.15)
-                setRange("4w")
-                setSelectedMuscle(null)
-              }}
-              className={`min-h-[36px] px-3.5 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer select-none ${
-                range === "4w"
-                  ? "bg-white text-zinc-950 shadow-xs"
-                  : "text-zinc-400 hover:text-white"
-              }`}
-            >
-              4 weeks
-            </button>
-          </div>
-
-          {/* Share icon button */}
-          <button
-            type="button"
-            onClick={handleShare}
-            className="w-9 h-9 min-h-[36px] min-w-[36px] rounded-full border border-zinc-800 bg-zinc-900 hover:bg-zinc-800 hover:border-zinc-700 text-zinc-300 hover:text-white flex items-center justify-center transition-all cursor-pointer shadow-xs"
-            aria-label="Share training status"
-          >
-            <Share2 className="w-4 h-4" />
-          </button>
-        </div>
+        {/* Right: Share icon button (tap >= 44px) */}
+        <button
+          type="button"
+          onClick={handleShare}
+          className="w-11 h-11 min-h-[44px] min-w-[44px] rounded-full border border-zinc-800 bg-zinc-900 hover:bg-zinc-800 hover:border-zinc-700 text-zinc-300 hover:text-white flex items-center justify-center transition-all cursor-pointer shadow-xs"
+          aria-label="Share training status"
+        >
+          <Share2 className="w-4 h-4" />
+        </button>
       </div>
 
       {/* ─── 2. Front & Back Anatomical Figures (Side-by-side, Reference 08 style) ─── */}
@@ -594,7 +540,7 @@ function getMuscleColors(
                   soundManager.play("click", 0.2)
                   setSelectedMuscle((prev) => (prev === m.key ? null : m.key))
                 }}
-                className={`min-h-[36px] px-3.5 py-1.5 rounded-full border flex items-center gap-1.5 transition-all cursor-pointer shadow-xs ${
+                className={`min-h-[44px] px-3.5 py-1.5 rounded-full border flex items-center gap-1.5 transition-all cursor-pointer shadow-xs ${
                   selectedMuscle === m.key
                     ? "bg-white border-white text-zinc-950"
                     : "bg-zinc-850 hover:bg-zinc-800 border-zinc-700/60 text-white"
@@ -640,14 +586,14 @@ function getMuscleColors(
         badge={activeMuscleModal?.category}
         subtitle={
           activeMuscleModal
-            ? `${activeMuscleModal.sets} ${activeMuscleModal.sets === 1 ? "set" : "sets"} · ${activeMuscleModal.reps} reps logged (${rangeLabel})`
+            ? `${activeMuscleModal.sets} ${activeMuscleModal.sets === 1 ? "set" : "sets"} · ${activeMuscleModal.reps} reps logged (${periodLabel})`
             : undefined
         }
       >
         {activeMuscleModal && activeMuscleModal.exercises.length > 0 ? (
           <div className="space-y-2">
             <span className="text-[11px] font-mono uppercase tracking-wider text-zinc-400 block">
-              Logged Movements ({rangeLabel})
+              Logged Movements ({periodLabel})
             </span>
             <div className="space-y-1.5">
               {activeMuscleModal.exercises.map((ex, idx) => (
@@ -667,7 +613,7 @@ function getMuscleColors(
           </div>
         ) : (
           <div className="space-y-3 py-1 font-body text-xs text-zinc-400">
-            <p>No workout sets logged for this muscle in the last {rangeLabel}.</p>
+            <p>No workout sets logged for this muscle in {periodLabel.toLowerCase()}.</p>
             {activeMuscleModal && (
               <div className="space-y-2">
                 <span className="text-[11px] font-mono uppercase tracking-wider text-zinc-400 block">

@@ -30,9 +30,10 @@ const inter = Inter({
   display: "swap",
 })
 
-type PeriodFilter = "week" | "month" | "year" | "all"
+type PeriodFilter = "today" | "week" | "month" | "year" | "all"
 
 const PERIOD_FILTERS: { id: PeriodFilter; label: string }[] = [
+  { id: "today", label: "Today" },
   { id: "week", label: "Week" },
   { id: "month", label: "Month" },
   { id: "year", label: "Year" },
@@ -59,31 +60,107 @@ export default function ProgressPage() {
     }
   }, [])
 
-  // Filter workouts according to minimal header period selection
-  const filteredWorkouts = useMemo(() => {
-    if (period === "all") return workouts
+  // Filter workouts and previous comparison period according to header selection
+  const { filteredWorkouts, previousPeriodWorkouts, currentPeriodLabel, previousPeriodLabel } =
+    useMemo(() => {
+      const now = new Date()
+      const todayStr = toLocalDateStr(now)
 
-    const now = new Date()
-    const todayStr = toLocalDateStr(now)
-    let startStr = ""
+      if (period === "today") {
+        const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1)
+        const yesterdayStr = toLocalDateStr(yesterday)
+        const curr = workouts.filter((w) => (w.date || "").slice(0, 10) === todayStr)
+        const prev = workouts.filter((w) => (w.date || "").slice(0, 10) === yesterdayStr)
+        return {
+          filteredWorkouts: curr,
+          previousPeriodWorkouts: prev,
+          currentPeriodLabel: "Today",
+          previousPeriodLabel: "Yesterday",
+        }
+      }
 
-    if (period === "week") {
-      const monday = getMondayOfWeek(now)
-      startStr = toLocalDateStr(monday)
-    } else if (period === "month") {
-      const firstDay = new Date(now.getFullYear(), now.getMonth(), 1)
-      startStr = toLocalDateStr(firstDay)
-    } else if (period === "year") {
-      const firstDay = new Date(now.getFullYear(), 0, 1)
-      startStr = toLocalDateStr(firstDay)
-    }
+      if (period === "week") {
+        const monday = getMondayOfWeek(now)
+        const startStr = toLocalDateStr(monday)
+        const lastMonday = new Date(monday)
+        lastMonday.setDate(lastMonday.getDate() - 7)
+        const lastSunday = new Date(monday)
+        lastSunday.setDate(lastSunday.getDate() - 1)
+        const prevStartStr = toLocalDateStr(lastMonday)
+        const prevEndStr = toLocalDateStr(lastSunday)
 
-    return workouts.filter((w) => {
-      const wDate = (w.date || "").slice(0, 10)
-      if (!wDate) return false
-      return wDate >= startStr && wDate <= todayStr
-    })
-  }, [workouts, period])
+        const curr = workouts.filter((w) => {
+          const d = (w.date || "").slice(0, 10)
+          return d >= startStr && d <= todayStr
+        })
+        const prev = workouts.filter((w) => {
+          const d = (w.date || "").slice(0, 10)
+          return d >= prevStartStr && d <= prevEndStr
+        })
+        return {
+          filteredWorkouts: curr,
+          previousPeriodWorkouts: prev,
+          currentPeriodLabel: "This Week",
+          previousPeriodLabel: "Last Week",
+        }
+      }
+
+      if (period === "month") {
+        const firstDay = new Date(now.getFullYear(), now.getMonth(), 1)
+        const startStr = toLocalDateStr(firstDay)
+        const prevMonthFirst = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+        const prevMonthLast = new Date(now.getFullYear(), now.getMonth(), 0)
+        const prevStartStr = toLocalDateStr(prevMonthFirst)
+        const prevEndStr = toLocalDateStr(prevMonthLast)
+
+        const curr = workouts.filter((w) => {
+          const d = (w.date || "").slice(0, 10)
+          return d >= startStr && d <= todayStr
+        })
+        const prev = workouts.filter((w) => {
+          const d = (w.date || "").slice(0, 10)
+          return d >= prevStartStr && d <= prevEndStr
+        })
+        return {
+          filteredWorkouts: curr,
+          previousPeriodWorkouts: prev,
+          currentPeriodLabel: "This Month",
+          previousPeriodLabel: "Last Month",
+        }
+      }
+
+      if (period === "year") {
+        const firstDay = new Date(now.getFullYear(), 0, 1)
+        const startStr = toLocalDateStr(firstDay)
+        const prevYearFirst = new Date(now.getFullYear() - 1, 0, 1)
+        const prevYearLast = new Date(now.getFullYear() - 1, 11, 31)
+        const prevStartStr = toLocalDateStr(prevYearFirst)
+        const prevEndStr = toLocalDateStr(prevYearLast)
+
+        const curr = workouts.filter((w) => {
+          const d = (w.date || "").slice(0, 10)
+          return d >= startStr && d <= todayStr
+        })
+        const prev = workouts.filter((w) => {
+          const d = (w.date || "").slice(0, 10)
+          return d >= prevStartStr && d <= prevEndStr
+        })
+        return {
+          filteredWorkouts: curr,
+          previousPeriodWorkouts: prev,
+          currentPeriodLabel: "This Year",
+          previousPeriodLabel: "Last Year",
+        }
+      }
+
+      // period === "all"
+      return {
+        filteredWorkouts: workouts,
+        previousPeriodWorkouts: [],
+        currentPeriodLabel: "All Time",
+        previousPeriodLabel: "",
+      }
+    }, [workouts, period])
 
   // Grouped sessions
   const allSessions = useMemo(() => groupWorkoutsIntoSessions(workouts), [workouts])
@@ -138,14 +215,30 @@ export default function ProgressPage() {
       className={`${spaceGrotesk.variable} ${inter.variable} font-body min-h-screen bg-black text-zinc-100 pb-32 max-w-lg mx-auto px-4 pt-4 space-y-6 sm:space-y-7`}
     >
       {/* ─── 1. MINIMAL HEADER: "REPORT" + Small Quiet Period Segmented Control + Monthly Quick Link ─── */}
-      <header className="flex items-center justify-between gap-2 pt-2">
-        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white font-display uppercase">
-          REPORT
-        </h1>
+      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-2">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white font-display uppercase">
+            REPORT
+          </h1>
 
-        <div className="flex items-center gap-1.5 sm:gap-2">
-          {/* Minimal Period Segmented Control (Task 5: Small, quiet, premium) */}
-          <div className="flex items-center p-0.5 rounded-xl bg-zinc-900 border border-zinc-800">
+          {/* Quick Monthly Report Action Button (mobile view) */}
+          <button
+            type="button"
+            onClick={() => {
+              soundManager.play("click", 0.2)
+              setMonthlyReportOpen(true)
+            }}
+            className="sm:hidden min-h-[44px] px-3 rounded-xl border border-zinc-800 bg-zinc-900 hover:bg-zinc-800 text-xs font-medium text-zinc-300 hover:text-white flex items-center gap-1.5 transition-all cursor-pointer shadow-xs shrink-0"
+            title="Open Monthly Report"
+          >
+            <CalendarIcon className="w-4 h-4 text-zinc-400" />
+            <span>Monthly</span>
+          </button>
+        </div>
+
+        <div className="flex items-center justify-between sm:justify-end gap-1.5 sm:gap-2">
+          {/* Minimal Period Segmented Control (Today | Week | Month | Year | All - tap >= 44px) */}
+          <div className="flex items-center p-0.5 rounded-xl bg-zinc-900 border border-zinc-800 w-full sm:w-auto">
             {PERIOD_FILTERS.map((f) => {
               const isActive = period === f.id
               return (
@@ -156,7 +249,7 @@ export default function ProgressPage() {
                     soundManager.play("click", 0.15)
                     setPeriod(f.id)
                   }}
-                  className={`px-2.5 sm:px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer min-h-[32px] ${
+                  className={`flex-1 sm:flex-none px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer min-h-[44px] flex items-center justify-center ${
                     isActive
                       ? "bg-zinc-800 text-white shadow-xs"
                       : "text-zinc-400 hover:text-white"
@@ -168,18 +261,18 @@ export default function ProgressPage() {
             })}
           </div>
 
-          {/* Quick Monthly Report Action Button */}
+          {/* Quick Monthly Report Action Button (desktop view) */}
           <button
             type="button"
             onClick={() => {
               soundManager.play("click", 0.2)
               setMonthlyReportOpen(true)
             }}
-            className="h-8 min-h-[32px] px-2.5 rounded-xl border border-zinc-800 bg-zinc-900 hover:bg-zinc-800 text-xs font-medium text-zinc-300 hover:text-white flex items-center gap-1.5 transition-all cursor-pointer shadow-xs shrink-0"
+            className="hidden sm:flex min-h-[44px] px-3 rounded-xl border border-zinc-800 bg-zinc-900 hover:bg-zinc-800 text-xs font-medium text-zinc-300 hover:text-white items-center gap-1.5 transition-all cursor-pointer shadow-xs shrink-0"
             title="Open Monthly Report"
           >
             <CalendarIcon className="w-3.5 h-3.5 text-zinc-400" />
-            <span className="hidden xs:inline">Monthly</span>
+            <span>Monthly</span>
           </button>
         </div>
       </header>
@@ -189,13 +282,13 @@ export default function ProgressPage() {
         <h2 className="text-base sm:text-lg font-bold text-white font-display">
           Total
         </h2>
-        <TotalStatsCard sessions={filteredSessions} allSessions={allSessions} />
+        <TotalStatsCard sessions={filteredSessions} />
       </section>
 
       {/* ─── 3. THIS WEEK SECTION (Reference 01: 7 Circles + Today & Avg min) ─── */}
       <section>
         <ThisWeekCard
-          sessions={allSessions}
+          sessions={filteredSessions}
           onOpenWeeklyOverview={() => {
             soundManager.play("click", 0.2)
             setActiveTab("weekly")
@@ -203,12 +296,16 @@ export default function ProgressPage() {
         />
       </section>
 
-      {/* ─── 4. TRAINING FREQUENCY / MASCOT (Reference 08: Coral Anatomical Figures + 7D/4W Toggle) ─── */}
+      {/* ─── 4. TRAINING FREQUENCY / MASCOT (Reference 08: Coral Anatomical Figures) ─── */}
       <section className="space-y-2">
         <h2 className="text-base sm:text-lg font-bold text-white font-display">
           Training Frequency
         </h2>
-        <TrainingFrequencyCard workouts={workouts} exercises={exercises} />
+        <TrainingFrequencyCard
+          workouts={filteredWorkouts}
+          exercises={exercises}
+          periodLabel={currentPeriodLabel}
+        />
       </section>
 
       {/* ─── 5. SECONDARY FEATURES BEHIND CLEAN ENTRY CARDS (Task 6: Minimal IA) ─── */}
@@ -234,7 +331,7 @@ export default function ProgressPage() {
                 Muscle Distribution
               </h3>
               <p className="text-xs text-zinc-400 font-body truncate">
-                6-zone balance radar & delta stats
+                6-zone balance radar & delta stats ({currentPeriodLabel})
               </p>
             </div>
           </div>
@@ -271,7 +368,7 @@ export default function ProgressPage() {
         <h2 className="text-base sm:text-lg font-bold text-white font-display">
           Personal Records
         </h2>
-        <PersonalRecords workouts={workouts} />
+        <PersonalRecords workouts={filteredWorkouts} />
       </section>
 
       {/* ─── MODALS ─── */}
@@ -289,6 +386,10 @@ export default function ProgressPage() {
         onClose={() => setRadarModalOpen(false)}
         workouts={workouts}
         exercises={exercises}
+        customCurrentWorkouts={filteredWorkouts}
+        customPreviousWorkouts={previousPeriodWorkouts}
+        currentLabel={currentPeriodLabel}
+        previousLabel={previousPeriodLabel}
       />
     </main>
   )

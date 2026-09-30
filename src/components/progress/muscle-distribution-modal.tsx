@@ -12,6 +12,10 @@ interface MuscleDistributionModalProps {
   onClose: () => void
   workouts: Workout[]
   exercises?: Exercise[]
+  customCurrentWorkouts?: Workout[]
+  customPreviousWorkouts?: Workout[]
+  currentLabel?: string
+  previousLabel?: string
 }
 
 export function MuscleDistributionModal({
@@ -19,6 +23,10 @@ export function MuscleDistributionModal({
   onClose,
   workouts,
   exercises = [],
+  customCurrentWorkouts,
+  customPreviousWorkouts,
+  currentLabel,
+  previousLabel,
 }: MuscleDistributionModalProps) {
   useEffect(() => {
     if (!isOpen) return
@@ -108,6 +116,18 @@ export function MuscleDistributionModal({
           <MuscleDistributionRadar
             workouts={workouts}
             exercises={exercises}
+            customCurrentWorkouts={customCurrentWorkouts}
+            customPreviousWorkouts={customPreviousWorkouts}
+            currentLabel={currentLabel}
+            previousLabel={previousLabel}
+            hidePeriodSelector={Boolean(customCurrentWorkouts)}
+            subtitle={
+              currentLabel && previousLabel
+                ? `${currentLabel} vs ${previousLabel}`
+                : currentLabel
+                ? `${currentLabel} volume distribution`
+                : "Sets per group vs previous period"
+            }
             className="border-none bg-transparent p-0 shadow-none"
           />
         </div>
