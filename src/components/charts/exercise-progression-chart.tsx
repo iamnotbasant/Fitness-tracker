@@ -299,6 +299,8 @@ export function ExerciseProgressionChart({
               <XAxis
                 dataKey="label"
                 stroke="#52525b"
+                interval="preserveStartEnd"
+                minTickGap={20}
                 tick={{ fontSize: 10, fill: "#71717a", fontFamily: "var(--font-body), sans-serif" }}
                 tickLine={false}
                 axisLine={false}

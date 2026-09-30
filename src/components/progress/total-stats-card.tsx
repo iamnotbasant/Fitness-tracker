@@ -27,24 +27,27 @@ export function TotalStatsCard({ sessions, allSessions }: TotalStatsCardProps) {
   const workoutCount = sessions.length
   const totalTimeMin = sessions.reduce((acc, s) => acc + s.durationMin, 0)
 
-  // Calculate volume in kg or total reps
-  const totalVolume = useMemo(() => {
-    let vol = 0
+  // Calculate weighted volume (kg) or total reps for unweighted
+  const { totalWeightVolume, totalReps } = useMemo(() => {
+    let weightVol = 0
+    let reps = 0
     sessions.forEach((s) => {
       s.rawWorkouts.forEach((w) => {
         const wt = w.weight || 0
         const r = w.reps || 0
         const sets = Math.max(1, w.sets || 1)
+        reps += r > 0 ? r * sets : sets
         if (wt > 0) {
-          vol += wt * (r > 0 ? r : sets)
+          weightVol += wt * (r > 0 ? r : sets)
         } else if (w.volume && w.volume > 0) {
-          vol += w.volume
-        } else {
-          vol += r * sets
+          weightVol += w.volume
         }
       })
     })
-    return Math.round(vol)
+    return {
+      totalWeightVolume: Math.round(weightVol),
+      totalReps: reps,
+    }
   }, [sessions])
 
   // Weekly bar chart (8 weeks like reference 01: 9 AUG ... 27 SEP)
@@ -118,11 +121,15 @@ export function TotalStatsCard({ sessions, allSessions }: TotalStatsCardProps) {
           </span>
         </div>
 
-        {/* Volume(kg) */}
+        {/* Volume(kg) or Total Reps */}
         <div>
-          <span className="text-xs text-zinc-400 font-medium block">Volume(kg)</span>
+          <span className="text-xs text-zinc-400 font-medium block">
+            {totalWeightVolume > 0 ? "Volume (kg)" : "Total Reps"}
+          </span>
           <span className="text-2xl sm:text-3xl font-extrabold text-[#2563eb] font-display tabular-nums mt-1 block">
-            {totalVolume.toLocaleString()}
+            {totalWeightVolume > 0
+              ? totalWeightVolume.toLocaleString()
+              : totalReps.toLocaleString()}
           </span>
         </div>
       </div>
@@ -143,6 +150,8 @@ export function TotalStatsCard({ sessions, allSessions }: TotalStatsCardProps) {
                 dataKey="label"
                 axisLine={false}
                 tickLine={false}
+                interval="preserveStartEnd"
+                minTickGap={16}
                 tick={{
                   fill: "#71717a",
                   fontSize: 9,

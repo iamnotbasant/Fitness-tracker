@@ -36,24 +36,26 @@ export async function getAuthenticatedUser(request: NextRequest) {
       }
     }
     
-    // In local / single-user mode, fallback to user_1 or first available user
-    const defaultUser = await db
-      .select()
-      .from(user)
-      .where(eq(user.id, 'user_1'))
-      .limit(1);
-    
-    if (defaultUser.length > 0) {
-      return defaultUser[0];
-    }
+    // Dev-only bypass ONLY if explicitly enabled via environment variable
+    if (process.env.ALLOW_DEV_AUTH_BYPASS === 'true') {
+      const defaultUser = await db
+        .select()
+        .from(user)
+        .where(eq(user.id, 'user_1'))
+        .limit(1);
+      
+      if (defaultUser.length > 0) {
+        return defaultUser[0];
+      }
 
-    const firstUser = await db
-      .select()
-      .from(user)
-      .limit(1);
+      const firstUser = await db
+        .select()
+        .from(user)
+        .limit(1);
 
-    if (firstUser.length > 0) {
-      return firstUser[0];
+      if (firstUser.length > 0) {
+        return firstUser[0];
+      }
     }
     
     return null;

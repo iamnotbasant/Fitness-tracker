@@ -95,11 +95,7 @@ export default function WorkoutEditDialog({ open, onClose, onSave, workout }: Pr
   }
 
   const handleRemoveExercise = (exerciseIndex: number) => {
-    if (confirm("Are you sure you want to remove this exercise?")) {
-      const updated = [...editableExercises]
-      updated.splice(exerciseIndex, 1)
-      setEditableExercises(updated)
-    }
+    setEditableExercises((prev) => prev.filter((_, idx) => idx !== exerciseIndex))
   }
 
   const handleSave = () => {

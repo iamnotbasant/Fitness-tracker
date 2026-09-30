@@ -2,12 +2,12 @@
 
 import { useRouter } from "next/navigation"
 import { useActiveSession, useExercises, useWorkouts, useRoutines, getLocalDateString, getLocalTimeString } from "@/hooks/use-local-data"
-import { Dumbbell, Plus, Minus, FastForward, Search, ChevronLeft, Clock, Timer, Play, Loader2, Pin, MoreVertical, Eye, Edit, X, Check, AlertTriangle, Trash2 } from "lucide-react"
+import { Dumbbell, Plus, Minus, FastForward, Search, ChevronLeft, Clock, Timer, Play, Loader2, Pin, MoreVertical, Eye, Edit, X, Check, AlertTriangle, Trash2, Volume2, VolumeX } from "lucide-react"
 import { useSession } from "@/lib/auth-client"
 import { useEffect, useState, useMemo, useCallback, useRef, memo } from "react"
 import { toast } from "sonner"
 import { motion, AnimatePresence } from "framer-motion"
-import soundManager from "@/lib/sounds"
+import soundManager, { triggerVibration } from "@/lib/sounds"
 import LiveExerciseCard from "@/components/workout/live-exercise-card"
 import WorkoutConfirmationDialog from "@/components/workout/workout-confirmation-dialog"
 import AddExercisePicker from "@/components/workout/add-exercise-picker"
@@ -18,9 +18,36 @@ export default function WorkoutHub() {
   const { session: activeSession, start, addExercise, updateExercise, removeExercise, reorderExercises, discard, finish } = useActiveSession()
   const { exercises } = useExercises()
   const { workouts, refresh } = useWorkouts()
-  const { routines, remove: removeRoutine } = useRoutines()
+  const { routines, remove: removeRoutine, isLoading: routinesLoading } = useRoutines()
   const { data: session } = useSession()
   const [mounted, setMounted] = useState(false)
+
+  // Sound preference state
+  const [soundEnabled, setSoundEnabled] = useState(true)
+  useEffect(() => {
+    setSoundEnabled(soundManager.isEnabled())
+  }, [])
+
+  const toggleSound = () => {
+    const next = !soundEnabled
+    soundManager.setEnabled(next)
+    setSoundEnabled(next)
+    toast.success(next ? "Sound effects enabled" : "Sound effects muted", { duration: 1500 })
+  }
+
+  // Dynamic levels from routines
+  const availableRoutineLevels = useMemo(() => {
+    const set = new Set<number>()
+    for (const r of routines) {
+      for (const e of (r.exercises || [])) {
+        if (e.level !== undefined && e.level !== null) set.add(Number(e.level))
+      }
+      const nameLower = (r.name || "").toLowerCase()
+      const match = nameLower.match(/level\s*(\d+)/)
+      if (match) set.add(Number(match[1]))
+    }
+    return Array.from(set).sort((a, b) => a - b)
+  }, [routines])
   
   // Timer control & freeze snapshot on finish
   const [tick, setTick] = useState(0)
@@ -47,8 +74,8 @@ export default function WorkoutHub() {
 
   // Routine filters & Pinning state
   const [pinnedRoutineIds, setPinnedRoutineIds] = useState<string[]>([])
-  const [splitFilter, setSplitFilter] = useState<"all" | "push" | "pull" | "legs" | "core">("all")
-  const [levelFilter, setLevelFilter] = useState<"all" | "1" | "2" | "3" | "4">("all")
+  const [splitFilter, setSplitFilter] = useState<string>("all")
+  const [levelFilter, setLevelFilter] = useState<string>("all")
 
   // Routine Full Overview & Context Menu
   const [overviewRoutine, setOverviewRoutine] = useState<any | null>(null)
@@ -177,9 +204,7 @@ export default function WorkoutHub() {
         else if (rem === 1) soundManager.play('countdown_1', 0.6)
         else if (rem <= 0) {
           soundManager.play('countdown_go', 0.8)
-          if (typeof window !== "undefined" && "vibrate" in navigator) {
-            try { navigator.vibrate([150, 50, 150]) } catch {}
-          }
+          triggerVibration([150, 50, 150])
           toast.success(`Rest finished for ${activeRest.exerciseName}! Next set ready!`, {
             duration: 3500,
           })
@@ -298,10 +323,12 @@ export default function WorkoutHub() {
         const matchesSplit =
           name.includes(splitFilter) ||
           desc.includes(splitFilter) ||
+          (splitFilter === "full" && (name.includes("full body") || desc.includes("full body"))) ||
           exList.some(
             (e) =>
               e.split?.toLowerCase() === splitFilter ||
-              (splitFilter === "legs" && e.split?.toLowerCase() === "leg")
+              (splitFilter === "legs" && e.split?.toLowerCase() === "leg") ||
+              (splitFilter === "full" && e.split?.toLowerCase() === "full body")
           )
         if (!matchesSplit) return false
       }
@@ -627,6 +654,15 @@ export default function WorkoutHub() {
                 <div className="text-lg md:text-xl font-semibold">Log Workout</div>
               </div>
               <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={toggleSound}
+                  className="rounded-xl border border-border/80 bg-card p-2 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+                  title={soundEnabled ? "Mute sounds" : "Unmute sounds"}
+                  aria-label={soundEnabled ? "Mute sounds" : "Unmute sounds"}
+                >
+                  {soundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4 text-muted-foreground" />}
+                </button>
 
                 {activeSession.items.length > 0 && (
                   <motion.button
@@ -637,7 +673,7 @@ export default function WorkoutHub() {
                     onClick={handleDiscard}
                     className="rounded-xl border border-destructive/50 bg-card px-4 py-2 text-sm font-medium text-destructive hover:bg-destructive/10"
                   >
-                    Discard
+                    Discard Workout
                   </motion.button>
                 )}
                 <motion.button
@@ -770,13 +806,13 @@ export default function WorkoutHub() {
 
         {/* Global Floating Rest Timer Bar */}
         <AnimatePresence>
-          {activeRest && restRemaining > 0 && (
+          {activeRest && restRemaining > 0 && !showConfirmation && !showDiscardDialog && (
             <motion.div
               initial={{ opacity: 0, y: 50, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 50, scale: 0.95 }}
               transition={{ type: "spring", stiffness: 450, damping: 32 }}
-              className="fixed bottom-20 md:bottom-6 left-2.5 right-2.5 sm:left-4 sm:right-4 max-w-md mx-auto z-50 pointer-events-auto"
+              className="fixed bottom-20 md:bottom-6 left-2.5 right-2.5 sm:left-4 sm:right-4 max-w-md mx-auto z-40 pointer-events-auto"
             >
               <div className="rounded-2xl border border-primary/30 bg-card/95 backdrop-blur-2xl p-3 sm:p-4 shadow-2xl shadow-primary/10 ring-1 ring-border/50">
                 <div className="flex items-center justify-between gap-2 sm:gap-3">
@@ -937,16 +973,6 @@ export default function WorkoutHub() {
       <header className="sticky top-0 z-20 border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
         <div className="mx-auto max-w-4xl px-4 py-3.5 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <button
-              onClick={() => {
-                soundManager.play('click', 0.3)
-                router.push("/")
-              }}
-              className="inline-flex items-center justify-center h-9 w-9 rounded-xl border border-border/60 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-              aria-label="Back to dashboard"
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </button>
             <div>
               <h1 className="text-xl font-bold tracking-tight">Start Workout</h1>
               <p className="text-xs text-muted-foreground hidden sm:block">Choose an empty workout or launch a saved routine</p>
@@ -1012,7 +1038,11 @@ export default function WorkoutHub() {
                 <option value="push">Push</option>
                 <option value="pull">Pull</option>
                 <option value="legs">Legs</option>
+                <option value="upper">Upper</option>
+                <option value="lower">Lower</option>
+                <option value="full">Full Body</option>
                 <option value="core">Core</option>
+                <option value="other">Other</option>
               </select>
 
               <select
@@ -1025,16 +1055,29 @@ export default function WorkoutHub() {
                 aria-label="Filter by level"
               >
                 <option value="all">All Levels</option>
-                <option value="1">Level 1</option>
-                <option value="2">Level 2</option>
-                <option value="3">Level 3</option>
-                <option value="4">Level 4</option>
+                {(availableRoutineLevels.length > 0 ? availableRoutineLevels : [1]).map((l) => (
+                  <option key={l} value={String(l)}>
+                    Level {l}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
 
           {/* Routine Cards Grid */}
-          {filteredRoutines.length === 0 ? (
+          {routinesLoading && (!routines || routines.length === 0) ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+              {[1, 2, 3, 4].map((n) => (
+                <div key={n} className="rounded-2xl border border-border/40 p-4 bg-card/60 animate-pulse flex items-center justify-between">
+                  <div className="space-y-2 flex-1">
+                    <div className="h-4 bg-muted rounded w-1/2" />
+                    <div className="h-3 bg-muted/60 rounded w-1/4" />
+                  </div>
+                  <div className="h-8 w-16 bg-muted rounded-xl" />
+                </div>
+              ))}
+            </div>
+          ) : filteredRoutines.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-border/80 p-8 text-center bg-card/40">
               <p className="text-sm text-muted-foreground mb-3">No routines found matching these filters</p>
               <button

@@ -2,59 +2,74 @@
 
 import { useEffect, useState } from "react"
 
-// Mock session that returns user from localStorage
+// Session hook that reads valid authenticated user and bearer token from localStorage
 export const useSession = () => {
   const [session, setSession] = useState<any>(null)
   const [isPending, setIsPending] = useState(true)
 
   useEffect(() => {
-    // Check localStorage for current user, default to local admin basant
-    let userStr = localStorage.getItem("currentUser")
-    if (!localStorage.getItem("bearer_token")) {
-      localStorage.setItem("bearer_token", "local_admin_token")
+    // Clean up any legacy mock token
+    const token = localStorage.getItem("bearer_token")
+    if (token === "local_admin_token") {
+      localStorage.removeItem("bearer_token")
+      localStorage.removeItem("currentUser")
     }
 
-    if (!userStr) {
-      const defaultUser = {
-        id: 1,
-        name: "basant",
-        role: "admin",
-      }
-      localStorage.setItem("currentUser", JSON.stringify(defaultUser))
-      userStr = JSON.stringify(defaultUser)
-    }
+    const currentToken = localStorage.getItem("bearer_token")
+    const userStr = localStorage.getItem("currentUser")
 
-    if (userStr) {
+    if (currentToken && userStr) {
       try {
         const user = JSON.parse(userStr)
-        setSession({
-          user: {
-            id: String(user.id),
-            name: user.name,
-            email: `${user.name.toLowerCase()}@fitness.app`,
-            role: user.role || "admin",
-          }
-        })
+        if (user && user.name) {
+          const rawId = user.id ? String(user.id) : "1"
+          const userId = rawId.startsWith("user_") ? rawId : `user_${rawId}`
+          setSession({
+            user: {
+              id: userId,
+              name: user.name,
+              email: user.email || `${user.name.toLowerCase()}@fitness.app`,
+              role: user.role || "user",
+            }
+          })
+        } else {
+          setSession(null)
+        }
       } catch (error) {
         console.error("Failed to parse user from localStorage:", error)
+        setSession(null)
       }
+    } else {
+      setSession(null)
     }
     setIsPending(false)
   }, [])
 
   const refetch = () => {
+    const currentToken = localStorage.getItem("bearer_token")
+    if (!currentToken || currentToken === "local_admin_token") {
+      setSession(null)
+      return
+    }
+
     const userStr = localStorage.getItem("currentUser")
     if (userStr) {
       try {
         const user = JSON.parse(userStr)
-        setSession({
-          user: {
-            id: String(user.id),
-            name: user.name,
-            email: `${user.name.toLowerCase()}@fitness.app`,
-            role: user.role,
-          }
-        })
+        if (user && user.name) {
+          const rawId = user.id ? String(user.id) : "1"
+          const userId = rawId.startsWith("user_") ? rawId : `user_${rawId}`
+          setSession({
+            user: {
+              id: userId,
+              name: user.name,
+              email: user.email || `${user.name.toLowerCase()}@fitness.app`,
+              role: user.role || "user",
+            }
+          })
+        } else {
+          setSession(null)
+        }
       } catch (error) {
         setSession(null)
       }
@@ -70,6 +85,9 @@ export const authClient = {
   signOut: async () => {
     localStorage.removeItem("currentUser")
     localStorage.removeItem("bearer_token")
+    if (typeof document !== "undefined") {
+      document.cookie = "better-auth.session_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT"
+    }
     return { error: null }
   }
 }

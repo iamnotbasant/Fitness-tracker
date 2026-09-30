@@ -473,11 +473,11 @@ function getMuscleColors(
 
   const activeMuscleModal = selectedMuscle ? muscleStats[selectedMuscle] : null
 
-  // Volume text display: e.g. "380 kg lifted" (matching reference 08) or "250 reps"
+  // Volume text display: e.g. "380 kg lifted · This Week" or "250 reps · This Week"
   const volumeDisplay =
     totalVolumeKg > 0
-      ? `${totalVolumeKg.toLocaleString()} kg lifted`
-      : `${totalReps.toLocaleString()} reps`
+      ? `${totalVolumeKg.toLocaleString()} kg lifted · ${periodLabel}`
+      : `${totalReps.toLocaleString()} reps · ${periodLabel}`
 
   return (
     <div className="rounded-3xl border border-zinc-800/90 bg-[#121316] p-5 sm:p-6 shadow-xl space-y-5">

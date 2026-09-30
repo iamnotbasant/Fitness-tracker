@@ -2,20 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { workoutSessions } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
-import { auth } from '@/lib/auth';
-
-async function getCurrentUser(request: NextRequest) {
-  try {
-    const session = await auth.api.getSession({ headers: request.headers });
-    if (!session?.user?.id) {
-      return null;
-    }
-    return session.user;
-  } catch (error) {
-    console.error('Session validation error:', error);
-    return null;
-  }
-}
+import { getAuthenticatedUser as getCurrentUser } from '@/lib/auth-server';
 
 export async function GET(
   request: NextRequest,

@@ -3,10 +3,13 @@
 import { useState, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { useProfile, useExercises } from "@/hooks/use-local-data"
-import { User, Save, Activity, RefreshCw } from "lucide-react"
+import type { Goal } from "@/lib/types"
+import { User, Save, Activity, RefreshCw, Volume2, VolumeX, Vibrate } from "lucide-react"
 import { toast } from "sonner"
 import { mutate as globalMutate } from "swr"
 import { DataBackup } from "@/components/profile/data-backup"
+import { Switch } from "@/components/ui/switch"
+import soundManager, { isVibrationEnabled, setVibrationEnabled } from "@/lib/sounds"
 
 export default function ProfilePage() {
   const router = useRouter()
@@ -24,7 +27,28 @@ export default function ProfilePage() {
   const [weightKg, setWeightKg] = useState<number | "">(profile.weightKg ?? "")
   const [weightUnit, setWeightUnit] = useState<"kg" | "lbs">("kg")
   const [goalType, setGoalType] = useState(profile.goalType ?? "strength")
-  const [goals, setGoals] = useState(profile.goals || [])
+  const [goals, setGoals] = useState<Goal[]>(profile.goals || [])
+
+  // Sound & Vibration preference states
+  const [soundEnabled, setSoundEnabled] = useState(true)
+  const [vibrationEnabledState, setVibrationEnabledState] = useState(true)
+
+  useEffect(() => {
+    setSoundEnabled(soundManager.isEnabled())
+    setVibrationEnabledState(isVibrationEnabled())
+  }, [])
+
+  const handleToggleSound = (checked: boolean) => {
+    soundManager.setEnabled(checked)
+    setSoundEnabled(checked)
+    toast.success(checked ? "Sound effects enabled" : "Sound effects muted")
+  }
+
+  const handleToggleVibration = (checked: boolean) => {
+    setVibrationEnabled(checked)
+    setVibrationEnabledState(checked)
+    toast.success(checked ? "Vibration enabled" : "Vibration disabled")
+  }
 
   // Load preferred weight unit
   useEffect(() => {
@@ -187,14 +211,18 @@ export default function ProfilePage() {
           className="grid gap-4 rounded-xl border bg-card p-4 shadow-sm"
           onSubmit={async (e) => {
             e.preventDefault()
-            await save({
-              name: name.trim(),
-              heightCm: Number(heightCm) || undefined,
-              weightKg: Number(weightKg) || undefined,
-              goalType: goalType as any,
-              goals,
-            })
-            toast.success("Profile saved!")
+            try {
+              await save({
+                name: name.trim(),
+                heightCm: Number(heightCm) || undefined,
+                weightKg: Number(weightKg) || undefined,
+                goalType: goalType as any,
+                goals,
+              })
+              toast.success("Profile saved!")
+            } catch (err: any) {
+              toast.error(err?.message || "Failed to save profile")
+            }
           }}
         >
           <div className="grid gap-1">
@@ -399,7 +427,7 @@ export default function ProfilePage() {
                 const ex = exercises.find((e) => e.id === g.exerciseId)
                 return (
                   <li key={idx} className="text-sm">
-                    {ex?.name ?? "Exercise"}: Target {g.targetReps ?? "-"} reps, {g.targetVolume ?? "-"} vol
+                    {`${ex?.name ?? "Exercise"}: Target ${g.targetReps ?? "-"} reps, ${g.targetVolume ?? "-"} vol`}
                   </li>
                 )
               })}
@@ -478,6 +506,50 @@ export default function ProfilePage() {
               <RefreshCw className={`h-3.5 w-3.5 ${isRecalculating ? "animate-spin" : ""}`} />
               <span>{isRecalculating ? "Normalizing..." : "Normalize Points"}</span>
             </button>
+          </div>
+        </div>
+
+        {/* Sound & Vibration Preferences */}
+        <div className="grid gap-3 rounded-xl border bg-card p-4 shadow-sm">
+          <div>
+            <h2 className="text-lg font-medium">Preferences</h2>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Customize audio feedback and haptics during workouts.
+            </p>
+          </div>
+          <div className="divide-y divide-border/60">
+            <div className="flex items-center justify-between py-2.5">
+              <div className="flex items-center gap-2.5">
+                {soundEnabled ? (
+                  <Volume2 className="h-4 w-4 text-primary shrink-0" />
+                ) : (
+                  <VolumeX className="h-4 w-4 text-muted-foreground shrink-0" />
+                )}
+                <div>
+                  <div className="text-sm font-medium">Sound Effects</div>
+                  <div className="text-xs text-muted-foreground">Timer beeps, set completions, and celebration chimes</div>
+                </div>
+              </div>
+              <Switch
+                checked={soundEnabled}
+                onCheckedChange={handleToggleSound}
+                aria-label="Toggle Sound Effects"
+              />
+            </div>
+            <div className="flex items-center justify-between py-2.5">
+              <div className="flex items-center gap-2.5">
+                <Vibrate className="h-4 w-4 text-primary shrink-0" />
+                <div>
+                  <div className="text-sm font-medium">Vibration & Haptics</div>
+                  <div className="text-xs text-muted-foreground">Tactile feedback for rest countdowns and completed reps</div>
+                </div>
+              </div>
+              <Switch
+                checked={vibrationEnabledState}
+                onCheckedChange={handleToggleVibration}
+                aria-label="Toggle Vibration"
+              />
+            </div>
           </div>
         </div>
 

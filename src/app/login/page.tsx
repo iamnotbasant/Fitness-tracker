@@ -1,12 +1,14 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { Loader2, UserPlus, LogIn } from "lucide-react"
+import { useSession } from "@/lib/auth-client"
 
 export default function LoginPage() {
   const router = useRouter()
+  const { data: session, isPending } = useSession()
   const [mode, setMode] = useState<"login" | "register">("login")
   const [formData, setFormData] = useState({
     name: "",
@@ -14,6 +16,13 @@ export default function LoginPage() {
     confirmPassword: "",
   })
   const [isLoading, setIsLoading] = useState(false)
+
+  // Redirect to home if already authenticated
+  useEffect(() => {
+    if (!isPending && session?.user) {
+      router.push("/")
+    }
+  }, [session, isPending, router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

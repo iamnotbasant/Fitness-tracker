@@ -79,6 +79,8 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    const finalUserId = existingBetterAuthUser.length > 0 ? existingBetterAuthUser[0].id : betterAuthUserId;
+
     // Create a better-auth session
     const sessionToken = generateId(32);
     const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
@@ -86,7 +88,7 @@ export async function POST(request: NextRequest) {
     await db.insert(session).values({
       id: generateId(32),
       token: sessionToken,
-      userId: betterAuthUserId,
+      userId: finalUserId,
       expiresAt,
       createdAt: new Date(),
       updatedAt: new Date(),

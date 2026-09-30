@@ -119,14 +119,36 @@ export function MuscleDistributionRadar({
   const currentStats = useMemo(() => calculatePeriodStats(currentWorkouts), [currentWorkouts])
   const previousStats = useMemo(() => calculatePeriodStats(previousWorkouts), [previousWorkouts])
 
-  // Stat deltas (strictly monochrome)
-  const deltaWorkouts = formatMonochromeDelta(currentStats.workouts - previousStats.workouts)
-  const deltaDuration = formatMonochromeDelta(
+  // Honest stat deltas (positive = emerald, negative = rose, 0 = neutral zinc)
+  const formatStatDelta = (delta: number, suffix: string = "") => {
+    if (delta > 0) {
+      return {
+        text: `↑ ${delta.toLocaleString()}${suffix}`,
+        className: "text-emerald-400",
+      }
+    }
+    if (delta < 0) {
+      return {
+        text: `↓ ${Math.abs(delta).toLocaleString()}${suffix}`,
+        className: "text-rose-400",
+      }
+    }
+    return {
+      text: `0${suffix}`,
+      className: "text-zinc-500",
+    }
+  }
+
+  const workoutDelta = formatStatDelta(currentStats.workouts - previousStats.workouts)
+  const durationDelta = formatStatDelta(
     currentStats.durationMin - previousStats.durationMin,
-    "m"
+    "min"
   )
-  const deltaSets = formatMonochromeDelta(currentStats.sets - previousStats.sets)
-  const deltaReps = formatMonochromeDelta(currentStats.reps - previousStats.reps)
+  const volumeDelta =
+    currentStats.volumeKg > 0 || previousStats.volumeKg > 0
+      ? formatStatDelta(currentStats.volumeKg - previousStats.volumeKg, " kg")
+      : formatStatDelta(currentStats.reps - previousStats.reps, " reps")
+  const setsDelta = formatStatDelta(currentStats.sets - previousStats.sets)
 
   const activePeriodLabel =
     PERIOD_OPTIONS.find((p) => p.id === selectedPeriod)?.label || "Last 30 days"
@@ -294,7 +316,7 @@ export function MuscleDistributionRadar({
         )}
       </div>
 
-      {/* ─── 4 Stat Cards: Workouts, Duration, Volume, Sets with Green Deltas (Reference 03) ─── */}
+      {/* ─── 4 Stat Cards: Workouts, Duration, Volume, Sets (Honest Deltas) ─── */}
       {!hideStatCards && (
         <div className="grid grid-cols-2 gap-3 pt-2 border-t border-zinc-800">
           {/* Card 1: Workouts */}
@@ -306,8 +328,8 @@ export function MuscleDistributionRadar({
               <span className="text-2xl font-bold text-white font-display tabular-nums block">
                 {currentStats.workouts}
               </span>
-              <span className="text-xs font-semibold text-emerald-400 flex items-center gap-0.5 font-mono">
-                ↑ {Math.max(1, currentStats.workouts)}
+              <span className={`text-xs font-semibold flex items-center gap-0.5 font-mono ${workoutDelta.className}`}>
+                {workoutDelta.text}
               </span>
             </div>
           </div>
@@ -321,8 +343,8 @@ export function MuscleDistributionRadar({
               <span className="text-2xl font-bold text-white font-display tabular-nums block">
                 {currentStats.durationMin}min
               </span>
-              <span className="text-xs font-semibold text-emerald-400 flex items-center gap-0.5 font-mono">
-                ↑ {Math.max(1, currentStats.durationMin)}min
+              <span className={`text-xs font-semibold flex items-center gap-0.5 font-mono ${durationDelta.className}`}>
+                {durationDelta.text}
               </span>
             </div>
           </div>
@@ -338,8 +360,8 @@ export function MuscleDistributionRadar({
                   ? `${currentStats.volumeKg.toLocaleString()} kg`
                   : `${currentStats.reps.toLocaleString()} reps`}
               </span>
-              <span className="text-xs font-semibold text-emerald-400 flex items-center gap-0.5 font-mono">
-                ↑ {currentStats.volumeKg > 0 ? `${currentStats.volumeKg.toLocaleString()} kg` : `${currentStats.reps} reps`}
+              <span className={`text-xs font-semibold flex items-center gap-0.5 font-mono ${volumeDelta.className}`}>
+                {volumeDelta.text}
               </span>
             </div>
           </div>
@@ -353,8 +375,8 @@ export function MuscleDistributionRadar({
               <span className="text-2xl font-bold text-white font-display tabular-nums block">
                 {currentStats.sets}
               </span>
-              <span className="text-xs font-semibold text-emerald-400 flex items-center gap-0.5 font-mono">
-                ↑ {Math.max(1, currentStats.sets)}
+              <span className={`text-xs font-semibold flex items-center gap-0.5 font-mono ${setsDelta.className}`}>
+                {setsDelta.text}
               </span>
             </div>
           </div>

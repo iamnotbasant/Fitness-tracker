@@ -50,7 +50,7 @@ export function TodayWorkoutCard({
   )
 
   const timeLabel = useMemo(
-    () => dateObj.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" }),
+    () => dateObj.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" }),
     [dateObj]
   )
 
@@ -127,7 +127,7 @@ export function TodayWorkoutCard({
               {onEdit && (
                 <button
                   onClick={() => setShowEditDialog(true)}
-                  className="rounded-lg p-2 sm:p-1.5 text-muted-foreground opacity-80 sm:opacity-0 transition-all hover:text-primary hover:bg-primary/10 group-hover:opacity-100 cursor-pointer"
+                  className="rounded-lg p-2 md:p-1.5 text-muted-foreground opacity-100 md:opacity-0 transition-all hover:text-primary hover:bg-primary/10 md:group-hover:opacity-100 cursor-pointer"
                   aria-label="Edit workout"
                 >
                   <Edit className="h-4 w-4" />
@@ -136,7 +136,7 @@ export function TodayWorkoutCard({
               {onDelete && (
                 <button
                   onClick={handleDelete}
-                  className="rounded-lg p-2 sm:p-1.5 text-muted-foreground opacity-80 sm:opacity-0 transition-all hover:text-destructive hover:bg-destructive/10 group-hover:opacity-100 cursor-pointer"
+                  className="rounded-lg p-2 md:p-1.5 text-muted-foreground opacity-100 md:opacity-0 transition-all hover:text-destructive hover:bg-destructive/10 md:group-hover:opacity-100 cursor-pointer"
                   aria-label="Delete workout"
                 >
                   <Trash2 className="h-4 w-4" />

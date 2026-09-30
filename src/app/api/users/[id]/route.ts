@@ -2,12 +2,28 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { users } from '@/db/schema';
 import { eq } from 'drizzle-orm';
+import { getAuthenticatedUser } from '@/lib/auth-server';
 
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const currentUser = await getAuthenticatedUser(request);
+    if (!currentUser) {
+      return NextResponse.json(
+        { error: 'Authentication required', code: 'UNAUTHORIZED' },
+        { status: 401 }
+      );
+    }
+
+    if (!currentUser.isAdmin) {
+      return NextResponse.json(
+        { error: 'Admin access required', code: 'FORBIDDEN' },
+        { status: 403 }
+      );
+    }
+
     const { id } = await params;
 
     // Validate ID is provided and is a valid integer

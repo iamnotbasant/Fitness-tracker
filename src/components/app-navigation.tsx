@@ -1,12 +1,12 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { usePathname, useRouter } from "next/navigation"
 import Link from "next/link"
 import { useTheme } from "next-themes"
 import { SegmentedNav } from "@/components/nav-segmented"
 import { AuthButton } from "@/components/auth-button"
-import { Menu, Sun, Moon, WifiOff, Play, User, RefreshCw } from "lucide-react"
+import { Menu, X, Sun, Moon, WifiOff, Play, User, RefreshCw } from "lucide-react"
 import { AnimatedFlame, AnimatedDumbbell, AnimatedActivity } from "@/components/ui/animated-icons"
 import { useOfflineStatus } from "@/hooks/use-local-data"
 
@@ -15,12 +15,46 @@ import { cn } from "@/lib/utils"
 export function AppNavigation() {
   const [mounted, setMounted] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const headerRef = useRef<HTMLElement>(null)
+  const pathname = usePathname()
   const { theme, setTheme } = useTheme()
   const { isOnline, pendingCount, isSyncing, syncNow } = useOfflineStatus()
 
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMobileMenuOpen(false)
+  }, [pathname])
+
+  // Close mobile menu on Escape key or outside click
+  useEffect(() => {
+    if (!mobileMenuOpen) return
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setMobileMenuOpen(false)
+      }
+    }
+
+    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+      if (headerRef.current && !headerRef.current.contains(e.target as Node)) {
+        setMobileMenuOpen(false)
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown)
+    document.addEventListener("mousedown", handleClickOutside)
+    document.addEventListener("touchstart", handleClickOutside)
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown)
+      document.removeEventListener("mousedown", handleClickOutside)
+      document.removeEventListener("touchstart", handleClickOutside)
+    }
+  }, [mobileMenuOpen])
   
   const navItems = [
     { href: "/", label: "Dashboard", icon: <AnimatedFlame size={16} className="text-current" /> },
@@ -33,7 +67,7 @@ export function AppNavigation() {
   return (
     <>
       {/* Desktop Navigation */}
-      <header className="sticky top-0 z-40 w-full bg-background/80 px-4 lg:px-8 py-3.5 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
+      <header ref={headerRef} className="sticky top-0 z-40 w-full bg-background/80 px-4 lg:px-8 py-3.5 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
         <div className="flex items-center justify-between gap-4 w-full">
           {/* Title - Far Left */}
           <div className="flex items-center gap-2.5">
@@ -105,7 +139,7 @@ export function AppNavigation() {
               className="p-2 hover:bg-secondary rounded-lg cursor-pointer"
               aria-label="Toggle menu"
             >
-              <Menu className="h-5 w-5" />
+              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
           </div>
         </div>

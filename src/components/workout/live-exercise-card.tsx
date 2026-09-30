@@ -19,7 +19,7 @@ import {
   Activity
 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
-import soundManager from "@/lib/sounds"
+import soundManager, { triggerVibration } from "@/lib/sounds"
 import { toast } from "sonner"
 import type { SessionExercise } from "@/lib/types"
 import PlateCalculatorDialog from "@/components/workout/plate-calculator-dialog"
@@ -513,9 +513,7 @@ function LiveExerciseCard({
     
     if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current)
     longPressTimerRef.current = setTimeout(() => {
-      if (typeof window !== "undefined" && "vibrate" in navigator) {
-        try { navigator.vibrate(40) } catch {}
-      }
+      triggerVibration(40)
       const x = Math.min(touch.clientX, window.innerWidth - 200)
       const y = Math.min(touch.clientY, window.innerHeight - 220)
       setContextMenuPos({ x, y })

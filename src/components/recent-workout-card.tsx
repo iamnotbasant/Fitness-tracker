@@ -35,7 +35,7 @@ export function RecentWorkoutCard({
     [dateObj],
   )
   const timeLabel = useMemo(
-    () => dateObj.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" }),
+    () => dateObj.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" }),
     [dateObj],
   )
 

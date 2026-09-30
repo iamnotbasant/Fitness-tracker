@@ -18,7 +18,18 @@ const fetcher = async (url: string) => {
         Authorization: `Bearer ${token}`,
       } : {},
     })
-    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    if (!res.ok) {
+      if (res.status === 401) {
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("bearer_token")
+          localStorage.removeItem("currentUser")
+          if (window.location.pathname !== "/login") {
+            window.location.href = "/login"
+          }
+        }
+      }
+      throw new Error(`HTTP ${res.status}`)
+    }
     const data = await res.json()
     if (typeof window !== "undefined") {
       try {
@@ -26,7 +37,10 @@ const fetcher = async (url: string) => {
       } catch {}
     }
     return data
-  } catch (err) {
+  } catch (err: any) {
+    if (err?.message === "HTTP 401") {
+      throw err
+    }
     if (typeof window !== "undefined") {
       try {
         const cached = localStorage.getItem(cacheKey)
@@ -178,6 +192,7 @@ export function useExercises() {
 
   const update = async (ex: Exercise) => {
     const token = localStorage.getItem("bearer_token")
+    const { id, userId, user_id, createdBy, created_by, createdAt, created_at, ...payload } = ex as any
     const res = await fetch(`/api/exercises/${ex.id}`, {
       method: "PUT",
       headers: {
@@ -185,9 +200,12 @@ export function useExercises() {
         ...(token && { Authorization: `Bearer ${token}` }),
       },
       credentials: "include",
-      body: JSON.stringify(ex),
+      body: JSON.stringify(payload),
     })
-    if (!res.ok) throw new Error("Failed to update exercise")
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.error || "Failed to update exercise")
+    }
     await mutate()
   }
 
@@ -298,7 +316,7 @@ export function useWorkouts() {
 }
 
 export function useProfile() {
-  const { data, mutate } = useSWR<{ profile: Profile }>(
+  const { data, mutate, isLoading } = useSWR<any>(
     "/api/profile",
     fetcher,
     {
@@ -308,7 +326,8 @@ export function useProfile() {
   )
 
   const save = async (p: Profile) => {
-    const token = localStorage.getItem("bearer_token")
+    const token = typeof window !== "undefined" ? localStorage.getItem("bearer_token") : null
+    const { id, userId, user_id, createdAt, created_at, updatedAt, updated_at, ...profileData } = p as any
     const res = await fetch("/api/profile", {
       method: "PUT",
       headers: {
@@ -316,13 +335,23 @@ export function useProfile() {
         ...(token && { Authorization: `Bearer ${token}` }),
       },
       credentials: "include",
-      body: JSON.stringify(p),
+      body: JSON.stringify(profileData),
     })
-    if (!res.ok) throw new Error("Failed to save profile")
-    await mutate()
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.error || "Failed to save profile")
+    }
+    const saved = await res.json()
+    await mutate(saved, { revalidate: true })
+    return saved
   }
 
-  return { profile: data?.profile ?? DEFAULT_PROFILE, save, refresh: () => mutate() }
+  const profileData = data?.profile ?? data
+  const currentProfile = (profileData && (profileData.name !== undefined || profileData.userId !== undefined))
+    ? profileData
+    : DEFAULT_PROFILE
+
+  return { profile: currentProfile, save, refresh: () => mutate(), isLoading }
 }
 
 // Debounce helper
@@ -892,7 +921,29 @@ export function useOfflineStatus() {
   }, [checkStatus])
 
   useEffect(() => {
-    checkStatus()
+    const initialSync = async () => {
+      checkStatus()
+      if (typeof window !== "undefined" && navigator.onLine) {
+        try {
+          const raw = localStorage.getItem("ft_pending_offline_workouts")
+          const q = raw ? JSON.parse(raw) : []
+          if (Array.isArray(q) && q.length > 0) {
+            setIsSyncing(true)
+            const count = await syncOfflineWorkouts()
+            if (count > 0) {
+              toast.success(`Online! Synced ${count} offline workout(s).`)
+              globalMutate("/api/workouts?limit=10000")
+            }
+            checkStatus()
+          }
+        } catch {}
+        finally {
+          setIsSyncing(false)
+        }
+      }
+    }
+    initialSync()
+
     const handleOnline = async () => {
       setIsOnline(true)
       const count = await syncOfflineWorkouts()
@@ -923,7 +974,7 @@ export function useOfflineStatus() {
 }
 
 export function useRoutines() {
-  const { data, mutate } = useSWR<{ routines: Routine[] }>(
+  const { data, mutate, isLoading, error } = useSWR<{ routines: Routine[] }>(
     "/api/routines?limit=10000",
     fetcher,
     {
@@ -1031,5 +1082,5 @@ export function useRoutines() {
     }
   }
 
-  return { routines: currentRoutines, create, update, remove, refresh: () => mutate() }
+  return { routines: currentRoutines, create, update, remove, refresh: () => mutate(), isLoading: isLoading || (!data && !error) }
 }

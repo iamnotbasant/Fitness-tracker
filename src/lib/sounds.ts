@@ -8,6 +8,12 @@ class SoundManager {
 
   constructor() {
     if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('sound_enabled')
+        this.enabled = stored !== null ? stored === 'true' : true
+      } catch {
+        this.enabled = true
+      }
       this.context = new (window.AudioContext || (window as any).webkitAudioContext)()
     }
   }
@@ -176,6 +182,11 @@ class SoundManager {
 
   setEnabled(enabled: boolean) {
     this.enabled = enabled
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('sound_enabled', String(enabled))
+      } catch {}
+    }
   }
 
   isEnabled() {
@@ -185,6 +196,33 @@ class SoundManager {
 
 // Singleton instance
 const soundManager = new SoundManager()
+
+// Vibration settings and trigger helpers
+export function isVibrationEnabled(): boolean {
+  if (typeof window === 'undefined') return true
+  try {
+    const stored = localStorage.getItem('vibration_enabled')
+    return stored !== null ? stored === 'true' : true
+  } catch {
+    return true
+  }
+}
+
+export function setVibrationEnabled(enabled: boolean) {
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.setItem('vibration_enabled', String(enabled))
+    } catch {}
+  }
+}
+
+export function triggerVibration(pattern: number | number[]) {
+  if (typeof window !== 'undefined' && 'vibrate' in navigator && isVibrationEnabled()) {
+    try {
+      navigator.vibrate(pattern)
+    } catch {}
+  }
+}
 
 // Initialize asynchronously on user interaction without blocking the main thread
 if (typeof window !== 'undefined') {

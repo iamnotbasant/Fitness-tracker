@@ -1,14 +1,16 @@
 "use client"
 
 import { useSession, authClient } from "@/lib/auth-client"
-import { User, Shield, LogOut, UserPlus } from "lucide-react"
+import { User, Shield, LogOut, UserPlus, LogIn } from "lucide-react"
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
+import Link from "next/link"
 import { toast } from "sonner"
 
 export function AuthButton() {
   const { data: session, isPending, refetch } = useSession()
   const router = useRouter()
+  const pathname = usePathname()
   const [mounted, setMounted] = useState(false)
   const [showMenu, setShowMenu] = useState(false)
 
@@ -16,25 +18,35 @@ export function AuthButton() {
     setMounted(true)
   }, [])
 
-  // Redirect to login if not authenticated
+  // Redirect to login if not authenticated and not already on /login
   useEffect(() => {
-    if (mounted && !isPending && !session) {
-      router.push("/login")
+    if (mounted && !isPending && !session?.user) {
+      if (pathname !== "/login") {
+        router.push("/login")
+      }
     }
-  }, [mounted, isPending, session, router])
+  }, [mounted, isPending, session, router, pathname])
 
   // Show loading state until mounted
   if (!mounted || isPending) {
     return (
       <div className="flex items-center gap-2 rounded-lg bg-muted px-3 py-1.5">
         <div className="h-4 w-4 animate-pulse rounded-full bg-muted-foreground/20" />
-        <span className="text-sm text-muted-foreground">Loading...</span>
+        <span className="text-xs text-muted-foreground">Loading...</span>
       </div>
     )
   }
 
   if (!session?.user) {
-    return null
+    return (
+      <Link
+        href="/login"
+        className="inline-flex items-center gap-1.5 rounded-lg border border-border/80 px-3 py-1.5 text-xs font-semibold hover:bg-secondary transition-colors cursor-pointer text-foreground"
+      >
+        <LogIn className="h-3.5 w-3.5" />
+        <span>Login</span>
+      </Link>
+    )
   }
 
   const handleSignOut = async () => {

@@ -64,13 +64,24 @@ export default function ExercisesPage() {
   const [levelFilter, setLevelFilter] = useState<"all" | number>("all")
   const [splitFilter, setSplitFilter] = useState<string>("all")
   const [typeFilter, setTypeFilter] = useState<string>("all")
-  const [sortBy, setSortBy] = useState<"level-asc" | "level-desc" | "name" | "popularity">("level-asc")
+  const [sortBy, setSortBy] = useState<"name" | "popularity">("name")
   const [showForm, setShowForm] = useState(false)
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  // Dynamic levels from existing exercises
+  const availableLevels = useMemo(() => {
+    const set = new Set<number>()
+    for (const ex of exercises) {
+      if (ex.level !== undefined && ex.level !== null) {
+        set.add(Number(ex.level))
+      }
+    }
+    return Array.from(set).sort((a, b) => a - b)
+  }, [exercises])
 
   // Debounce search query for better performance
   const debouncedQuery = useDebounce(query, 300)
@@ -111,11 +122,7 @@ export default function ExercisesPage() {
     }
 
     // Sort logic
-    if (sortBy === "level-asc") {
-      list = list.slice().sort((a, b) => Number(a.level ?? 0) - Number(b.level ?? 0) || a.name.localeCompare(b.name))
-    } else if (sortBy === "level-desc") {
-      list = list.slice().sort((a, b) => Number(b.level ?? 0) - Number(a.level ?? 0) || a.name.localeCompare(b.name))
-    } else if (sortBy === "popularity") {
+    if (sortBy === "popularity") {
       list = list.slice().sort((a, b) => {
         const aLast = (a as any).lastUsedAt || 0
         const bLast = (b as any).lastUsedAt || 0
@@ -196,7 +203,8 @@ export default function ExercisesPage() {
           {query.trim().length > 0 && (
             <div className="flex items-center justify-between text-xs text-muted-foreground px-1 pt-0.5">
               <p>
-                Showing results for <span className="font-semibold text-foreground">&apos;{query.trim()}&apos;</span>
+                Showing results for{" "}
+                <span className="font-semibold text-foreground">&apos;{query.trim()}&apos;</span>
               </p>
               <span className="text-[11px] tabular-nums">
                 {query !== debouncedQuery ? (
@@ -223,10 +231,11 @@ export default function ExercisesPage() {
               <option value="push">Push</option>
               <option value="pull">Pull</option>
               <option value="legs">Legs</option>
+              <option value="upper">Upper</option>
+              <option value="lower">Lower</option>
+              <option value="full">Full Body</option>
               <option value="core">Core</option>
-              <option value="chest">Chest</option>
-              <option value="back">Back</option>
-              <option value="arms">Arms</option>
+              <option value="other">Other</option>
             </select>
 
             <select
@@ -250,7 +259,7 @@ export default function ExercisesPage() {
               aria-label="Filter by level"
             >
               <option value="all">All Levels</option>
-              {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((l) => (
+              {(availableLevels.length > 0 ? availableLevels : [1]).map((l) => (
                 <option key={l} value={l}>
                   Level {l}
                 </option>
@@ -263,8 +272,6 @@ export default function ExercisesPage() {
               className="min-h-[44px] h-11 rounded-xl sm:rounded-full border border-border/80 bg-card px-3 text-xs font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-zinc-400 cursor-pointer hover:border-zinc-500/50 transition-colors"
               aria-label="Sort by"
             >
-              <option value="level-asc">Level (Low to High)</option>
-              <option value="level-desc">Level (High to Low)</option>
               <option value="name">Name (A-Z)</option>
               <option value="popularity">Popularity</option>
             </select>
@@ -496,7 +503,7 @@ function NewExerciseForm({
           >
             {SPLITS.map((s) => (
               <option key={s} value={s}>
-                {s}
+                {s === "full" ? "Full Body" : s.charAt(0).toUpperCase() + s.slice(1)}
               </option>
             ))}
           </select>

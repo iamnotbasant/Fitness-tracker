@@ -560,7 +560,7 @@ export function MonthlyReportModal({
             <div className="flex flex-col items-center justify-center py-2 space-y-1">
               <Flame className="w-8 h-8 text-orange-500 fill-orange-500" />
               <div className="text-sm font-bold text-white font-display">
-                {calendarLog.weekStreak} Week Streak
+                {`${calendarLog.weekStreak} Week Streak`}
               </div>
             </div>
 

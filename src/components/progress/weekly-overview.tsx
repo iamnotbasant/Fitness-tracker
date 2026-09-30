@@ -143,7 +143,7 @@ export function WeeklyOverview({
   const summary = useMemo(() => {
     const primaryMuscles = Object.values(muscleStats).filter((m) => m.role === "primary")
     const secondaryMuscles = Object.values(muscleStats).filter((m) => m.role === "secondary")
-    const totalSetsSum = Object.values(muscleStats).reduce((acc, m) => acc + m.primarySets, 0)
+    const totalSetsSum = weekWorkouts.reduce((acc, w) => acc + (w.sets || 0), 0)
     const workoutDaysCount = weekInfo.days.filter((d) => workoutDatesSet.has(d.dateStr)).length
 
     return {
@@ -152,7 +152,7 @@ export function WeeklyOverview({
       totalSetsSum,
       workoutDaysCount,
     }
-  }, [muscleStats, weekInfo.days, workoutDatesSet])
+  }, [muscleStats, weekInfo.days, workoutDatesSet, weekWorkouts])
 
   // Active muscle for detail bottom sheet
   const activeMuscleModal = selectedMuscle ? muscleStats[selectedMuscle] : null
@@ -538,8 +538,7 @@ export function WeeklyOverview({
                       {session.name}
                     </h4>
                     <p className="text-[11px] text-zinc-400 font-body mt-0.5">
-                      {formatDateDisplay(session.date)}
-                      {session.time ? ` · ${formatTimeDisplay(session.time)}` : ""}
+                      {session.time ? `${formatDateDisplay(session.date)} · ${formatTimeDisplay(session.time)}` : formatDateDisplay(session.date)}
                     </p>
                   </div>
                   <span className="px-2 py-0.5 rounded-md bg-zinc-800 border border-zinc-700/60 text-white font-mono text-[10px] font-semibold shrink-0">

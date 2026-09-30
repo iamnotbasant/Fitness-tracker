@@ -1321,7 +1321,7 @@ export default function ExerciseDetailPage() {
                               <polyline points="12 6 12 12 16 14"></polyline>
                             </svg>
                             {new Date(`${session.date}T${session.time}`).toLocaleTimeString([], {
-                              hour: "2-digit",
+                              hour: "numeric",
                               minute: "2-digit",
                             })}
                           </div>

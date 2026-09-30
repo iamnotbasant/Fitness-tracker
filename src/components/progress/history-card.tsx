@@ -86,8 +86,7 @@ export function HistoryCard({ sessions }: HistoryCardProps) {
                 <div className="flex items-center gap-1.5 truncate">
                   <Calendar className="h-3.5 w-3.5 text-zinc-400 shrink-0" />
                   <span className="truncate">
-                    {formatDateDisplay(session.date)}
-                    {session.time ? ` · ${formatTimeDisplay(session.time)}` : ""}
+                    {session.time ? `${formatDateDisplay(session.date)} · ${formatTimeDisplay(session.time)}` : formatDateDisplay(session.date)}
                   </span>
                 </div>
 
@@ -109,9 +108,9 @@ export function HistoryCard({ sessions }: HistoryCardProps) {
         badge={`${selectedSession?.durationMin ?? 0} min`}
         subtitle={
           selectedSession
-            ? `${formatDateDisplay(selectedSession.date)}${
-                selectedSession.time ? ` · ${formatTimeDisplay(selectedSession.time)}` : ""
-              }`
+            ? selectedSession.time
+              ? `${formatDateDisplay(selectedSession.date)} · ${formatTimeDisplay(selectedSession.time)}`
+              : formatDateDisplay(selectedSession.date)
             : undefined
         }
       >

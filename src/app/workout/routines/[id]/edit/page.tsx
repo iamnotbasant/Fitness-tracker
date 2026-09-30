@@ -1,10 +1,11 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { authClient, useSession } from "@/lib/auth-client"
 import { useExercises, useRoutines } from "@/hooks/use-local-data"
 import { ArrowLeft, Plus, Search, Trash2, GripVertical } from "lucide-react"
+import { toast } from "sonner"
 import type { RoutineExercise } from "@/lib/types"
 
 export default function EditRoutinePage() {
@@ -29,6 +30,8 @@ export default function EditRoutinePage() {
   const { routines, update } = useRoutines()
   
   const [name, setName] = useState("")
+  const [nameError, setNameError] = useState("")
+  const nameInputRef = useRef<HTMLInputElement>(null)
   const [description, setDescription] = useState("")
   const [routineExercises, setRoutineExercises] = useState<RoutineExercise[]>([])
   const [showExercisePicker, setShowExercisePicker] = useState(false)
@@ -120,23 +123,29 @@ export default function EditRoutinePage() {
 
   const handleSave = async () => {
     if (!name.trim()) {
-      alert("Please enter a routine name")
+      setNameError("Please fill out this field")
+      toast.error("Please enter a routine name")
+      nameInputRef.current?.focus()
       return
     }
     if (routineExercises.length === 0) {
-      alert("Please add at least one exercise")
+      toast.error("Please add at least one exercise to the routine")
       return
     }
 
-    await update({
-      id: routineId,
-      name: name.trim(),
-      description: description.trim() || undefined,
-      exercises: routineExercises,
-      createdAt: new Date().toISOString(),
-    })
-
-    router.push("/workout")
+    try {
+      await update({
+        id: routineId,
+        name: name.trim(),
+        description: description.trim() || undefined,
+        exercises: routineExercises,
+        createdAt: new Date().toISOString(),
+      })
+      toast.success("Routine updated successfully!")
+      router.push("/workout")
+    } catch (err: any) {
+      toast.error(err.message || "Failed to update routine")
+    }
   }
 
   // Show loading while checking authentication or loading routine
@@ -177,13 +186,23 @@ export default function EditRoutinePage() {
         {/* Routine Info */}
         <div className="rounded-2xl border bg-card p-4 sm:p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-2">Routine Name</label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium">Routine Name *</label>
+              {nameError && <span className="text-xs text-destructive font-medium">{nameError}</span>}
+            </div>
             <input
+              ref={nameInputRef}
               type="text"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => {
+                setName(e.target.value)
+                if (nameError) setNameError("")
+              }}
               placeholder="e.g., Push Day, Full Body A"
-              className="w-full px-4 py-3 rounded-xl border bg-background focus:outline-none focus:ring-2 focus:ring-ring text-sm"
+              required
+              className={`w-full px-4 py-3 rounded-xl border bg-background focus:outline-none focus:ring-2 text-sm transition-colors ${
+                nameError ? "border-destructive focus:ring-destructive" : "focus:ring-ring"
+              }`}
             />
           </div>
           <div>

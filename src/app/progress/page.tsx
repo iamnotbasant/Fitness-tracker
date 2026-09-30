@@ -355,7 +355,7 @@ export default function ProgressPage() {
                 Monthly Report
               </h3>
               <p className="text-xs text-zinc-400 font-body truncate">
-                {currentMonthName} {currentYear} · 12-mo trend, calendar log & share
+                {`${currentMonthName} ${currentYear} · 12-mo trend, calendar log & share`}
               </p>
             </div>
           </div>
