@@ -3,6 +3,7 @@
 import { useMemo, useState, useRef, useEffect } from "react"
 import type { Workout } from "@/lib/types"
 import soundManager from "@/lib/sounds"
+import { Flame } from "lucide-react"
 
 interface DayData {
   date: string
@@ -266,18 +267,18 @@ export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
     }
   }, [heatmapData])
 
-  // PURE WHITE MONOCHROME INTENSITY SCALE
+  // CALM DESATURATED TEAL HEATMAP SCALE (Tasteful dark theme)
   const getCellColor = (volume: number, isFuture = false) => {
     if (isFuture) {
       return "bg-zinc-900/30 border-zinc-800/30 border-dashed cursor-default opacity-30"
     }
     if (volume === 0) {
-      return "bg-zinc-900 border-zinc-800/70 hover:border-zinc-600"
+      return "bg-[#141418] border-[#222228] hover:border-zinc-700"
     }
-    if (volume <= levelThresholds.low) return "bg-zinc-700 border-zinc-600/60"
-    if (volume <= levelThresholds.medium) return "bg-zinc-500 border-zinc-400/60"
-    if (volume <= levelThresholds.high) return "bg-zinc-300 border-zinc-200/70"
-    return "bg-white border-white"
+    if (volume <= levelThresholds.low) return "bg-[#192928] border-[#243e3c]"
+    if (volume <= levelThresholds.medium) return "bg-[#20413e] border-[#2d5e5a]"
+    if (volume <= levelThresholds.high) return "bg-[#2d605c] border-[#3f8580]"
+    return "bg-[#4fa8a0] border-[#6ac2b9]"
   }
 
   const formatDate = (dateStr: string) => {
@@ -308,26 +309,21 @@ export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
   }, [heatmapData])
 
   return (
-    <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-4 sm:p-6 shadow-sm space-y-5">
-      {/* ─── Hero Metric & Span Selector Strip ─── */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-4 border-b border-zinc-800">
-        <div>
-          <span className="text-[11px] font-mono uppercase tracking-wider text-zinc-400 block mb-1">
-            Current Streak
-          </span>
-          <div className="flex items-baseline gap-2 font-mono">
-            <span className="text-4xl sm:text-5xl font-black tracking-tight text-white">
-              {streakStats.currentStreak}
-            </span>
-            <span className="text-sm font-medium text-zinc-400">days</span>
+    <div className="rounded-2xl border border-white/[0.08] bg-[#121216]/90 p-4 sm:p-6 shadow-sm space-y-5">
+      {/* ─── Section Header (Consistent Icon + Title) & Time Span Selector ─── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/[0.08]">
+        <div className="flex items-center gap-2.5">
+          <div className="p-2 rounded-xl bg-[#4fa8a0]/10 border border-[#4fa8a0]/25 text-[#4fa8a0]">
+            <Flame className="h-4 w-4" />
           </div>
-          <p className="text-[11px] text-zinc-500 mt-1">
-            Sundays excluded · Best: {streakStats.longestStreak}d · {streakStats.activeDays} active days
-          </p>
+          <div>
+            <h2 className="text-base font-semibold text-white tracking-tight font-display">Consistency</h2>
+            <p className="text-xs text-zinc-400 font-body">Daily workout frequency & active streak</p>
+          </div>
         </div>
 
-        {/* Time Span Filter (Monochrome Pills) */}
-        <div className="flex items-center gap-1 bg-zinc-950 p-1 rounded-xl border border-zinc-800 self-start sm:self-auto">
+        {/* Time Span Filter (Tap >= 44px) */}
+        <div className="flex items-center gap-1 bg-[#0c0c10] p-1 rounded-xl border border-white/[0.08] self-start sm:self-auto min-h-[44px]">
           {(
             [
               { id: "4w", label: "1 Mo" },
@@ -344,9 +340,9 @@ export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
                 soundManager.play("click", 0.3)
                 setRange(r.id)
               }}
-              className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+              className={`h-9 px-3 rounded-lg text-xs font-medium transition-all cursor-pointer flex items-center justify-center ${
                 range === r.id
-                  ? "bg-white text-black font-semibold shadow-xs"
+                  ? "bg-[#4fa8a0]/20 text-[#6fc4bc] border border-[#4fa8a0]/40 font-semibold shadow-xs"
                   : "text-zinc-400 hover:text-white"
               }`}
             >
@@ -354,6 +350,22 @@ export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
             </button>
           ))}
         </div>
+      </div>
+
+      {/* ─── Hero Metric: Current Streak ─── */}
+      <div className="pb-1">
+        <span className="text-[11px] font-body uppercase tracking-wider text-zinc-400 block mb-1">
+          Current Streak
+        </span>
+        <div className="flex items-baseline gap-2">
+          <span className="text-4xl sm:text-5xl font-black tracking-tight text-white font-display tabular-nums">
+            {streakStats.currentStreak}
+          </span>
+          <span className="text-sm font-medium text-zinc-400 font-body">days</span>
+        </div>
+        <p className="text-xs text-zinc-400 font-body mt-1">
+          Sundays excluded · Best: <span className="font-display font-semibold tabular-nums text-zinc-300">{streakStats.longestStreak}d</span> · <span className="font-display font-semibold tabular-nums text-zinc-300">{streakStats.activeDays}</span> active days
+        </p>
       </div>
 
       {/* ─── Heatmap Grid Container ─── */}
@@ -407,21 +419,21 @@ export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
                       />
 
                       {/* Tooltip */}
-                      <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover/day:flex flex-col gap-1 z-30 w-52 p-2.5 rounded-xl bg-zinc-950 text-white text-xs shadow-2xl border border-zinc-800">
-                        <div className="flex items-center justify-between border-b border-zinc-800 pb-1">
-                          <span className="font-semibold text-white">{formatDate(day.date)}</span>
+                      <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover/day:flex flex-col gap-1 z-30 w-52 p-2.5 rounded-xl bg-[#0c0c10] text-white text-xs shadow-2xl border border-white/[0.1]">
+                        <div className="flex items-center justify-between border-b border-white/[0.08] pb-1">
+                          <span className="font-semibold text-white font-body">{formatDate(day.date)}</span>
                           {hasWorkouts && (
-                            <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-300 border border-zinc-700">
+                            <span className="text-[10px] font-display font-bold px-1.5 py-0.5 rounded bg-zinc-800 text-[#6fc4bc] border border-white/[0.08] tabular-nums">
                               {day.points.toLocaleString()} pts
                             </span>
                           )}
                         </div>
                         {day.isFuture ? (
-                          <span className="text-[11px] text-zinc-500 italic">Upcoming</span>
+                          <span className="text-[11px] text-zinc-500 italic font-body">Upcoming</span>
                         ) : hasWorkouts ? (
                           <div className="space-y-1 pt-0.5">
-                            <span className="text-[11px] text-zinc-400 font-medium">
-                              Volume: <strong className="text-white">{day.volume} reps</strong> ({day.workouts.length} exercises)
+                            <span className="text-[11px] text-zinc-400 font-body">
+                              Volume: <strong className="text-white font-display tabular-nums">{day.volume} reps</strong> ({day.workouts.length} exercises)
                             </span>
                             <div className="max-h-24 overflow-y-auto space-y-0.5 pt-1">
                               {day.workouts.map((w, i) => (
@@ -429,8 +441,8 @@ export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
                                   key={i}
                                   className="flex items-center justify-between text-[11px] text-zinc-400 truncate"
                                 >
-                                  <span className="truncate">{w.name}</span>
-                                  <span className="font-mono text-white ml-1.5 shrink-0">
+                                  <span className="truncate font-body">{w.name}</span>
+                                  <span className="font-display tabular-nums text-white ml-1.5 shrink-0">
                                     {w.sets}×{w.timeSeconds ? `${w.timeSeconds}s` : w.reps}
                                   </span>
                                 </div>
@@ -438,7 +450,7 @@ export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
                             </div>
                           </div>
                         ) : (
-                          <span className="text-[11px] text-zinc-500">Rest day / No workout</span>
+                          <span className="text-[11px] text-zinc-500 font-body">Rest day / No workout</span>
                         )}
                       </div>
                     </div>
@@ -451,18 +463,18 @@ export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
       </div>
 
       {/* ─── Legend ─── */}
-      <div className="flex items-center justify-between pt-2 border-t border-zinc-800 text-xs text-zinc-400 flex-wrap gap-2">
-        <span className="text-zinc-500 text-[11px]">Consistency Grid ({gridConfig.spanLabel})</span>
+      <div className="flex items-center justify-between pt-3 border-t border-white/[0.08] text-xs text-zinc-400 flex-wrap gap-2">
+        <span className="text-zinc-500 text-[11px] font-body">Consistency Grid ({gridConfig.spanLabel})</span>
         <div className="flex items-center gap-2">
-          <span className="text-[11px] text-zinc-500">Less</span>
+          <span className="text-[11px] text-zinc-500 font-body">Less</span>
           <div className="flex gap-1 items-center">
-            <div className="h-3 w-3 rounded-[3px] bg-zinc-900 border border-zinc-800/80" />
-            <div className="h-3 w-3 rounded-[3px] bg-zinc-700 border border-zinc-600/60" />
-            <div className="h-3 w-3 rounded-[3px] bg-zinc-500 border border-zinc-400/60" />
-            <div className="h-3 w-3 rounded-[3px] bg-zinc-300 border border-zinc-200/70" />
-            <div className="h-3 w-3 rounded-[3px] bg-white border border-white" />
+            <div className="h-3 w-3 rounded-[3px] bg-[#141418] border border-[#222228]" />
+            <div className="h-3 w-3 rounded-[3px] bg-[#192928] border border-[#243e3c]" />
+            <div className="h-3 w-3 rounded-[3px] bg-[#20413e] border border-[#2d5e5a]" />
+            <div className="h-3 w-3 rounded-[3px] bg-[#2d605c] border border-[#3f8580]" />
+            <div className="h-3 w-3 rounded-[3px] bg-[#4fa8a0] border border-[#6ac2b9]" />
           </div>
-          <span className="text-[11px] text-zinc-500">More</span>
+          <span className="text-[11px] text-zinc-500 font-body">More</span>
         </div>
       </div>
     </div>

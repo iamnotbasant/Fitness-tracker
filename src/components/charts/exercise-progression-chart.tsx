@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useEffect } from "react"
 import type { Workout, Exercise } from "@/lib/types"
+import { TrendingUp } from "lucide-react"
 import {
   AreaChart,
   Area,
@@ -198,50 +199,69 @@ export function ExerciseProgressionChart({
   const { isTimer } = exerciseTypeInfo
 
   return (
-    <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-4 sm:p-6 shadow-sm space-y-5">
-      {/* ─── Control Header: Exercise Selector & Reps Toggle ─── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-zinc-800">
-        <div>
-          <h2 className="text-sm font-semibold text-white tracking-tight">Progression</h2>
-          <p className="text-[11px] text-zinc-500 font-mono">
-            {isTimer ? "Hold duration over time" : "Reps over time"}
-          </p>
+    <div className="rounded-2xl border border-white/[0.08] bg-[#121216]/90 p-4 sm:p-6 shadow-sm space-y-5">
+      {/* ─── Section Header (Consistent Icon + Title) & Exercise Selector ─── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/[0.08]">
+        <div className="flex items-center gap-2.5">
+          <div className="p-2 rounded-xl bg-[#4fa8a0]/10 border border-[#4fa8a0]/25 text-[#4fa8a0]">
+            <TrendingUp className="h-4 w-4" />
+          </div>
+          <div>
+            <h2 className="text-base font-semibold text-white tracking-tight font-display">Progression</h2>
+            <p className="text-xs text-zinc-400 font-body">
+              {isTimer ? "Hold duration trajectory" : "Repetition volume & set progression"}
+            </p>
+          </div>
         </div>
 
-        {/* Exercise Selector */}
+        {/* Exercise Selector (Tap >= 44px) */}
         <select
           value={selectedId}
           onChange={(e) => {
             soundManager.play("click", 0.2)
             setSelectedId(e.target.value)
           }}
-          className="w-full sm:w-56 px-3 py-1.5 rounded-xl bg-zinc-950 border border-zinc-800 text-xs font-semibold text-white focus:outline-none focus:border-zinc-500 cursor-pointer"
+          className="w-full sm:w-60 h-11 min-h-[44px] px-3.5 rounded-xl bg-[#0c0c10] border border-white/[0.1] text-xs font-semibold text-white focus:outline-none focus:border-[#4fa8a0] cursor-pointer"
         >
           {exerciseOptions.map((opt) => (
-            <option key={opt.id} value={opt.id} className="bg-zinc-950 text-white">
+            <option key={opt.id} value={opt.id} className="bg-[#121216] text-white">
               {opt.name} {opt.count > 0 ? `(${opt.count})` : ""}
             </option>
           ))}
         </select>
       </div>
 
-      {/* ─── Reps Toggle Strip & Inline Stat ─── */}
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        {/* Toggle: Max Reps per Set vs Total Reps */}
-        <div className="flex items-center gap-1 bg-zinc-950 p-1 rounded-xl border border-zinc-800">
+      {/* ─── Hero Metric: Best Performance & Metric Toggle Strip ─── */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-1">
+        <div>
+          <span className="text-[11px] font-body uppercase tracking-wider text-zinc-400 block mb-1">
+            Best Performance
+          </span>
+          <div className="flex items-baseline gap-2">
+            <span className="text-3xl sm:text-4xl font-bold tracking-tight text-white font-display tabular-nums">
+              {bestDisplay}
+            </span>
+          </div>
+          <p className="text-xs text-zinc-400 font-body mt-1">
+            Personal best for <strong className="text-zinc-200 font-medium">{activeExercise.name}</strong> · <span className="font-display font-semibold tabular-nums text-zinc-300">{totalSessions}</span> sessions logged
+          </p>
+        </div>
+
+        {/* Toggle: Max Reps per Set vs Total Reps (Tap >= 44px) */}
+        <div className="flex items-center gap-1 bg-[#0c0c10] p-1 rounded-xl border border-white/[0.08] self-start sm:self-auto min-h-[44px]">
           <button
             type="button"
             onClick={() => {
               soundManager.play("click", 0.2)
               setMetric("max_reps")
             }}
-            className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+            className={`h-9 px-3.5 text-xs font-semibold rounded-lg transition-all cursor-pointer flex items-center justify-center ${
               metric === "max_reps"
-                ? "bg-white text-black shadow-xs"
+                ? "bg-[#4fa8a0]/20 text-[#6fc4bc] border border-[#4fa8a0]/40 shadow-xs"
                 : "text-zinc-400 hover:text-white"
             }`}
           >
-            {isTimer ? "Max Hold" : "Max Reps / Set"}
+            {isTimer ? "Max Hold" : "Max Set"}
           </button>
           <button
             type="button"
@@ -249,54 +269,43 @@ export function ExerciseProgressionChart({
               soundManager.play("click", 0.2)
               setMetric("total_reps")
             }}
-            className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+            className={`h-9 px-3.5 text-xs font-semibold rounded-lg transition-all cursor-pointer flex items-center justify-center ${
               metric === "total_reps"
-                ? "bg-white text-black shadow-xs"
+                ? "bg-[#4fa8a0]/20 text-[#6fc4bc] border border-[#4fa8a0]/40 shadow-xs"
                 : "text-zinc-400 hover:text-white"
             }`}
           >
-            {isTimer ? "Total Duration" : "Total Reps"}
+            {isTimer ? "Total Time" : "Total Reps"}
           </button>
-        </div>
-
-        {/* Minimal Inline Stat */}
-        <div className="flex items-center gap-3 text-xs text-zinc-400 font-mono">
-          <span>
-            Best: <strong className="text-white">{bestDisplay}</strong>
-          </span>
-          <span className="text-zinc-600">·</span>
-          <span>
-            Sessions: <strong className="text-white">{totalSessions}</strong>
-          </span>
         </div>
       </div>
 
-      {/* ─── ONE White Line/Area Chart ─── */}
+      {/* ─── Calm Teal Line/Area Chart ─── */}
       {chartData.length > 0 ? (
         <div className="h-60 sm:h-64 pt-2">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+            <AreaChart data={chartData} margin={{ top: 10, right: 12, left: -10, bottom: 0 }}>
               <defs>
-                <linearGradient id="whiteProgressionGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#ffffff" stopOpacity={0.18} />
-                  <stop offset="95%" stopColor="#ffffff" stopOpacity={0.0} />
+                <linearGradient id="calmTealProgressionGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#4fa8a0" stopOpacity={0.24} />
+                  <stop offset="95%" stopColor="#4fa8a0" stopOpacity={0.0} />
                 </linearGradient>
               </defs>
               <CartesianGrid
                 strokeDasharray="3 3"
                 vertical={false}
-                stroke="rgba(255, 255, 255, 0.05)"
+                stroke="rgba(255, 255, 255, 0.06)"
               />
               <XAxis
                 dataKey="label"
                 stroke="#71717a"
-                tick={{ fontSize: 10, fill: "#71717a", fontFamily: "monospace" }}
+                tick={{ fontSize: 10, fill: "#71717a", fontFamily: "var(--font-body), sans-serif" }}
                 tickLine={false}
                 axisLine={false}
               />
               <YAxis
                 stroke="#71717a"
-                tick={{ fontSize: 10, fill: "#71717a", fontFamily: "monospace" }}
+                tick={{ fontSize: 10, fill: "#71717a", fontFamily: "var(--font-display), Space Grotesk, sans-serif" }}
                 tickLine={false}
                 axisLine={false}
                 domain={[0, "dataMax + 2"]}
@@ -307,12 +316,12 @@ export function ExerciseProgressionChart({
                   if (!active || !payload || !payload.length) return null
                   const d = payload[0].payload
                   return (
-                    <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-2.5 shadow-xl text-xs space-y-1">
-                      <p className="font-semibold text-white">{d.label}</p>
-                      <p className="text-white font-mono font-bold">
+                    <div className="rounded-xl border border-white/[0.1] bg-[#0c0c10] p-2.5 shadow-xl text-xs space-y-1">
+                      <p className="font-semibold text-white font-body">{d.label}</p>
+                      <p className="text-[#6fc4bc] font-display font-bold tabular-nums">
                         {d.tooltipText}
                       </p>
-                      <p className="text-[11px] text-zinc-500 font-mono">
+                      <p className="text-[11px] text-zinc-500 font-body">
                         {d.setsCount} {d.setsCount === 1 ? "set" : "sets"} logged
                       </p>
                     </div>
@@ -322,17 +331,17 @@ export function ExerciseProgressionChart({
               <Area
                 type="monotone"
                 dataKey="value"
-                stroke="#ffffff"
-                strokeWidth={2}
-                fill="url(#whiteProgressionGradient)"
-                dot={{ r: 3, fill: "#ffffff", strokeWidth: 1 }}
-                activeDot={{ r: 5, fill: "#ffffff" }}
+                stroke="#4fa8a0"
+                strokeWidth={2.5}
+                fill="url(#calmTealProgressionGradient)"
+                dot={{ r: 3.5, fill: "#4fa8a0", strokeWidth: 1, stroke: "#121216" }}
+                activeDot={{ r: 5.5, fill: "#6fc4bc", stroke: "#ffffff", strokeWidth: 2 }}
               />
             </AreaChart>
           </ResponsiveContainer>
         </div>
       ) : (
-        <div className="flex h-44 items-center justify-center text-xs text-zinc-500 bg-zinc-950/40 rounded-xl border border-dashed border-zinc-800 p-4 text-center">
+        <div className="flex h-44 items-center justify-center text-xs text-zinc-500 bg-[#0c0c10]/50 rounded-xl border border-dashed border-white/[0.08] p-4 text-center font-body">
           No workout history logged for {activeExercise.name} in this date range.
         </div>
       )}

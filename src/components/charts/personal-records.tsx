@@ -3,6 +3,7 @@
 import { useMemo } from "react"
 import type { Workout } from "@/lib/types"
 import { useExercises } from "@/hooks/use-local-data"
+import { Trophy } from "lucide-react"
 
 export const formatTime = (sec: number) => {
   if (!sec) return "0s"
@@ -113,38 +114,71 @@ export function PersonalRecords({ workouts }: { workouts: Workout[] }) {
 
   if (records.length === 0) {
     return (
-      <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-4 sm:p-6 shadow-sm space-y-3">
-        <div className="pb-2 border-b border-zinc-800">
-          <h2 className="text-sm font-semibold text-white tracking-tight">Records</h2>
-          <p className="text-[11px] text-zinc-500 font-mono">Personal bests</p>
+      <div className="rounded-2xl border border-white/[0.08] bg-[#121216]/90 p-4 sm:p-6 shadow-sm space-y-4">
+        <div className="flex items-center gap-2.5 pb-3 border-b border-white/[0.08]">
+          <div className="p-2 rounded-xl bg-[#4fa8a0]/10 border border-[#4fa8a0]/25 text-[#4fa8a0]">
+            <Trophy className="h-4 w-4" />
+          </div>
+          <div>
+            <h2 className="text-base font-semibold text-white tracking-tight font-display">Personal Records</h2>
+            <p className="text-xs text-zinc-400 font-body">Peak milestones across all exercises</p>
+          </div>
         </div>
-        <p className="text-xs text-zinc-500 py-3">No personal records logged yet.</p>
+        <p className="text-xs text-zinc-500 py-3 font-body">No personal records logged yet.</p>
       </div>
     )
   }
 
+  const latestPR = records[0]
+
   return (
-    <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-4 sm:p-6 shadow-sm space-y-4">
-      <div className="pb-3 border-b border-zinc-800">
-        <h2 className="text-sm font-semibold text-white tracking-tight">Records</h2>
-        <p className="text-[11px] text-zinc-500 font-mono">Personal bests</p>
+    <div className="rounded-2xl border border-white/[0.08] bg-[#121216]/90 p-4 sm:p-6 shadow-sm space-y-5">
+      {/* ─── Section Header (Consistent Icon + Title) ─── */}
+      <div className="flex items-center justify-between gap-4 pb-4 border-b border-white/[0.08]">
+        <div className="flex items-center gap-2.5">
+          <div className="p-2 rounded-xl bg-[#4fa8a0]/10 border border-[#4fa8a0]/25 text-[#4fa8a0]">
+            <Trophy className="h-4 w-4" />
+          </div>
+          <div>
+            <h2 className="text-base font-semibold text-white tracking-tight font-display">Personal Records</h2>
+            <p className="text-xs text-zinc-400 font-body">Peak milestones across all exercises</p>
+          </div>
+        </div>
       </div>
 
-      {/* Plain Minimal List: Exercise — Value — Date */}
-      <div className="divide-y divide-zinc-800/80">
+      {/* ─── Hero Metric: Total PRs Tracked ─── */}
+      <div className="pb-1">
+        <span className="text-[11px] font-body uppercase tracking-wider text-zinc-400 block mb-1">
+          Milestones Reached
+        </span>
+        <div className="flex items-baseline gap-2">
+          <span className="text-3xl sm:text-4xl font-bold tracking-tight text-white font-display tabular-nums">
+            {records.length}
+          </span>
+          <span className="text-sm font-medium text-zinc-400 font-body">personal bests</span>
+        </div>
+        {latestPR && (
+          <p className="text-xs text-zinc-400 font-body mt-1">
+            Latest: <strong className="text-zinc-200 font-medium font-body">{latestPR.name}</strong> · <span className="font-display font-bold tabular-nums text-[#6fc4bc]">{latestPR.valueDisplay}</span> on {latestPR.dateDisplay}
+          </p>
+        )}
+      </div>
+
+      {/* ─── Minimal List: Exercise — Value — Date ─── */}
+      <div className="divide-y divide-white/[0.06] pt-1">
         {records.map((r) => (
           <div
             key={r.name}
-            className="py-3 flex items-center justify-between text-xs gap-3 min-h-[44px]"
+            className="py-3.5 flex items-center justify-between text-xs gap-3 min-h-[48px]"
           >
-            <span className="font-medium text-white truncate min-w-0">
+            <span className="font-medium text-sm text-zinc-100 truncate min-w-0 font-body">
               {r.name}
             </span>
-            <div className="flex items-center gap-4 shrink-0 font-mono">
-              <span className="font-bold text-white text-xs">
+            <div className="flex items-center gap-4 shrink-0 font-display">
+              <span className="font-bold text-sm sm:text-base text-[#6fc4bc] tabular-nums">
                 {r.valueDisplay}
               </span>
-              <span className="text-[11px] text-zinc-500 min-w-[70px] text-right">
+              <span className="text-xs text-zinc-500 min-w-[75px] text-right font-body">
                 {r.dateDisplay}
               </span>
             </div>
