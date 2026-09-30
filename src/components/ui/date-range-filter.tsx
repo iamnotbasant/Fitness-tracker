@@ -184,8 +184,8 @@ export function DateRangeFilter({
                   onClick={() => handleSelectPreset(opt.id)}
                   className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left transition-all cursor-pointer text-xs ${
                     isSelected
-                      ? "bg-cyan-500 text-white font-semibold shadow-xs"
-                      : "text-zinc-300 hover:text-white hover:bg-white/[0.06]"
+                      ? "bg-white text-black font-semibold shadow-xs"
+                      : "text-zinc-400 hover:text-white hover:bg-white/[0.08]"
                   }`}
                 >
                   <span className="flex items-center gap-2">
@@ -206,7 +206,7 @@ export function DateRangeFilter({
             type="button"
             className={`h-9 px-3 rounded-xl border text-xs font-medium flex items-center gap-2 transition-all cursor-pointer shadow-xs ${
               value.preset === "custom" && value.startDate && value.endDate
-                ? "border-cyan-500/50 bg-cyan-500/10 text-cyan-200"
+                ? "border-white/40 bg-zinc-850 text-white"
                 : "border-white/[0.1] bg-[#101014] hover:bg-[#15151a] hover:border-white/[0.18] text-zinc-300 hover:text-white"
             }`}
           >
@@ -234,7 +234,7 @@ export function DateRangeFilter({
         >
           <div className="flex items-center justify-between border-b border-white/[0.08] pb-2.5">
             <span className="font-semibold text-white flex items-center gap-1.5">
-              <CalendarIcon className="h-3.5 w-3.5 text-cyan-400" />
+              <CalendarIcon className="h-3.5 w-3.5 text-zinc-300" />
               Custom Date Range
             </span>
             {value.preset === "custom" && (
@@ -273,7 +273,7 @@ export function DateRangeFilter({
             <Button
               type="button"
               onClick={handleApplyCustomRange}
-              className="flex-1 h-8 text-xs rounded-xl bg-cyan-500 hover:bg-cyan-600 text-white font-semibold"
+              className="flex-1 h-8 text-xs rounded-xl bg-white hover:bg-zinc-200 text-black font-semibold"
             >
               Apply Range
             </Button>

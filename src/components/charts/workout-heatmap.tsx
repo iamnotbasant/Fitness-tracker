@@ -2,8 +2,6 @@
 
 import { useMemo, useState, useRef, useEffect } from "react"
 import type { Workout } from "@/lib/types"
-import { Flame, Trophy, Calendar, Zap, ChevronRight } from "lucide-react"
-import { AnimatedFlame, AnimatedTrophy, AnimatedCalendar, AnimatedActivity } from "@/components/ui/animated-icons"
 import soundManager from "@/lib/sounds"
 
 interface DayData {
@@ -14,7 +12,6 @@ interface DayData {
   isFuture?: boolean
 }
 
-type Palette = "emerald" | "flame" | "monochrome"
 export type HeatmapRange = "4w" | "12w" | "26w" | "52w" | "all"
 
 const toLocalDateStr = (d: Date) => {
@@ -25,7 +22,6 @@ const toLocalDateStr = (d: Date) => {
 }
 
 export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
-  const [palette, setPalette] = useState<Palette>("flame")
   const scrollContainerRef = useRef<HTMLDivElement>(null)
 
   const earliestWorkoutDate = useMemo(() => {
@@ -34,7 +30,7 @@ export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
     return sorted[0]?.date || null
   }, [workouts])
 
-  // Default to "all" for recently started accounts so first workout is right at the start
+  // Default to "all" for recently started accounts
   const defaultRange: HeatmapRange = useMemo(() => {
     if (!earliestWorkoutDate) return "all"
     const earliest = new Date(earliestWorkoutDate).getTime()
@@ -102,7 +98,6 @@ export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
         startDate.setDate(today.getDate() - 28)
       }
     } else {
-      // 52w default
       startDate.setDate(today.getDate() - 364)
     }
 
@@ -111,7 +106,6 @@ export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
     startDate.setDate(startDate.getDate() - dayOfWeek)
     startDate.setHours(0, 0, 0, 0)
 
-    // For "all" or "4w", ensure at least 4 weeks to give a full clean monthly habit grid
     const minWeeks = range === "4w" || range === "all" ? 4 : range === "12w" ? 12 : range === "26w" ? 26 : 52
 
     let currentDate = new Date(startDate)
@@ -142,7 +136,7 @@ export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
       if (weeks.length >= 60) break
     }
 
-    // Calculate Streaks (ignoring Sundays)
+    // Streaks with Sunday-skipping strictly preserved (commit f3bcae6)
     let currentStreak = 0
     let longestStreak = 0
     let tempStreak = 0
@@ -180,7 +174,7 @@ export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
         activeDays++
       }
       if (isSunday) {
-        // Sundays are fully ignored in streak math (neither increment nor break streak)
+        // Sundays are ignored in streak math (neither increment nor break streak)
         return
       }
       if (hasWorkout) {
@@ -204,7 +198,7 @@ export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
     }
   }, [workouts, range, earliestWorkoutDate])
 
-  // Dynamic grid configuration based on selected Span
+  // Grid configuration
   const gridConfig = useMemo(() => {
     const numWeeks = heatmapData.length
     if (range === "4w" || (range === "all" && numWeeks <= 6)) {
@@ -215,7 +209,7 @@ export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
         gapRowClass: "gap-2 sm:gap-2.5",
         minWidthClass: "min-w-0 w-full justify-start",
         colWidthPx: 38,
-        spanLabel: range === "all" ? `All Time (${numWeeks * 7} Days)` : "28 Days",
+        spanLabel: range === "all" ? `All (${numWeeks * 7}d)` : "28 Days",
       }
     }
     if (range === "12w" || (range === "all" && numWeeks <= 14)) {
@@ -226,7 +220,7 @@ export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
         gapRowClass: "gap-1.5 sm:gap-2",
         minWidthClass: "min-w-[420px]",
         colWidthPx: 26,
-        spanLabel: range === "all" ? `All Time (${numWeeks * 7} Days)` : "84 Days",
+        spanLabel: range === "all" ? `All (${numWeeks * 7}d)` : "84 Days",
       }
     }
     if (range === "26w" || (range === "all" && numWeeks <= 28)) {
@@ -237,10 +231,9 @@ export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
         gapRowClass: "gap-1.5",
         minWidthClass: "min-w-[560px]",
         colWidthPx: 19,
-        spanLabel: range === "all" ? `All Time (${numWeeks * 7} Days)` : "182 Days",
+        spanLabel: range === "all" ? `All (${numWeeks * 7}d)` : "182 Days",
       }
     }
-    // 52w or all > 28 weeks
     return {
       boxClass: "h-3 w-3 sm:h-3.5 sm:w-3.5 rounded-[3px]",
       dayLabelClass: "h-3 sm:h-3.5 leading-3 sm:leading-3.5 text-[10px]",
@@ -248,11 +241,10 @@ export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
       gapRowClass: "gap-1",
       minWidthClass: "min-w-[760px]",
       colWidthPx: 16,
-      spanLabel: range === "all" ? `All Time (${numWeeks * 7} Days)` : "365 Days",
+      spanLabel: range === "all" ? `All (${numWeeks * 7}d)` : "365 Days",
     }
   }, [range, heatmapData.length])
 
-  // Scroll to start for short grids or to end for long historical grids
   useEffect(() => {
     if (scrollContainerRef.current) {
       if (heatmapData.length > 20) {
@@ -263,7 +255,7 @@ export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
     }
   }, [heatmapData.length, range])
 
-  // Thresholds for color scale
+  // Intensity thresholds
   const levelThresholds = useMemo(() => {
     const volumes = heatmapData.flat().map((d) => d.volume).filter((v) => v > 0)
     const avg = volumes.length > 0 ? volumes.reduce((a, b) => a + b, 0) / volumes.length : 100
@@ -274,32 +266,18 @@ export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
     }
   }, [heatmapData])
 
+  // PURE WHITE MONOCHROME INTENSITY SCALE
   const getCellColor = (volume: number, isFuture = false) => {
     if (isFuture) {
-      return "bg-secondary/20 border-border/20 border-dashed cursor-default opacity-40"
+      return "bg-zinc-900/30 border-zinc-800/30 border-dashed cursor-default opacity-30"
     }
-
     if (volume === 0) {
-      return "bg-secondary/40 border-border/30 hover:border-primary/50"
+      return "bg-zinc-900 border-zinc-800/70 hover:border-zinc-600"
     }
-
-    if (palette === "emerald") {
-      if (volume <= levelThresholds.low) return "bg-[#065f46] border-[#047857]/50"
-      if (volume <= levelThresholds.medium) return "bg-[#059669] border-[#10b981]/60"
-      if (volume <= levelThresholds.high) return "bg-[#10b981] border-[#34d399]/70"
-      return "bg-[#34d399] border-[#6ee7b7]"
-    } else if (palette === "flame") {
-      if (volume <= levelThresholds.low) return "bg-[#9a3412] border-[#c2410c]/50"
-      if (volume <= levelThresholds.medium) return "bg-[#ea580c] border-[#f97316]/60"
-      if (volume <= levelThresholds.high) return "bg-[#f97316] border-[#fb923c]/70"
-      return "bg-[#fb923c] border-[#fdba74]"
-    } else {
-      // monochrome (clean white & neutral zinc)
-      if (volume <= levelThresholds.low) return "bg-[#3f3f46] border-[#52525b]/50"
-      if (volume <= levelThresholds.medium) return "bg-[#71717a] border-[#a1a1aa]/60"
-      if (volume <= levelThresholds.high) return "bg-[#d4d4d8] border-[#e4e4e7]/70"
-      return "bg-[#ffffff] border-[#ffffff]"
-    }
+    if (volume <= levelThresholds.low) return "bg-zinc-700 border-zinc-600/60"
+    if (volume <= levelThresholds.medium) return "bg-zinc-500 border-zinc-400/60"
+    if (volume <= levelThresholds.high) return "bg-zinc-300 border-zinc-200/70"
+    return "bg-white border-white"
   }
 
   const formatDate = (dateStr: string) => {
@@ -308,7 +286,6 @@ export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
     return date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" })
   }
 
-  // Month labels aligned with column width
   const monthLabels = useMemo(() => {
     const labels: { month: string; weekIndex: number }[] = []
     let lastMonth = -1
@@ -331,156 +308,62 @@ export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
   }, [heatmapData])
 
   return (
-    <div className="rounded-2xl border border-border/70 bg-card p-4 sm:p-6 shadow-sm space-y-5">
-      {/* Heatmap Card Header */}
-      <div className="flex items-center justify-between gap-4 flex-wrap pb-2 border-b border-border/40">
-        <div className="flex items-center gap-2">
-          <AnimatedCalendar className="h-4.5 w-4.5 text-primary" />
-          <h3 className="text-sm font-semibold text-foreground">Workout Consistency</h3>
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          {/* Start Date Box */}
-          <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-secondary/50 border border-border/60 text-xs">
-            <span className="text-muted-foreground">Started:</span>
-            <span className="font-semibold text-foreground">
-              {earliestWorkoutDate
-                ? new Date(earliestWorkoutDate).toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                    year: "numeric",
-                  })
-                : "Today"}
-            </span>
-          </div>
-
-          <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-secondary text-secondary-foreground">
-            {streakStats.activeDays} active days
+    <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-4 sm:p-6 shadow-sm space-y-5">
+      {/* ─── Hero Metric & Span Selector Strip ─── */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-4 border-b border-zinc-800">
+        <div>
+          <span className="text-[11px] font-mono uppercase tracking-wider text-zinc-400 block mb-1">
+            Current Streak
           </span>
+          <div className="flex items-baseline gap-2 font-mono">
+            <span className="text-4xl sm:text-5xl font-black tracking-tight text-white">
+              {streakStats.currentStreak}
+            </span>
+            <span className="text-sm font-medium text-zinc-400">days</span>
+          </div>
+          <p className="text-[11px] text-zinc-500 mt-1">
+            Sundays excluded · Best: {streakStats.longestStreak}d · {streakStats.activeDays} active days
+          </p>
+        </div>
+
+        {/* Time Span Filter (Monochrome Pills) */}
+        <div className="flex items-center gap-1 bg-zinc-950 p-1 rounded-xl border border-zinc-800 self-start sm:self-auto">
+          {(
+            [
+              { id: "4w", label: "1 Mo" },
+              { id: "12w", label: "3 Mo" },
+              { id: "26w", label: "6 Mo" },
+              { id: "52w", label: "1 Yr" },
+              { id: "all", label: "All" },
+            ] as const
+          ).map((r) => (
+            <button
+              key={r.id}
+              type="button"
+              onClick={() => {
+                soundManager.play("click", 0.3)
+                setRange(r.id)
+              }}
+              className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+                range === r.id
+                  ? "bg-white text-black font-semibold shadow-xs"
+                  : "text-zinc-400 hover:text-white"
+              }`}
+            >
+              {r.label}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Animated Consistency Highlight Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-        <div className="p-3 rounded-xl bg-secondary/30 border border-border/50 flex items-center gap-2.5">
-          <div className="h-8 w-8 rounded-lg bg-orange-500/10 text-orange-500 flex items-center justify-center shrink-0">
-            <AnimatedFlame className="h-4 w-4" />
-          </div>
-          <div>
-            <span className="text-[10px] text-muted-foreground block font-medium">Current Streak</span>
-            <span className="text-base font-black text-foreground">
-              {streakStats.currentStreak} <span className="text-[10px] text-muted-foreground font-normal">days</span>
-            </span>
-          </div>
-        </div>
-
-        <div className="p-3 rounded-xl bg-secondary/30 border border-border/50 flex items-center gap-2.5">
-          <div className="h-8 w-8 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0">
-            <AnimatedTrophy className="h-4 w-4" />
-          </div>
-          <div>
-            <span className="text-[10px] text-muted-foreground block font-medium">Longest Streak</span>
-            <span className="text-base font-black text-foreground">
-              {streakStats.longestStreak} <span className="text-[10px] text-muted-foreground font-normal">days</span>
-            </span>
-          </div>
-        </div>
-
-        <div className="p-3 rounded-xl bg-secondary/30 border border-border/50 flex items-center gap-2.5">
-          <div className="h-8 w-8 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
-            <AnimatedCalendar className="h-4 w-4" />
-          </div>
-          <div>
-            <span className="text-[10px] text-muted-foreground block font-medium">Active Days</span>
-            <span className="text-base font-black text-foreground">
-              {streakStats.activeDays} <span className="text-[10px] text-muted-foreground font-normal">days</span>
-            </span>
-          </div>
-        </div>
-
-        <div className="p-3 rounded-xl bg-secondary/30 border border-border/50 flex items-center gap-2.5">
-          <div className="h-8 w-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
-            <AnimatedActivity className="h-4 w-4" />
-          </div>
-          <div>
-            <span className="text-[10px] text-muted-foreground block font-medium">Logged Sessions</span>
-            <span className="text-base font-black text-primary">
-              {streakStats.totalWorkouts} <span className="text-[10px] text-muted-foreground font-normal">total</span>
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Range and Palette Selectors */}
-      <div className="flex items-center justify-between gap-3 flex-wrap pt-1">
-        {/* Time Span Filter */}
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold text-muted-foreground">Span:</span>
-          <div className="flex items-center bg-secondary/70 p-0.5 rounded-lg border border-border/50">
-            {(
-              [
-                { id: "4w", label: "1 Mo" },
-                { id: "12w", label: "3 Mo" },
-                { id: "26w", label: "6 Mo" },
-                { id: "52w", label: "1 Yr" },
-                { id: "all", label: "All" },
-              ] as const
-            ).map((r) => (
-              <button
-                key={r.id}
-                onClick={() => {
-                  soundManager.play("click", 0.3)
-                  setRange(r.id)
-                }}
-                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer ${
-                  range === r.id
-                    ? "bg-background text-foreground shadow-xs font-semibold"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {r.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Color Palette Selector */}
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold text-muted-foreground">Theme:</span>
-          <div className="flex items-center bg-secondary/70 p-0.5 rounded-lg border border-border/50">
-            {(
-              [
-                { id: "emerald", label: "Emerald" },
-                { id: "flame", label: "Flame" },
-                { id: "monochrome", label: "Monochrome" },
-              ] as const
-            ).map((p) => (
-              <button
-                key={p.id}
-                onClick={() => {
-                  soundManager.play("click", 0.3)
-                  setPalette(p.id)
-                }}
-                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer ${
-                  palette === p.id
-                    ? "bg-background text-foreground shadow-xs font-semibold"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {p.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Heatmap Grid Container with Auto-Scroll to End */}
+      {/* ─── Heatmap Grid Container ─── */}
       <div
         ref={scrollContainerRef}
-        className="overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent rounded-xl"
+        className="overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-zinc-800 scrollbar-track-transparent rounded-xl"
       >
         <div className={`inline-flex flex-col gap-1.5 ${gridConfig.minWidthClass} py-1`}>
           {/* Month labels at top */}
-          <div className="flex gap-1 pl-9 mb-1 text-[11px] text-muted-foreground font-medium select-none">
+          <div className="flex gap-1 pl-9 mb-1 text-[11px] text-zinc-500 font-mono font-medium select-none">
             {monthLabels.map(({ month, weekIndex }, idx) => (
               <div
                 key={idx}
@@ -499,7 +382,7 @@ export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
           {/* Day labels and heatmap grid */}
           <div className={`flex ${gridConfig.gapColClass} items-center`}>
             {/* Day labels on the left */}
-            <div className={`flex flex-col ${gridConfig.gapRowClass} text-muted-foreground font-medium select-none pr-1.5`}>
+            <div className={`flex flex-col ${gridConfig.gapRowClass} text-zinc-500 font-mono font-medium select-none pr-1.5`}>
               <div className={`${gridConfig.dayLabelClass} opacity-0`}>Sun</div>
               <div className={`${gridConfig.dayLabelClass}`}>Mon</div>
               <div className={`${gridConfig.dayLabelClass} opacity-0`}>Tue</div>
@@ -523,32 +406,31 @@ export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
                         )}`}
                       />
 
-                      {/* Custom Tooltip */}
-                      <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover/day:flex flex-col gap-1 z-30 w-52 p-2.5 rounded-xl bg-popover text-popover-foreground text-xs shadow-2xl border border-border backdrop-blur-md">
-                        <div className="flex items-center justify-between border-b border-border/50 pb-1">
-                          <span className="font-bold">{formatDate(day.date)}</span>
+                      {/* Tooltip */}
+                      <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover/day:flex flex-col gap-1 z-30 w-52 p-2.5 rounded-xl bg-zinc-950 text-white text-xs shadow-2xl border border-zinc-800">
+                        <div className="flex items-center justify-between border-b border-zinc-800 pb-1">
+                          <span className="font-semibold text-white">{formatDate(day.date)}</span>
                           {hasWorkouts && (
-                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-primary/20 text-primary">
+                            <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-300 border border-zinc-700">
                               {day.points.toLocaleString()} pts
                             </span>
                           )}
                         </div>
                         {day.isFuture ? (
-                          <span className="text-[11px] text-muted-foreground italic">Upcoming day</span>
+                          <span className="text-[11px] text-zinc-500 italic">Upcoming</span>
                         ) : hasWorkouts ? (
                           <div className="space-y-1 pt-0.5">
-                            <span className="text-[11px] text-muted-foreground font-medium">
-                              Volume: <strong className="text-foreground">{day.volume} reps/load</strong> (
-                              {day.workouts.length} exercises)
+                            <span className="text-[11px] text-zinc-400 font-medium">
+                              Volume: <strong className="text-white">{day.volume} reps</strong> ({day.workouts.length} exercises)
                             </span>
                             <div className="max-h-24 overflow-y-auto space-y-0.5 pt-1">
                               {day.workouts.map((w, i) => (
                                 <div
                                   key={i}
-                                  className="flex items-center justify-between text-[11px] text-muted-foreground truncate"
+                                  className="flex items-center justify-between text-[11px] text-zinc-400 truncate"
                                 >
                                   <span className="truncate">{w.name}</span>
-                                  <span className="font-medium text-foreground ml-1.5 shrink-0">
+                                  <span className="font-mono text-white ml-1.5 shrink-0">
                                     {w.sets}×{w.timeSeconds ? `${w.timeSeconds}s` : w.reps}
                                   </span>
                                 </div>
@@ -556,7 +438,7 @@ export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
                             </div>
                           </div>
                         ) : (
-                          <span className="text-[11px] text-muted-foreground">Rest day / No workout logged</span>
+                          <span className="text-[11px] text-zinc-500">Rest day / No workout</span>
                         )}
                       </div>
                     </div>
@@ -568,19 +450,19 @@ export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
         </div>
       </div>
 
-      {/* Legend */}
-      <div className="flex items-center justify-between pt-2 border-t border-border/50 text-xs text-muted-foreground flex-wrap gap-2">
-        <span className="font-medium text-foreground">Consistency Grid ({gridConfig.spanLabel})</span>
+      {/* ─── Legend ─── */}
+      <div className="flex items-center justify-between pt-2 border-t border-zinc-800 text-xs text-zinc-400 flex-wrap gap-2">
+        <span className="text-zinc-500 text-[11px]">Consistency Grid ({gridConfig.spanLabel})</span>
         <div className="flex items-center gap-2">
-          <span>Less</span>
+          <span className="text-[11px] text-zinc-500">Less</span>
           <div className="flex gap-1 items-center">
-            <div className="h-3 w-3 rounded-[3px] bg-secondary/40 border border-border/30" />
-            <div className={`h-3 w-3 rounded-[3px] ${getCellColor(levelThresholds.low * 0.8)}`} />
-            <div className={`h-3 w-3 rounded-[3px] ${getCellColor(levelThresholds.medium * 0.9)}`} />
-            <div className={`h-3 w-3 rounded-[3px] ${getCellColor(levelThresholds.high * 0.9)}`} />
-            <div className={`h-3 w-3 rounded-[3px] ${getCellColor(levelThresholds.high * 1.5)}`} />
+            <div className="h-3 w-3 rounded-[3px] bg-zinc-900 border border-zinc-800/80" />
+            <div className="h-3 w-3 rounded-[3px] bg-zinc-700 border border-zinc-600/60" />
+            <div className="h-3 w-3 rounded-[3px] bg-zinc-500 border border-zinc-400/60" />
+            <div className="h-3 w-3 rounded-[3px] bg-zinc-300 border border-zinc-200/70" />
+            <div className="h-3 w-3 rounded-[3px] bg-white border border-white" />
           </div>
-          <span>More Intensity</span>
+          <span className="text-[11px] text-zinc-500">More</span>
         </div>
       </div>
     </div>
