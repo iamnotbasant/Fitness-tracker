@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useId } from "react"
+import React, { useState } from "react"
 import { Calendar as CalendarIcon, ChevronDown, Check, X } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Button } from "@/components/ui/button"
@@ -162,7 +162,7 @@ export function DateRangeFilter({
         <PopoverTrigger asChild>
           <button
             type="button"
-            className="h-11 min-h-[44px] px-3.5 rounded-xl border border-white/[0.1] bg-[#121216] hover:bg-[#18181f] hover:border-white/[0.18] text-xs font-medium text-white flex items-center justify-between gap-2.5 transition-all shadow-xs cursor-pointer min-w-[125px]"
+            className="h-11 min-h-[44px] px-3.5 rounded-xl border border-zinc-800 bg-zinc-900 hover:bg-zinc-850 hover:border-zinc-700 text-xs font-medium text-white flex items-center justify-between gap-2.5 transition-all shadow-xs cursor-pointer min-w-[125px]"
           >
             <span>{activeLabel}</span>
             <ChevronDown className="h-3.5 w-3.5 text-zinc-400 shrink-0" />
@@ -171,7 +171,7 @@ export function DateRangeFilter({
         <PopoverContent
           align="start"
           sideOffset={6}
-          className="w-48 p-1.5 rounded-xl border border-white/[0.1] bg-[#121216] shadow-2xl text-xs"
+          className="w-48 p-1.5 rounded-xl border border-zinc-800 bg-zinc-900 shadow-2xl text-xs"
         >
           <div className="space-y-0.5">
             {PRESET_OPTIONS.map((opt) => {
@@ -184,12 +184,12 @@ export function DateRangeFilter({
                   onClick={() => handleSelectPreset(opt.id)}
                   className={`w-full min-h-[40px] flex items-center justify-between px-3 py-2 rounded-lg text-left transition-all cursor-pointer text-xs ${
                     isSelected
-                      ? "bg-[#4fa8a0]/20 text-[#6fc4bc] font-semibold border border-[#4fa8a0]/40 shadow-xs"
-                      : "text-zinc-400 hover:text-white hover:bg-white/[0.08]"
+                      ? "bg-zinc-800 text-white font-semibold border border-zinc-700 shadow-xs"
+                      : "text-zinc-400 hover:text-white hover:bg-zinc-800/60"
                   }`}
                 >
                   <span className="flex items-center gap-2">
-                    {isSelected && <Check className="h-3.5 w-3.5 stroke-[2.5] text-[#4fa8a0]" />}
+                    {isSelected && <Check className="h-3.5 w-3.5 stroke-[2.5] text-white" />}
                     <span className={isSelected ? "" : "pl-5.5"}>{opt.label}</span>
                   </span>
                 </button>
@@ -206,8 +206,8 @@ export function DateRangeFilter({
             type="button"
             className={`h-11 min-h-[44px] px-3.5 rounded-xl border text-xs font-medium flex items-center gap-2 transition-all cursor-pointer shadow-xs ${
               value.preset === "custom" && value.startDate && value.endDate
-                ? "border-[#4fa8a0]/40 bg-[#4fa8a0]/15 text-[#6fc4bc]"
-                : "border-white/[0.1] bg-[#121216] hover:bg-[#18181f] hover:border-white/[0.18] text-zinc-300 hover:text-white"
+                ? "border-white/40 bg-zinc-800 text-white"
+                : "border-zinc-800 bg-zinc-900 hover:bg-zinc-850 hover:border-zinc-700 text-zinc-300 hover:text-white"
             }`}
           >
             <CalendarIcon className="h-3.5 w-3.5 text-zinc-400 shrink-0" />
@@ -220,7 +220,7 @@ export function DateRangeFilter({
               <span
                 onClick={handleClearCustom}
                 title="Reset to All Time"
-                className="ml-1 p-1 rounded-md hover:bg-white/20 text-zinc-400 hover:text-white cursor-pointer"
+                className="ml-1 p-1 rounded-md hover:bg-zinc-700 text-zinc-400 hover:text-white cursor-pointer"
               >
                 <X className="h-3.5 w-3.5" />
               </span>
@@ -230,9 +230,9 @@ export function DateRangeFilter({
         <PopoverContent
           align="start"
           sideOffset={6}
-          className="w-80 p-4 rounded-2xl border border-white/[0.1] bg-[#121216] shadow-2xl text-xs space-y-3.5"
+          className="w-80 p-4 rounded-2xl border border-zinc-800 bg-zinc-900 shadow-2xl text-xs space-y-3.5"
         >
-          <div className="flex items-center justify-between border-b border-white/[0.08] pb-2.5">
+          <div className="flex items-center justify-between border-b border-zinc-800 pb-2.5">
             <span className="font-semibold text-white flex items-center gap-1.5">
               <CalendarIcon className="h-3.5 w-3.5 text-zinc-300" />
               Custom Date Range
@@ -255,7 +255,7 @@ export function DateRangeFilter({
                 type="date"
                 value={customStart}
                 onChange={(e) => setCustomStart(e.target.value)}
-                className="h-10 text-xs bg-white/[0.04] border-white/[0.1] text-white rounded-lg"
+                className="h-10 text-xs bg-zinc-950 border-zinc-800 text-white rounded-lg"
               />
             </div>
             <div className="space-y-1.5">
@@ -264,7 +264,7 @@ export function DateRangeFilter({
                 type="date"
                 value={customEnd}
                 onChange={(e) => setCustomEnd(e.target.value)}
-                className="h-10 text-xs bg-white/[0.04] border-white/[0.1] text-white rounded-lg"
+                className="h-10 text-xs bg-zinc-950 border-zinc-800 text-white rounded-lg"
               />
             </div>
           </div>
@@ -273,7 +273,7 @@ export function DateRangeFilter({
             <Button
               type="button"
               onClick={handleApplyCustomRange}
-              className="flex-1 h-11 min-h-[44px] text-xs rounded-xl bg-[#4fa8a0] hover:bg-[#5cb8af] text-black font-semibold cursor-pointer"
+              className="flex-1 h-11 min-h-[44px] text-xs rounded-xl bg-white hover:bg-zinc-200 text-zinc-950 font-semibold cursor-pointer"
             >
               Apply Range
             </Button>
@@ -281,7 +281,7 @@ export function DateRangeFilter({
               type="button"
               variant="outline"
               onClick={() => setPickerOpen(false)}
-              className="h-11 min-h-[44px] text-xs rounded-xl border-white/[0.1] bg-white/[0.04] text-zinc-300 hover:text-white cursor-pointer"
+              className="h-11 min-h-[44px] text-xs rounded-xl border-zinc-800 bg-zinc-950 text-zinc-300 hover:text-white cursor-pointer"
             >
               Cancel
             </Button>

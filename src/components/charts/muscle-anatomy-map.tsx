@@ -2,14 +2,10 @@
 
 import { useState, useMemo } from "react"
 import type { Workout, Exercise } from "@/lib/types"
-import { X, Activity } from "lucide-react"
+import { Activity } from "lucide-react"
 import soundManager from "@/lib/sounds"
 import { motion, AnimatePresence } from "framer-motion"
-import {
-  ANALYTICS_PALETTE,
-  getMuscleCategoryConfig,
-  type MuscleCategoryKey,
-} from "@/lib/analytics-palette"
+import { DetailBottomSheet } from "./detail-bottom-sheet"
 import {
   MALE_FRONT_PARTS,
   MALE_BACK_PARTS,
@@ -31,23 +27,21 @@ export interface MuscleStat {
   volumePercent: number // 0 to 100% share of total training sets
 }
 
-// Calm desaturated intensity ramp
-export const ANATOMY_INTENSITY_SCALE = [
-  { key: "none", label: "0%", bracket: "0%", color: "#141418", stroke: "#222228", text: "#71717a" },
-  { key: "low", label: "1–25%", bracket: "1–25%", color: "#1c282b", stroke: "#2b3d42", text: "#8b9ea0" },
-  { key: "med-low", label: "26–50%", bracket: "26–50%", color: "#253e41", stroke: "#385b60", text: "#a4b9bb" },
-  { key: "med-high", label: "51–75%", bracket: "51–75%", color: "#345c5d", stroke: "#4b8284", text: "#c5dad9" },
-  { key: "high", label: "76–100%", bracket: "76–100%", color: "#4fa8a0", stroke: "#6fc4bc", text: "#ffffff" },
+// Strict white monochrome heatmap scale (zinc-900 to bright white)
+export const WHITE_HEATMAP_SCALE = [
+  { key: "none", label: "0%", color: "#18181b", stroke: "#27272a" },
+  { key: "low", label: "1–25%", color: "#27272a", stroke: "#3f3f46" },
+  { key: "med-low", label: "26–50%", color: "#3f3f46", stroke: "#52525b" },
+  { key: "med-high", label: "51–75%", color: "#71717a", stroke: "#a1a1aa" },
+  { key: "high", label: "76–100%", color: "#ffffff", stroke: "#ffffff" },
 ] as const
 
-// Backwards-compatible export
-export const WHITE_HEATMAP_SCALE = ANATOMY_INTENSITY_SCALE
 export function getWhiteIntensityTier(intensity: number) {
-  if (intensity <= 0) return ANATOMY_INTENSITY_SCALE[0]
-  if (intensity <= 0.25) return ANATOMY_INTENSITY_SCALE[1]
-  if (intensity <= 0.50) return ANATOMY_INTENSITY_SCALE[2]
-  if (intensity <= 0.75) return ANATOMY_INTENSITY_SCALE[3]
-  return ANATOMY_INTENSITY_SCALE[4]
+  if (intensity <= 0) return WHITE_HEATMAP_SCALE[0]
+  if (intensity <= 0.25) return WHITE_HEATMAP_SCALE[1]
+  if (intensity <= 0.50) return WHITE_HEATMAP_SCALE[2]
+  if (intensity <= 0.75) return WHITE_HEATMAP_SCALE[3]
+  return WHITE_HEATMAP_SCALE[4]
 }
 
 interface MuscleAnatomyMapProps {
@@ -324,33 +318,24 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
 
     const stat = muscleStats[muscleKey]
     const intensity = stat?.intensity ?? 0
-    const cat = getMuscleCategoryConfig(muscleKey)
+    const tier = getWhiteIntensityTier(intensity)
 
-    if (isSelected) return cat.hex
-    if (isHovered) return intensity > 0 ? cat.stroke : "#1e1e26"
-    if (intensity <= 0) return "#141418"
+    if (isSelected) return "#ffffff"
+    if (isHovered) return intensity > 0 ? "#e4e4e7" : "#27272a"
 
-    const alphaHex = Math.round(Math.min(1, Math.max(0.3, intensity)) * 255)
-      .toString(16)
-      .padStart(2, "0")
-    return `${cat.hex}${alphaHex}`
+    return tier.color
   }
 
   const getStrokeColor = (slug: string, isHovered: boolean, isSelected: boolean) => {
     if (NEUTRAL_SLUGS.has(slug)) return "#18181b"
-
-    const muscleKey = slugToMuscleKey(slug)
-    if (!muscleKey) return "#222228"
-
-    const stat = muscleStats[muscleKey]
-    const intensity = stat?.intensity ?? 0
-    const cat = getMuscleCategoryConfig(muscleKey)
-
     if (isSelected) return "#ffffff"
     if (isHovered) return "#ffffff"
-    if (intensity <= 0) return "#222228"
 
-    return cat.stroke
+    const muscleKey = slugToMuscleKey(slug)
+    const intensity = muscleKey ? muscleStats[muscleKey]?.intensity ?? 0 : 0
+    const tier = getWhiteIntensityTier(intensity)
+
+    return tier.stroke
   }
 
   const frontParts = useMemo(
@@ -381,7 +366,7 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
         onClick={() => {
           if (muscleKey) {
             soundManager.play("click", 0.3)
-            setSelectedMuscle((prev) => (prev === muscleKey ? null : muscleKey))
+            setSelectedMuscle(muscleKey)
           }
         }}
         onMouseEnter={() => {
@@ -406,7 +391,7 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
     )
   }
 
-  // Floating Numeric % Badge Pin on SVG (BIG & Unmissable)
+  // Floating Numeric % Badge Pin on SVG (Strict Monochrome)
   const renderSvgNumericBadge = (
     muscleKey: string,
     x: number,
@@ -419,7 +404,6 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
     const isSelected = selectedMuscle === muscleKey
     const isHovered = hoveredMuscle === muscleKey
     const pct = Math.round(stat.intensity * 100)
-    const cat = getMuscleCategoryConfig(muscleKey)
     const isTrained = stat.sets > 0
 
     return (
@@ -429,7 +413,7 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
         className="cursor-pointer select-none"
         onClick={() => {
           soundManager.play("click", 0.3)
-          setSelectedMuscle((prev) => (prev === muscleKey ? null : muscleKey))
+          setSelectedMuscle(muscleKey)
         }}
         onMouseEnter={() => setHoveredMuscle(muscleKey)}
         onMouseLeave={() => setHoveredMuscle(null)}
@@ -442,16 +426,16 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
           height="28"
           rx="14"
           ry="14"
-          fill={isSelected ? "#1c1c24" : "#0c0c10f0"}
-          stroke={isSelected ? "#ffffff" : isHovered ? "#ffffff" : isTrained ? cat.stroke : "#27272e"}
+          fill={isSelected ? "#27272a" : "#09090bf0"}
+          stroke={isSelected ? "#ffffff" : isHovered ? "#ffffff" : isTrained ? "#52525b" : "#27272a"}
           strokeWidth={isSelected ? "2" : isHovered ? "1.8" : "1"}
         />
-        {/* Swatch Dot */}
+        {/* Swatch Indicator Dot */}
         <circle
           cx="-29"
           cy="0"
-          r="3.5"
-          fill={isTrained ? cat.hex : "#3f3f46"}
+          r="3"
+          fill={isTrained ? "#ffffff" : "#3f3f46"}
         />
         {/* Label */}
         <text
@@ -469,7 +453,7 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
         <text
           x="-21"
           y="9.5"
-          fill={isSelected ? "#ffffff" : isTrained ? cat.stroke : "#71717a"}
+          fill={isSelected || isTrained ? "#ffffff" : "#71717a"}
           fontSize="12.5"
           fontFamily="var(--font-display), Space Grotesk, sans-serif"
           fontWeight="700"
@@ -497,12 +481,14 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
     }
   }, [muscleStats])
 
+  const activeModalMuscle = selectedMuscle ? muscleStats[selectedMuscle] : null
+
   return (
-    <div className="rounded-2xl border border-white/[0.08] bg-[#121216]/90 p-4 sm:p-6 shadow-sm space-y-6">
-      {/* ─── Section Header (Consistent Icon + Title) & Front/Back Toggle ─── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/[0.08]">
+    <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4 sm:p-6 shadow-sm space-y-6">
+      {/* ─── Section Header (Monochrome Icon + Title) & Front/Back Toggle ─── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-zinc-800">
         <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-xl bg-[#4fa8a0]/10 border border-[#4fa8a0]/25 text-[#4fa8a0]">
+          <div className="p-2 rounded-xl bg-zinc-800 border border-zinc-700/60 text-white">
             <Activity className="h-4 w-4" />
           </div>
           <div>
@@ -512,7 +498,7 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
         </div>
 
         {/* Front / Back Toggle (Tap >= 44px) */}
-        <div className="flex items-center gap-1 bg-[#0c0c10] p-1 rounded-xl border border-white/[0.08] self-start sm:self-auto min-h-[44px]">
+        <div className="flex items-center gap-1 bg-zinc-950 p-1 rounded-xl border border-zinc-800 self-start sm:self-auto min-h-[44px]">
           <button
             type="button"
             onClick={() => {
@@ -521,7 +507,7 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
             }}
             className={`h-9 px-3.5 text-xs font-semibold rounded-lg transition-all cursor-pointer flex items-center justify-center ${
               activeView === "front"
-                ? "bg-[#4fa8a0]/20 text-[#6fc4bc] border border-[#4fa8a0]/40 shadow-xs"
+                ? "bg-white text-zinc-950 shadow-xs"
                 : "text-zinc-400 hover:text-white"
             }`}
           >
@@ -535,7 +521,7 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
             }}
             className={`h-9 px-3.5 text-xs font-semibold rounded-lg transition-all cursor-pointer flex items-center justify-center ${
               activeView === "back"
-                ? "bg-[#4fa8a0]/20 text-[#6fc4bc] border border-[#4fa8a0]/40 shadow-xs"
+                ? "bg-white text-zinc-950 shadow-xs"
                 : "text-zinc-400 hover:text-white"
             }`}
           >
@@ -616,99 +602,29 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
         </AnimatePresence>
       </div>
 
-      {/* ─── Category Swatches + Intensity Legend ─── */}
-      <div className="pt-3 border-t border-white/[0.08] space-y-2">
-        <div className="flex items-center justify-between text-xs text-zinc-400">
-          <span className="font-body text-[11px] uppercase tracking-wider text-zinc-400">Muscle Categories</span>
-          <span className="text-[11px] text-zinc-500 font-body">Muted low-saturation palette</span>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-          {(
-            [
-              { cat: "push", label: "Push (Chest, Delts)", hex: ANALYTICS_PALETTE.muscleCategories.push.hex },
-              { cat: "pull", label: "Pull (Lats, Traps)", hex: ANALYTICS_PALETTE.muscleCategories.pull.hex },
-              { cat: "legs", label: "Legs (Quads, Glutes)", hex: ANALYTICS_PALETTE.muscleCategories.legs.hex },
-              { cat: "core", label: "Core (Abs, Obliques)", hex: ANALYTICS_PALETTE.muscleCategories.core.hex },
-              { cat: "arms", label: "Arms (Biceps, Triceps)", hex: ANALYTICS_PALETTE.muscleCategories.arms.hex },
-            ] as const
-          ).map((item) => (
-            <div
-              key={item.cat}
-              className="flex items-center gap-2 p-2 rounded-xl bg-[#0c0c10] border border-white/[0.06] text-xs"
-            >
-              <span
-                className="h-2.5 w-2.5 rounded-full shrink-0"
-                style={{ backgroundColor: item.hex }}
+      {/* ─── White Heat Scale Legend ─── */}
+      <div className="pt-3 border-t border-zinc-800 flex items-center justify-between text-xs text-zinc-400 flex-wrap gap-2">
+        <span className="font-body text-[11px] text-zinc-500 uppercase tracking-wider">
+          Activation Scale
+        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] text-zinc-500 font-body">0%</span>
+          <div className="flex gap-1 items-center">
+            {WHITE_HEATMAP_SCALE.map((tier) => (
+              <div
+                key={tier.key}
+                className="h-3 w-3 rounded-[3px] border"
+                style={{ backgroundColor: tier.color, borderColor: tier.stroke }}
+                title={tier.label}
               />
-              <span className="font-body text-zinc-300 text-[11px] truncate">{item.label}</span>
-            </div>
-          ))}
+            ))}
+          </div>
+          <span className="text-[11px] text-zinc-500 font-body">100%</span>
         </div>
       </div>
 
-      {/* ─── Tap Muscle → Contributing Exercises Panel ─── */}
-      <AnimatePresence>
-        {selectedMuscle && muscleStats[selectedMuscle] && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="rounded-xl border border-white/[0.12] bg-[#0c0c10] p-4 space-y-3"
-          >
-            <div className="flex items-center justify-between border-b border-white/[0.08] pb-2">
-              <div>
-                <h3 className="text-sm font-bold text-white font-display">
-                  {muscleStats[selectedMuscle].name}
-                </h3>
-                <span className="text-xs font-display tabular-nums text-zinc-400">
-                  {Math.round(muscleStats[selectedMuscle].intensity * 100)}% load · {muscleStats[selectedMuscle].sets} sets logged
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setSelectedMuscle(null)}
-                className="p-1.5 rounded-lg hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors cursor-pointer"
-                title="Close"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-
-            {muscleStats[selectedMuscle].exercises.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
-                {muscleStats[selectedMuscle].exercises.map((ex, idx) => (
-                  <div
-                    key={idx}
-                    className="flex items-center justify-between p-2.5 rounded-lg bg-[#14141a] border border-white/[0.06] text-xs"
-                  >
-                    <span className="text-zinc-200 font-medium truncate mr-2 font-body">{ex.name}</span>
-                    <span className="font-display tabular-nums text-zinc-400 shrink-0">
-                      {ex.sets}s {ex.reps > 0 ? `· ${ex.reps}r` : ""}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-xs text-zinc-500 space-y-1.5 pt-1 font-body">
-                <p>No logged sets yet. Target exercises:</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {(SUGGESTED_EXERCISES[selectedMuscle] || []).map((ex, i) => (
-                    <span
-                      key={i}
-                      className="px-2 py-0.5 rounded-md bg-[#14141a] border border-white/[0.06] text-zinc-300 text-[11px]"
-                    >
-                      {ex}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ─── LIST: Muscle Group with BIG Unmissable % and Category Color Bars ─── */}
-      <div className="pt-3 border-t border-white/[0.08] space-y-3">
+      {/* ─── Muscle List: Tap opens Bottom Sheet Modal (No inline expanding clutter) ─── */}
+      <div className="pt-2 space-y-2">
         <div className="flex items-center justify-between text-xs text-zinc-400 font-body uppercase tracking-wider pb-1">
           <span>Muscle Group</span>
           <span>Volume Share</span>
@@ -717,8 +633,6 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
         <div className="space-y-2">
           {sortedMuscles.map((muscle) => {
             const pct = Math.round(muscle.intensity * 100)
-            const isSelected = selectedMuscle === muscle.key
-            const cat = getMuscleCategoryConfig(muscle.key)
             const isTrained = muscle.sets > 0
 
             return (
@@ -726,47 +640,36 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
                 key={muscle.key}
                 onClick={() => {
                   soundManager.play("click", 0.25)
-                  setSelectedMuscle((prev) => (prev === muscle.key ? null : muscle.key))
+                  setSelectedMuscle(muscle.key)
                 }}
-                className={`p-3 rounded-xl transition-all cursor-pointer flex items-center justify-between gap-3 border min-h-[56px] ${
-                  isSelected
-                    ? "bg-[#181820] border-white/40 shadow-xs"
-                    : "bg-[#0c0c10]/70 border-white/[0.06] hover:border-white/[0.15] hover:bg-[#14141a]"
-                }`}
+                className="p-3.5 rounded-xl transition-all cursor-pointer flex items-center justify-between gap-3 border min-h-[56px] bg-zinc-950/60 border-zinc-800/80 hover:border-zinc-700 hover:bg-zinc-850"
               >
                 {/* BIG unmissable percentage on the left */}
                 <div className="flex items-center gap-3.5 min-w-0 flex-1">
                   <span
-                    className="font-display font-bold text-2xl sm:text-3xl tabular-nums min-w-[3.5rem] text-right shrink-0"
-                    style={{ color: isTrained ? cat.stroke : "#71717a" }}
+                    className={`font-display font-bold text-2xl sm:text-3xl tabular-nums min-w-[3.5rem] text-right shrink-0 ${
+                      isTrained ? "text-white" : "text-zinc-600"
+                    }`}
                   >
                     {pct}%
                   </span>
 
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className={`font-medium text-sm truncate font-body ${isSelected ? "text-white font-bold" : "text-zinc-100"}`}>
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <span className="font-medium text-sm text-zinc-100 truncate font-body">
                         {muscle.name}
                       </span>
-                      <span
-                        className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded shrink-0 border"
-                        style={{
-                          backgroundColor: cat.subtleBg,
-                          color: cat.stroke,
-                          borderColor: `${cat.hex}40`,
-                        }}
-                      >
-                        {cat.label}
+                      <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded shrink-0 bg-zinc-850 border border-zinc-700/60 text-zinc-400">
+                        {muscle.category}
                       </span>
                     </div>
 
-                    {/* Category-colored Progress Bar */}
-                    <div className="h-1.5 w-full bg-zinc-800/80 rounded-full overflow-hidden">
+                    {/* Pure White Progress Bar */}
+                    <div className="h-1.5 w-full bg-zinc-800 rounded-full overflow-hidden">
                       <div
-                        className="h-full rounded-full transition-all duration-300"
+                        className="h-full bg-white rounded-full transition-all duration-300"
                         style={{
                           width: `${Math.max(pct, isTrained ? 4 : 0)}%`,
-                          backgroundColor: isTrained ? cat.hex : "transparent",
                         }}
                       />
                     </div>
@@ -787,6 +690,63 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
           })}
         </div>
       </div>
+
+      {/* ─── Bottom-Sheet Modal for Muscle Drilldown (Clutter-Free, Focused) ─── */}
+      <DetailBottomSheet
+        isOpen={!!activeModalMuscle}
+        onClose={() => setSelectedMuscle(null)}
+        title={activeModalMuscle?.name || "Muscle Detail"}
+        badge={activeModalMuscle?.category}
+        subtitle={
+          activeModalMuscle
+            ? `${Math.round(activeModalMuscle.intensity * 100)}% activation · ${activeModalMuscle.volumePercent}% volume share · ${activeModalMuscle.sets} sets logged`
+            : undefined
+        }
+      >
+        {activeModalMuscle && activeModalMuscle.exercises.length > 0 ? (
+          <div className="space-y-2">
+            <span className="text-[11px] font-mono uppercase tracking-wider text-zinc-500 block">
+              Top Exercises
+            </span>
+            <div className="space-y-1.5">
+              {activeModalMuscle.exercises.map((ex, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-center justify-between p-3 rounded-xl bg-zinc-950 border border-zinc-800/80 text-xs"
+                >
+                  <span className="text-zinc-200 font-medium font-body truncate">
+                    {ex.name}
+                  </span>
+                  <span className="font-display tabular-nums text-white font-semibold shrink-0 ml-2">
+                    {ex.sets} {ex.sets === 1 ? "set" : "sets"}{ex.reps > 0 ? ` · ${ex.reps} reps` : ""}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-3 py-1 font-body text-xs text-zinc-400">
+            <p>No workout sets logged for this muscle in this date range.</p>
+            {activeModalMuscle && (
+              <div className="space-y-2">
+                <span className="text-[11px] font-mono uppercase tracking-wider text-zinc-500 block">
+                  Target Movements
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {(SUGGESTED_EXERCISES[activeModalMuscle.key] || []).map((ex, i) => (
+                    <span
+                      key={i}
+                      className="px-3 py-1.5 rounded-lg bg-zinc-950 border border-zinc-800 text-zinc-300 text-xs"
+                    >
+                      {ex}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </DetailBottomSheet>
     </div>
   )
 }

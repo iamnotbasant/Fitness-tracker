@@ -267,18 +267,18 @@ export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
     }
   }, [heatmapData])
 
-  // CALM DESATURATED TEAL HEATMAP SCALE (Tasteful dark theme)
+  // STRICT MONOCHROME HEATMAP CELL COLORS (Zinc to Pure White)
   const getCellColor = (volume: number, isFuture = false) => {
     if (isFuture) {
       return "bg-zinc-900/30 border-zinc-800/30 border-dashed cursor-default opacity-30"
     }
     if (volume === 0) {
-      return "bg-[#141418] border-[#222228] hover:border-zinc-700"
+      return "bg-zinc-900 border-zinc-800/70 hover:border-zinc-600"
     }
-    if (volume <= levelThresholds.low) return "bg-[#192928] border-[#243e3c]"
-    if (volume <= levelThresholds.medium) return "bg-[#20413e] border-[#2d5e5a]"
-    if (volume <= levelThresholds.high) return "bg-[#2d605c] border-[#3f8580]"
-    return "bg-[#4fa8a0] border-[#6ac2b9]"
+    if (volume <= levelThresholds.low) return "bg-zinc-800 border-zinc-700/70"
+    if (volume <= levelThresholds.medium) return "bg-zinc-600 border-zinc-500/70"
+    if (volume <= levelThresholds.high) return "bg-zinc-400 border-zinc-300/80"
+    return "bg-white border-white"
   }
 
   const formatDate = (dateStr: string) => {
@@ -309,11 +309,11 @@ export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
   }, [heatmapData])
 
   return (
-    <div className="rounded-2xl border border-white/[0.08] bg-[#121216]/90 p-4 sm:p-6 shadow-sm space-y-5">
-      {/* ─── Section Header (Consistent Icon + Title) & Time Span Selector ─── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/[0.08]">
+    <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4 sm:p-6 shadow-sm space-y-5">
+      {/* ─── Section Header (Monochrome Icon + Title) & Time Span Selector ─── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-zinc-800">
         <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-xl bg-[#4fa8a0]/10 border border-[#4fa8a0]/25 text-[#4fa8a0]">
+          <div className="p-2 rounded-xl bg-zinc-800 border border-zinc-700/60 text-white">
             <Flame className="h-4 w-4" />
           </div>
           <div>
@@ -323,7 +323,7 @@ export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
         </div>
 
         {/* Time Span Filter (Tap >= 44px) */}
-        <div className="flex items-center gap-1 bg-[#0c0c10] p-1 rounded-xl border border-white/[0.08] self-start sm:self-auto min-h-[44px]">
+        <div className="flex items-center gap-1 bg-zinc-950 p-1 rounded-xl border border-zinc-800 self-start sm:self-auto min-h-[44px]">
           {(
             [
               { id: "4w", label: "1 Mo" },
@@ -342,7 +342,7 @@ export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
               }}
               className={`h-9 px-3 rounded-lg text-xs font-medium transition-all cursor-pointer flex items-center justify-center ${
                 range === r.id
-                  ? "bg-[#4fa8a0]/20 text-[#6fc4bc] border border-[#4fa8a0]/40 font-semibold shadow-xs"
+                  ? "bg-white text-zinc-950 font-semibold shadow-xs"
                   : "text-zinc-400 hover:text-white"
               }`}
             >
@@ -419,11 +419,11 @@ export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
                       />
 
                       {/* Tooltip */}
-                      <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover/day:flex flex-col gap-1 z-30 w-52 p-2.5 rounded-xl bg-[#0c0c10] text-white text-xs shadow-2xl border border-white/[0.1]">
-                        <div className="flex items-center justify-between border-b border-white/[0.08] pb-1">
+                      <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover/day:flex flex-col gap-1 z-30 w-52 p-2.5 rounded-xl bg-zinc-950 text-white text-xs shadow-2xl border border-zinc-800">
+                        <div className="flex items-center justify-between border-b border-zinc-800 pb-1">
                           <span className="font-semibold text-white font-body">{formatDate(day.date)}</span>
                           {hasWorkouts && (
-                            <span className="text-[10px] font-display font-bold px-1.5 py-0.5 rounded bg-zinc-800 text-[#6fc4bc] border border-white/[0.08] tabular-nums">
+                            <span className="text-[10px] font-display font-bold px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-200 border border-zinc-700 tabular-nums">
                               {day.points.toLocaleString()} pts
                             </span>
                           )}
@@ -462,17 +462,17 @@ export function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
         </div>
       </div>
 
-      {/* ─── Legend ─── */}
-      <div className="flex items-center justify-between pt-3 border-t border-white/[0.08] text-xs text-zinc-400 flex-wrap gap-2">
+      {/* ─── Legend: Strict 5-tier Monochrome ─── */}
+      <div className="flex items-center justify-between pt-3 border-t border-zinc-800 text-xs text-zinc-400 flex-wrap gap-2">
         <span className="text-zinc-500 text-[11px] font-body">Consistency Grid ({gridConfig.spanLabel})</span>
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-zinc-500 font-body">Less</span>
           <div className="flex gap-1 items-center">
-            <div className="h-3 w-3 rounded-[3px] bg-[#141418] border border-[#222228]" />
-            <div className="h-3 w-3 rounded-[3px] bg-[#192928] border border-[#243e3c]" />
-            <div className="h-3 w-3 rounded-[3px] bg-[#20413e] border border-[#2d5e5a]" />
-            <div className="h-3 w-3 rounded-[3px] bg-[#2d605c] border border-[#3f8580]" />
-            <div className="h-3 w-3 rounded-[3px] bg-[#4fa8a0] border border-[#6ac2b9]" />
+            <div className="h-3 w-3 rounded-[3px] bg-zinc-900 border border-zinc-800/70" />
+            <div className="h-3 w-3 rounded-[3px] bg-zinc-800 border border-zinc-700/70" />
+            <div className="h-3 w-3 rounded-[3px] bg-zinc-600 border border-zinc-500/70" />
+            <div className="h-3 w-3 rounded-[3px] bg-zinc-400 border border-zinc-300/80" />
+            <div className="h-3 w-3 rounded-[3px] bg-white border border-white" />
           </div>
           <span className="text-[11px] text-zinc-500 font-body">More</span>
         </div>

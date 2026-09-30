@@ -72,7 +72,7 @@ export function ExerciseProgressionChart({
     )
   }, [exerciseOptions, selectedId])
 
-  // Categorize exercise: timer vs reps (no tonnage for bodyweight)
+  // Categorize exercise: timer vs reps
   const exerciseTypeInfo = useMemo(() => {
     const exObj = exercises.find(
       (e) => String(e.id) === selectedId || e.name.toLowerCase() === activeExercise.name.toLowerCase()
@@ -199,11 +199,11 @@ export function ExerciseProgressionChart({
   const { isTimer } = exerciseTypeInfo
 
   return (
-    <div className="rounded-2xl border border-white/[0.08] bg-[#121216]/90 p-4 sm:p-6 shadow-sm space-y-5">
-      {/* ─── Section Header (Consistent Icon + Title) & Exercise Selector ─── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/[0.08]">
+    <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4 sm:p-6 shadow-sm space-y-5">
+      {/* ─── Section Header (Monochrome Icon + Title) & Exercise Selector ─── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-zinc-800">
         <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-xl bg-[#4fa8a0]/10 border border-[#4fa8a0]/25 text-[#4fa8a0]">
+          <div className="p-2 rounded-xl bg-zinc-800 border border-zinc-700/60 text-white">
             <TrendingUp className="h-4 w-4" />
           </div>
           <div>
@@ -221,10 +221,10 @@ export function ExerciseProgressionChart({
             soundManager.play("click", 0.2)
             setSelectedId(e.target.value)
           }}
-          className="w-full sm:w-60 h-11 min-h-[44px] px-3.5 rounded-xl bg-[#0c0c10] border border-white/[0.1] text-xs font-semibold text-white focus:outline-none focus:border-[#4fa8a0] cursor-pointer"
+          className="w-full sm:w-60 h-11 min-h-[44px] px-3.5 rounded-xl bg-zinc-950 border border-zinc-800 text-xs font-semibold text-white focus:outline-none focus:border-white cursor-pointer"
         >
           {exerciseOptions.map((opt) => (
-            <option key={opt.id} value={opt.id} className="bg-[#121216] text-white">
+            <option key={opt.id} value={opt.id} className="bg-zinc-900 text-white">
               {opt.name} {opt.count > 0 ? `(${opt.count})` : ""}
             </option>
           ))}
@@ -248,7 +248,7 @@ export function ExerciseProgressionChart({
         </div>
 
         {/* Toggle: Max Reps per Set vs Total Reps (Tap >= 44px) */}
-        <div className="flex items-center gap-1 bg-[#0c0c10] p-1 rounded-xl border border-white/[0.08] self-start sm:self-auto min-h-[44px]">
+        <div className="flex items-center gap-1 bg-zinc-950 p-1 rounded-xl border border-zinc-800 self-start sm:self-auto min-h-[44px]">
           <button
             type="button"
             onClick={() => {
@@ -257,7 +257,7 @@ export function ExerciseProgressionChart({
             }}
             className={`h-9 px-3.5 text-xs font-semibold rounded-lg transition-all cursor-pointer flex items-center justify-center ${
               metric === "max_reps"
-                ? "bg-[#4fa8a0]/20 text-[#6fc4bc] border border-[#4fa8a0]/40 shadow-xs"
+                ? "bg-white text-zinc-950 shadow-xs"
                 : "text-zinc-400 hover:text-white"
             }`}
           >
@@ -271,7 +271,7 @@ export function ExerciseProgressionChart({
             }}
             className={`h-9 px-3.5 text-xs font-semibold rounded-lg transition-all cursor-pointer flex items-center justify-center ${
               metric === "total_reps"
-                ? "bg-[#4fa8a0]/20 text-[#6fc4bc] border border-[#4fa8a0]/40 shadow-xs"
+                ? "bg-white text-zinc-950 shadow-xs"
                 : "text-zinc-400 hover:text-white"
             }`}
           >
@@ -280,31 +280,31 @@ export function ExerciseProgressionChart({
         </div>
       </div>
 
-      {/* ─── Calm Teal Line/Area Chart ─── */}
+      {/* ─── Pure White Line/Area Chart ─── */}
       {chartData.length > 0 ? (
         <div className="h-60 sm:h-64 pt-2">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={chartData} margin={{ top: 10, right: 12, left: -10, bottom: 0 }}>
+            <AreaChart data={chartData} margin={{ top: 10, right: 12, left: -14, bottom: 0 }}>
               <defs>
-                <linearGradient id="calmTealProgressionGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#4fa8a0" stopOpacity={0.24} />
-                  <stop offset="95%" stopColor="#4fa8a0" stopOpacity={0.0} />
+                <linearGradient id="whiteProgressionGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#ffffff" stopOpacity={0.22} />
+                  <stop offset="95%" stopColor="#ffffff" stopOpacity={0.0} />
                 </linearGradient>
               </defs>
               <CartesianGrid
                 strokeDasharray="3 3"
                 vertical={false}
-                stroke="rgba(255, 255, 255, 0.06)"
+                stroke="rgba(255, 255, 255, 0.07)"
               />
               <XAxis
                 dataKey="label"
-                stroke="#71717a"
+                stroke="#52525b"
                 tick={{ fontSize: 10, fill: "#71717a", fontFamily: "var(--font-body), sans-serif" }}
                 tickLine={false}
                 axisLine={false}
               />
               <YAxis
-                stroke="#71717a"
+                stroke="#52525b"
                 tick={{ fontSize: 10, fill: "#71717a", fontFamily: "var(--font-display), Space Grotesk, sans-serif" }}
                 tickLine={false}
                 axisLine={false}
@@ -316,9 +316,9 @@ export function ExerciseProgressionChart({
                   if (!active || !payload || !payload.length) return null
                   const d = payload[0].payload
                   return (
-                    <div className="rounded-xl border border-white/[0.1] bg-[#0c0c10] p-2.5 shadow-xl text-xs space-y-1">
+                    <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-2.5 shadow-xl text-xs space-y-1">
                       <p className="font-semibold text-white font-body">{d.label}</p>
-                      <p className="text-[#6fc4bc] font-display font-bold tabular-nums">
+                      <p className="text-white font-display font-bold tabular-nums">
                         {d.tooltipText}
                       </p>
                       <p className="text-[11px] text-zinc-500 font-body">
@@ -331,17 +331,17 @@ export function ExerciseProgressionChart({
               <Area
                 type="monotone"
                 dataKey="value"
-                stroke="#4fa8a0"
+                stroke="#ffffff"
                 strokeWidth={2.5}
-                fill="url(#calmTealProgressionGradient)"
-                dot={{ r: 3.5, fill: "#4fa8a0", strokeWidth: 1, stroke: "#121216" }}
-                activeDot={{ r: 5.5, fill: "#6fc4bc", stroke: "#ffffff", strokeWidth: 2 }}
+                fill="url(#whiteProgressionGradient)"
+                dot={{ r: 3.5, fill: "#ffffff", strokeWidth: 1, stroke: "#18181b" }}
+                activeDot={{ r: 5.5, fill: "#ffffff", stroke: "#000000", strokeWidth: 2 }}
               />
             </AreaChart>
           </ResponsiveContainer>
         </div>
       ) : (
-        <div className="flex h-44 items-center justify-center text-xs text-zinc-500 bg-[#0c0c10]/50 rounded-xl border border-dashed border-white/[0.08] p-4 text-center font-body">
+        <div className="flex h-44 items-center justify-center text-xs text-zinc-500 bg-zinc-950/50 rounded-xl border border-dashed border-zinc-800 p-4 text-center font-body">
           No workout history logged for {activeExercise.name} in this date range.
         </div>
       )}
