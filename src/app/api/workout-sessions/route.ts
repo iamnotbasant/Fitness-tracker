@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { workoutSessions, routines } from '@/db/schema';
+import { workoutSessions, routines, exercises } from '@/db/schema';
 import { eq, and, gte, lte, desc, isNull, isNotNull } from 'drizzle-orm';
 import { getAuthenticatedUser } from '@/lib/auth-server';
 

@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { ExerciseCard } from "@/components/exercise-card"
 import { useExercises } from "@/hooks/use-local-data"
-import { Plus, Lock, AlertCircle, Loader2 } from "lucide-react"
+import { Plus, Lock, AlertCircle, Loader2, Search, X } from "lucide-react"
 import type { Exercise } from "@/lib/types"
 import { useSession } from "@/lib/auth-client"
 import { toast } from "sonner"
@@ -130,7 +130,7 @@ export default function ExercisesPage() {
 
   return (
     <main className="pb-32 md:pb-12">
-      <section className="mx-auto max-w-5xl px-4 pt-6">
+      <section className="mx-auto max-w-5xl px-3 pt-6 md:px-4">
         {mounted && session && typeof window !== "undefined" && !localStorage.getItem("bearer_token") && (
           <div className="mb-4 rounded-lg border border-destructive bg-destructive/10 p-4 flex items-start gap-3">
             <AlertCircle className="h-5 w-5 text-destructive mt-0.5" />
@@ -153,59 +153,70 @@ export default function ExercisesPage() {
           </div>
         )}
 
-        <div className="flex flex-col gap-3 md:flex-row md:items-center">
-          <h1 className="text-2xl font-semibold">Exercises</h1>
-          <div className="flex flex-col gap-2 md:ml-auto md:flex-row md:items-center">
-            <div className="flex gap-2">
-              <select
-                value={levelFilter}
-                onChange={(e) => setLevelFilter(e.target.value === "all" ? "all" : Number(e.target.value))}
-                className="flex-1 rounded-lg border bg-card px-3 py-2.5 text-sm md:flex-none cursor-pointer"
-                aria-label="Filter by level"
-              >
-                <option value="all">All Levels</option>
-                {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((l) => (
-                  <option key={l} value={l}>
-                    Level {l}
-                  </option>
-                ))}
-              </select>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as any)}
-                className="flex-1 rounded-lg border bg-card px-3 py-2.5 text-sm md:flex-none cursor-pointer"
-                aria-label="Sort by"
-              >
-                <option value="level-asc">Level (Low to High)</option>
-                <option value="level-desc">Level (High to Low)</option>
-                <option value="name">Name (A-Z)</option>
-                <option value="popularity">Popularity</option>
-              </select>
-            </div>
-            <button
-              className="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 md:w-auto cursor-pointer"
-              onClick={() => setShowForm((s) => !s)}
-            >
-              {showForm ? "Close" : "New Exercise"}
-            </button>
-          </div>
+        {/* Header: Title + Action */}
+        <div className="flex items-center justify-between gap-3">
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Exercises</h1>
+          <button
+            type="button"
+            className="inline-flex items-center justify-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs sm:text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors min-h-[44px] cursor-pointer shadow-xs"
+            onClick={() => setShowForm((s) => !s)}
+          >
+            <Plus className="h-4 w-4" />
+            <span>{showForm ? "Close" : "New Exercise"}</span>
+          </button>
         </div>
 
+        {/* Search Bar + Filters (reference: Hevy exercise search) */}
         <div className="mt-3 flex flex-col gap-2.5">
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            className="w-full rounded-xl border bg-card px-4 py-2.5 text-sm font-medium focus:ring-1 focus:ring-primary outline-none"
-            placeholder="Search exercises by name, muscle, or tag..."
-            aria-label="Search exercises"
-          />
+          {/* Rounded-full Search bar with Search icon & clear X button */}
+          <div className="relative">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="w-full h-11 rounded-full border border-border/80 bg-card pl-10 pr-11 text-sm font-medium text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-zinc-400 focus:border-zinc-400 transition-colors"
+              placeholder="Search exercises by name, muscle, or tag..."
+              aria-label="Search exercises"
+            />
+            {query.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setQuery("")}
+                className="absolute right-1 top-1/2 -translate-y-1/2 h-11 w-11 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                aria-label="Clear search"
+              >
+                <div className="h-5 w-5 rounded-full bg-zinc-800 hover:bg-zinc-700 flex items-center justify-center text-zinc-300">
+                  <X className="h-3 w-3" />
+                </div>
+              </button>
+            )}
+          </div>
 
-          {/* Filter Dropdowns: Split & Type */}
-          <div className="flex items-center justify-end gap-2 pt-1">
+          {/* "Showing results for '...'" label row when searching */}
+          {query.trim().length > 0 && (
+            <div className="flex items-center justify-between text-xs text-muted-foreground px-1 pt-0.5">
+              <p>
+                Showing results for <span className="font-semibold text-foreground">&apos;{query.trim()}&apos;</span>
+              </p>
+              <span className="text-[11px] tabular-nums">
+                {query !== debouncedQuery ? (
+                  <span className="inline-flex items-center gap-1 text-muted-foreground">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    <span>Searching...</span>
+                  </span>
+                ) : (
+                  `${filtered.length} ${filtered.length === 1 ? "exercise" : "exercises"}`
+                )}
+              </span>
+            </div>
+          )}
+
+          {/* Filter Dropdowns: Split, Type, Level, Sort */}
+          <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center justify-end gap-2 pt-1">
             <select
               value={splitFilter}
               onChange={(e) => setSplitFilter(e.target.value)}
-              className="h-8.5 rounded-xl bg-card border border-border/80 px-3 py-1 text-xs font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer hover:border-primary/50 transition-colors"
+              className="min-h-[44px] h-11 rounded-xl sm:rounded-full bg-card border border-border/80 px-3 text-xs font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-zinc-400 cursor-pointer hover:border-zinc-500/50 transition-colors"
               aria-label="Filter by split"
             >
               <option value="all">All Splits</option>
@@ -221,7 +232,7 @@ export default function ExercisesPage() {
             <select
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
-              className="h-8.5 rounded-xl bg-card border border-border/80 px-3 py-1 text-xs font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer hover:border-primary/50 transition-colors"
+              className="min-h-[44px] h-11 rounded-xl sm:rounded-full bg-card border border-border/80 px-3 text-xs font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-zinc-400 cursor-pointer hover:border-zinc-500/50 transition-colors"
               aria-label="Filter by exercise type"
             >
               <option value="all">All Types</option>
@@ -231,11 +242,33 @@ export default function ExercisesPage() {
               <option value="cardio">Cardio</option>
               <option value="mobility">Mobility</option>
             </select>
-          </div>
 
-          {query !== debouncedQuery && (
-            <p className="text-xs text-muted-foreground">Searching...</p>
-          )}
+            <select
+              value={levelFilter}
+              onChange={(e) => setLevelFilter(e.target.value === "all" ? "all" : Number(e.target.value))}
+              className="min-h-[44px] h-11 rounded-xl sm:rounded-full border border-border/80 bg-card px-3 text-xs font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-zinc-400 cursor-pointer hover:border-zinc-500/50 transition-colors"
+              aria-label="Filter by level"
+            >
+              <option value="all">All Levels</option>
+              {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((l) => (
+                <option key={l} value={l}>
+                  Level {l}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as any)}
+              className="min-h-[44px] h-11 rounded-xl sm:rounded-full border border-border/80 bg-card px-3 text-xs font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-zinc-400 cursor-pointer hover:border-zinc-500/50 transition-colors"
+              aria-label="Sort by"
+            >
+              <option value="level-asc">Level (Low to High)</option>
+              <option value="level-desc">Level (High to Low)</option>
+              <option value="name">Name (A-Z)</option>
+              <option value="popularity">Popularity</option>
+            </select>
+          </div>
         </div>
 
         {showForm && (
@@ -257,12 +290,12 @@ export default function ExercisesPage() {
             </div>
           </div>
         ) : (
-          <div className="grid items-stretch gap-3 sm:grid-cols-2 lg:grid-cols-3 md:gap-4">
+          <div className="grid grid-cols-2 gap-2.5 sm:gap-3 md:gap-4 sm:grid-cols-3 lg:grid-cols-4 items-stretch">
             {filtered.map((e) => (
               <ExerciseCard key={e.id} ex={e} onDelete={remove} />
             ))}
             {filtered.length === 0 && (
-              <div className="rounded-xl border bg-card p-6 text-center text-sm text-muted-foreground">
+              <div className="col-span-full rounded-2xl border border-border/80 bg-card p-8 text-center text-sm text-muted-foreground">
                 No exercises found.
               </div>
             )}

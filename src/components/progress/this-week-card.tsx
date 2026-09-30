@@ -1,6 +1,8 @@
 "use client"
 
 import React, { useMemo } from "react"
+import { ChevronRight } from "lucide-react"
+import soundManager from "@/lib/sounds"
 import {
   type AggregatedWorkoutSession,
   toLocalDateStr,
@@ -8,11 +10,12 @@ import {
 
 interface ThisWeekCardProps {
   sessions: AggregatedWorkoutSession[]
+  onOpenWeeklyOverview?: () => void
 }
 
 const DAY_LABELS = ["S", "M", "T", "W", "T", "F", "S"] as const
 
-export function ThisWeekCard({ sessions }: ThisWeekCardProps) {
+export function ThisWeekCard({ sessions, onOpenWeeklyOverview }: ThisWeekCardProps) {
   const { days, todayMinutes, weeklyAvgMinutes } = useMemo(() => {
     const now = new Date()
     const todayStr = toLocalDateStr(now)
@@ -68,7 +71,7 @@ export function ThisWeekCard({ sessions }: ThisWeekCardProps) {
   return (
     <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-5 sm:p-6 shadow-xs space-y-5">
       {/* Section Header */}
-      <div className="flex items-center justify-between pb-1">
+      <div className="flex items-center justify-between pb-1 gap-2">
         <div>
           <h2 className="text-base sm:text-lg font-semibold text-white tracking-tight font-display">
             This Week
@@ -77,6 +80,20 @@ export function ThisWeekCard({ sessions }: ThisWeekCardProps) {
             Daily consistency & session duration
           </p>
         </div>
+
+        {onOpenWeeklyOverview && (
+          <button
+            type="button"
+            onClick={() => {
+              soundManager.play("click", 0.2)
+              onOpenWeeklyOverview()
+            }}
+            className="h-10 min-h-[44px] px-3 rounded-xl border border-zinc-800 bg-zinc-950 hover:bg-zinc-850 hover:border-zinc-700 text-xs font-semibold text-white flex items-center gap-1.5 transition-all cursor-pointer shadow-xs shrink-0"
+          >
+            <span>Overview</span>
+            <ChevronRight className="h-3.5 w-3.5 text-zinc-400" />
+          </button>
+        )}
       </div>
 
       {/* 7 Day Circles: S M T W T F S with dates inside */}

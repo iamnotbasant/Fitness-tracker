@@ -19,10 +19,15 @@ export function ExerciseCard({ ex, onDelete }: ExerciseCardProps) {
   const router = useRouter()
   const { data: session } = useSession()
   const [mounted, setMounted] = useState(false)
+  const [imageError, setImageError] = useState(false)
 
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  useEffect(() => {
+    setImageError(false)
+  }, [ex.imageUrl])
 
   const handleClick = () => {
     router.push(`/exercises/${ex.id}`)
@@ -42,85 +47,88 @@ export function ExerciseCard({ ex, onDelete }: ExerciseCardProps) {
 
   const canEdit = mounted
 
+  const muscleGroup = ex.bodyParts && ex.bodyParts.length > 0
+    ? ex.bodyParts.join(", ")
+    : (ex.split ? ex.split.charAt(0).toUpperCase() + ex.split.slice(1) : (ex.type ? ex.type.charAt(0).toUpperCase() + ex.type.slice(1) : "General"))
+
   return (
     <div
       onClick={handleClick}
-      className="group relative flex flex-col overflow-hidden rounded-2xl border border-border/70 bg-card shadow-sm transition-all duration-300 hover:shadow-xl hover:border-primary/50 hover:-translate-y-1 cursor-pointer select-none"
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault()
+          handleClick()
+        }
+      }}
+      role="button"
+      tabIndex={0}
+      className="group relative flex flex-col overflow-hidden rounded-2xl border border-border/70 bg-card shadow-xs transition-all duration-200 hover:shadow-lg hover:border-zinc-500/50 hover:-translate-y-0.5 active:scale-[0.98] cursor-pointer select-none min-h-[44px]"
     >
-      {/* Exercise Image or Modern Geometric Graphic */}
-      <div className="aspect-[16/9] w-full overflow-hidden bg-muted/60 relative">
-        {ex.imageUrl ? (
+      {/* Roughly square visual area on top (reference: Hevy exercise picker) */}
+      <div className="aspect-square w-full overflow-hidden bg-zinc-900/80 relative">
+        {ex.imageUrl && !imageError ? (
           <img
             src={ex.imageUrl}
             alt={ex.name}
             loading="lazy"
             decoding="async"
-            className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-108"
-            onError={(e) => {
-              (e.target as HTMLElement).style.display = 'none';
-            }}
+            className="h-full w-full object-cover transition-transform duration-300 ease-out group-hover:scale-105"
+            onError={() => setImageError(true)}
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-secondary/50 via-muted to-secondary/30 text-muted-foreground/60">
-            <Dumbbell className="h-10 w-10 stroke-[1.25] transition-transform duration-300 group-hover:scale-110 group-hover:text-primary/70" />
+          <div className="flex h-full w-full items-center justify-center bg-zinc-900/60 text-zinc-500">
+            <Dumbbell className="h-8 w-8 stroke-[1.25] text-zinc-500/70 transition-transform duration-300 group-hover:scale-110 group-hover:text-zinc-400" />
           </div>
         )}
 
-        {/* Subtle dark gradient overlay on hover for crisp contrast */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+        {/* Subtle dark gradient overlay on hover */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
 
-        {/* Floating Action Buttons - Visible on mobile touch, graceful reveal on desktop hover */}
+        {/* Subtle Level badge in top-left corner */}
+        {ex.level !== undefined && (
+          <div className="absolute top-2 left-2 z-10 pointer-events-none">
+            <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-black/60 text-zinc-300 backdrop-blur-md border border-white/10 shadow-xs">
+              Lvl {ex.level}
+            </span>
+          </div>
+        )}
+
+        {/* Corner Affordances: Edit & Delete buttons */}
         {mounted && canEdit && (
           <div
-            className="absolute top-2.5 right-2.5 sm:top-3 sm:right-3 flex items-center gap-1.5 opacity-90 sm:opacity-0 sm:-translate-y-1.5 pointer-events-auto sm:pointer-events-none group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto transition-all duration-250 ease-out z-20"
+            className="absolute top-1.5 right-1.5 flex items-center gap-1 z-20 opacity-90 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-200"
             onClick={(e) => e.stopPropagation()}
           >
             <button
+              type="button"
               onClick={handleEdit}
-              className="p-2 sm:p-2 rounded-xl bg-background/90 backdrop-blur-md border border-border/80 text-foreground shadow-lg hover:bg-primary hover:text-primary-foreground hover:scale-110 active:scale-95 transition-all duration-150 cursor-pointer min-h-[36px] min-w-[36px] flex items-center justify-center"
+              className="relative h-7 w-7 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-zinc-300 hover:text-white hover:bg-black/80 flex items-center justify-center transition-colors cursor-pointer before:absolute before:-inset-2 before:content-['']"
               title="Edit Exercise"
               aria-label="Edit Exercise"
             >
-              <Edit className="h-3.5 w-3.5" />
+              <Edit className="h-3 w-3" />
             </button>
             <button
+              type="button"
               onClick={handleDelete}
-              className="p-2 sm:p-2 rounded-xl bg-background/90 backdrop-blur-md border border-border/80 text-muted-foreground shadow-lg hover:bg-destructive hover:text-destructive-foreground hover:border-destructive hover:scale-110 active:scale-95 transition-all duration-150 cursor-pointer min-h-[36px] min-w-[36px] flex items-center justify-center"
+              className="relative h-7 w-7 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-zinc-400 hover:text-red-400 hover:bg-black/80 flex items-center justify-center transition-colors cursor-pointer before:absolute before:-inset-2 before:content-['']"
               title="Delete Exercise"
               aria-label="Delete Exercise"
             >
-              <Trash2 className="h-3.5 w-3.5" />
+              <Trash2 className="h-3 w-3" />
             </button>
           </div>
         )}
       </div>
 
-      {/* Card Body */}
-      <div className="p-4 flex flex-col gap-2.5 flex-1 justify-between">
-        <div>
-          <h3 className="text-base font-bold tracking-tight text-foreground line-clamp-1 group-hover:text-primary transition-colors">
-            {ex.name}
-          </h3>
-        </div>
-
-        {/* Clean Badges: Level, Split, Type */}
-        <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-          {ex.level !== undefined && (
-            <span className="rounded-lg bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 text-[11px] font-bold">
-              Level {ex.level}
-            </span>
-          )}
-          {ex.split && (
-            <span className="rounded-lg bg-secondary border border-border/60 px-2 py-0.5 text-[11px] font-medium capitalize text-secondary-foreground">
-              {ex.split}
-            </span>
-          )}
-          {ex.type && ex.type.split(',').map((t, idx) => (
-            <span key={idx} className="rounded-lg bg-muted px-2 py-0.5 text-[11px] font-medium capitalize text-muted-foreground">
-              {t.trim()}
-            </span>
-          ))}
-        </div>
+      {/* Card Body: Name in semibold white, muscle group in small grey text */}
+      <div className="p-2.5 sm:p-3 flex flex-col justify-between flex-1 gap-0.5 bg-card">
+        <h3 className="text-xs sm:text-sm font-semibold tracking-tight text-white line-clamp-2 leading-snug group-hover:text-zinc-200 transition-colors">
+          {ex.name}
+        </h3>
+        <p className="text-[11px] sm:text-xs text-zinc-400 capitalize truncate">
+          {muscleGroup}
+        </p>
       </div>
     </div>
   )
