@@ -22,7 +22,7 @@ interface WeeklyWorkoutChartProps {
 }
 
 export function WeeklyWorkoutChart({ sessions }: WeeklyWorkoutChartProps) {
-  // Compute recent 7 Monday-start weeks
+  // Compute recent 5 Monday-start weeks for optimal density on mobile
   const chartData = useMemo(() => {
     const now = new Date()
     const currentMonday = getMondayOfWeek(now)
@@ -35,7 +35,7 @@ export function WeeklyWorkoutChart({ sessions }: WeeklyWorkoutChartProps) {
       count: number
     }[] = []
 
-    for (let i = 6; i >= 0; i--) {
+    for (let i = 4; i >= 0; i--) {
       const m = new Date(currentMonday)
       m.setDate(m.getDate() - i * 7)
 
@@ -80,7 +80,7 @@ export function WeeklyWorkoutChart({ sessions }: WeeklyWorkoutChartProps) {
             Workout times per week
           </h2>
           <p className="text-xs text-zinc-400 font-body mt-0.5">
-            Weekly session frequency over past 7 weeks
+            Weekly session frequency over past 5 weeks
           </p>
         </div>
       </div>
@@ -101,7 +101,7 @@ export function WeeklyWorkoutChart({ sessions }: WeeklyWorkoutChartProps) {
               dataKey="label"
               axisLine={false}
               tickLine={false}
-              tick={{ fill: "#a1a1aa", fontSize: 11, fontFamily: "var(--font-body), sans-serif" }}
+              tick={{ fill: "#e4e4e7", fontSize: 12, fontWeight: 500, fontFamily: "var(--font-body), sans-serif" }}
               dy={6}
             />
             <YAxis
@@ -135,7 +135,9 @@ export function WeeklyWorkoutChart({ sessions }: WeeklyWorkoutChartProps) {
               dataKey="count"
               fill="#ffffff"
               radius={[5, 5, 0, 0]}
-              maxBarSize={32}
+              maxBarSize={36}
+              isAnimationActive={true}
+              animationDuration={280}
             />
           </BarChart>
         </ResponsiveContainer>

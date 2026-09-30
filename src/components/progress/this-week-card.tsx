@@ -86,40 +86,56 @@ export function ThisWeekCard({ sessions, onOpenWeeklyOverview }: ThisWeekCardPro
         )}
       </div>
 
-      {/* ─── 2. 7 Day Circles (S M T W T F S, matching Reference 01) ─── */}
-      <div className="grid grid-cols-7 gap-1 sm:gap-2 justify-items-center py-1">
-        {days.map((day, idx) => (
-          <div key={idx} className="flex flex-col items-center select-none">
-            {/* Day of Week Label */}
-            <span
-              className={`text-xs font-medium font-body mb-2 ${
-                day.isToday ? "text-white font-bold" : "text-zinc-500"
-              }`}
-            >
-              {day.dayName}
-            </span>
+      {/* ─── 2. 7 Day Circles (S M T W T F S) ─── */}
+      <div className="space-y-3">
+        <div className="grid grid-cols-7 gap-1 sm:gap-2 justify-items-center py-1">
+          {days.map((day, idx) => (
+            <div key={idx} className="flex flex-col items-center select-none">
+              {/* Day of Week Label */}
+              <span
+                className={`text-xs font-medium font-body mb-2 ${
+                  day.isToday ? "text-white font-semibold" : "text-zinc-500"
+                }`}
+              >
+                {day.dayName}
+              </span>
 
-            {/* Date Circle */}
-            <div
-              className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-display tabular-nums text-xs sm:text-sm transition-all ${
-                day.isToday
-                  ? "bg-[#2563eb] text-white font-bold shadow-md shadow-blue-600/30"
-                  : day.hasWorkout
-                  ? "bg-zinc-800 text-white font-semibold border border-zinc-600"
-                  : "bg-zinc-900/80 text-zinc-400 border border-zinc-800/80"
-              }`}
-            >
-              {day.dateNumber}
+              {/* Unified Date Circle:
+                  - Workout Day: filled white circle with dark text
+                  - Today: marked with distinctive blue ring
+                  - Rest Day: subtle dark circle */}
+              <div
+                className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-display tabular-nums text-xs sm:text-sm transition-all ${
+                  day.hasWorkout && day.isToday
+                    ? "bg-white text-zinc-950 font-bold ring-2 ring-[#3b82f6] ring-offset-2 ring-offset-[#121316] shadow-md shadow-blue-500/20"
+                    : day.isToday
+                    ? "bg-blue-600/20 text-blue-400 ring-2 ring-[#3b82f6] ring-offset-2 ring-offset-[#121316] font-bold"
+                    : day.hasWorkout
+                    ? "bg-white text-zinc-950 font-bold shadow-xs"
+                    : "bg-zinc-900/80 text-zinc-500 border border-zinc-800/80 font-normal"
+                }`}
+              >
+                {day.dateNumber}
+              </div>
             </div>
+          ))}
+        </div>
 
-            {/* Workout Marker */}
-            <div className="mt-1.5 flex items-center justify-center h-1.5">
-              {day.hasWorkout && !day.isToday ? (
-                <div className="w-1.5 h-1.5 rounded-full bg-[#3b82f6]" />
-              ) : null}
-            </div>
-          </div>
-        ))}
+        {/* Tiny Clear Legend */}
+        <div className="flex items-center justify-center gap-5 pt-1 text-[11px] text-zinc-400 select-none">
+          <span className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-full ring-2 ring-[#3b82f6] ring-offset-1 ring-offset-[#121316] bg-blue-600/20" />
+            <span>Today</span>
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-white" />
+            <span>Workout</span>
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-zinc-900 border border-zinc-750" />
+            <span>Rest</span>
+          </span>
+        </div>
       </div>
 
       {/* ─── 3. Two Mini-Stats: Today(min) | Weekly average(min) (Reference 01) ─── */}

@@ -10,6 +10,7 @@ import { mutate as globalMutate } from "swr"
 import { DataBackup } from "@/components/profile/data-backup"
 import { Switch } from "@/components/ui/switch"
 import soundManager, { isVibrationEnabled, setVibrationEnabled } from "@/lib/sounds"
+import { PageTransition } from "@/components/ui/page-transition"
 
 export default function ProfilePage() {
   const router = useRouter()
@@ -199,363 +200,375 @@ export default function ProfilePage() {
   }
 
   return (
-    <main className="pb-32 md:pb-12">
+    <PageTransition>
+      <main className="pb-32 md:pb-12">
+        <header className="mx-auto max-w-3xl px-4 pt-6">
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Profile</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">Set your info and targets.</p>
+        </header>
 
-      <header className="mx-auto max-w-3xl px-4 pt-6">
-        <h1 className="text-2xl font-semibold">Profile</h1>
-        <p className="text-sm text-muted-foreground">Set your info and targets.</p>
-      </header>
-
-      <section className="mx-auto max-w-3xl px-4 pt-4 space-y-6">
-        <form
-          className="grid gap-4 rounded-xl border bg-card p-4 shadow-sm"
-          onSubmit={async (e) => {
-            e.preventDefault()
-            try {
-              await save({
-                name: name.trim(),
-                heightCm: Number(heightCm) || undefined,
-                weightKg: Number(weightKg) || undefined,
-                goalType: goalType as any,
-                goals,
-              })
-              toast.success("Profile saved!")
-            } catch (err: any) {
-              toast.error(err?.message || "Failed to save profile")
-            }
-          }}
-        >
-          <div className="grid gap-1">
-            <label className="text-sm text-muted-foreground">Name</label>
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="rounded-lg border bg-card px-3 py-2"
-              placeholder="Your name"
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-sm text-muted-foreground">Height (cm)</label>
+        <section className="mx-auto max-w-3xl px-4 pt-4 space-y-6">
+          <form
+            className="grid gap-5 rounded-2xl border bg-card p-5 sm:p-6 shadow-xs"
+            onSubmit={async (e) => {
+              e.preventDefault()
+              try {
+                await save({
+                  name: name.trim(),
+                  heightCm: Number(heightCm) || undefined,
+                  weightKg: Number(weightKg) || undefined,
+                  goalType: goalType as any,
+                  goals,
+                })
+                toast.success("Profile saved!")
+              } catch (err: any) {
+                toast.error(err?.message || "Failed to save profile")
+              }
+            }}
+          >
+            <div className="grid gap-1.5">
+              <label className="text-xs font-medium text-muted-foreground">Name</label>
               <input
-                type="number"
-                value={heightCm}
-                onChange={(e) => setHeightCm(Number(e.target.value))}
-                className="w-full rounded-lg border bg-card px-3 py-2 mt-1"
-                placeholder="cm"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="rounded-xl border bg-card px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                placeholder="Your name"
               />
             </div>
-            <div>
-              <div className="flex items-center justify-between">
-                <label className="text-sm text-muted-foreground">Weight</label>
-                <div className="flex items-center gap-1 bg-muted/60 p-0.5 rounded-md text-xs border border-border/50">
-                  <button
-                    type="button"
-                    onClick={() => handleToggleUnit("kg")}
-                    className={`px-1.5 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
-                      weightUnit === "kg"
-                        ? "bg-primary text-primary-foreground shadow-xs"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    kg
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleToggleUnit("lbs")}
-                    className={`px-1.5 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
-                      weightUnit === "lbs"
-                        ? "bg-primary text-primary-foreground shadow-xs"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    lbs
-                  </button>
-                </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">Height (cm)</label>
+                <input
+                  type="number"
+                  value={heightCm}
+                  onChange={(e) => setHeightCm(Number(e.target.value))}
+                  className="w-full rounded-xl border bg-card px-3 py-2 mt-1 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                  placeholder="cm"
+                />
               </div>
-              <input
-                type="number"
-                step="0.1"
-                value={
-                  weightKg === ""
-                    ? ""
-                    : weightUnit === "lbs"
-                    ? Math.round(Number(weightKg) * 2.20462 * 10) / 10
-                    : weightKg
-                }
-                onChange={(e) => {
-                  const val = e.target.value
-                  if (val === "") {
-                    setWeightKg("")
-                  } else {
-                    const num = Number(val)
-                    setWeightKg(weightUnit === "lbs" ? Math.round((num / 2.20462) * 10) / 10 : num)
+              <div>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-medium text-muted-foreground">Weight</label>
+                  <div className="flex items-center gap-1 bg-muted/60 p-0.5 rounded-full text-xs border border-border/50">
+                    <button
+                      type="button"
+                      onClick={() => handleToggleUnit("kg")}
+                      className={`px-2 py-0.5 rounded-full text-[10px] font-bold transition-all cursor-pointer ${
+                        weightUnit === "kg"
+                          ? "bg-primary text-primary-foreground shadow-xs"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      kg
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleToggleUnit("lbs")}
+                      className={`px-2 py-0.5 rounded-full text-[10px] font-bold transition-all cursor-pointer ${
+                        weightUnit === "lbs"
+                          ? "bg-primary text-primary-foreground shadow-xs"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      lbs
+                    </button>
+                  </div>
+                </div>
+                <input
+                  type="number"
+                  step="0.1"
+                  value={
+                    weightKg === ""
+                      ? ""
+                      : weightUnit === "lbs"
+                      ? Math.round(Number(weightKg) * 2.20462 * 10) / 10
+                      : weightKg
                   }
-                }}
-                className="w-full rounded-lg border bg-card px-3 py-2 mt-1"
-                placeholder={weightUnit}
-              />
+                  onChange={(e) => {
+                    const val = e.target.value
+                    if (val === "") {
+                      setWeightKg("")
+                    } else {
+                      const num = Number(val)
+                      setWeightKg(weightUnit === "lbs" ? Math.round((num / 2.20462) * 10) / 10 : num)
+                    }
+                  }}
+                  className="w-full rounded-xl border bg-card px-3 py-2 mt-1 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                  placeholder={weightUnit}
+                />
+              </div>
             </div>
-          </div>
 
-          {/* Dynamic BMI & Calorie Target Calculator */}
-          {bmiInfo && (
-            <div className="rounded-xl border border-border/80 bg-muted/20 p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Activity className="h-4 w-4 text-primary" />
-                  <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                    Body Metrics & Calorie Target
+            {/* Dynamic BMI & Calorie Target Calculator */}
+            {bmiInfo && (
+              <div className="rounded-xl border border-border/80 bg-muted/20 p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Activity className="h-4 w-4 text-primary" />
+                    <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                      Body Metrics & Calorie Target
+                    </span>
+                  </div>
+                  <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full border ${bmiInfo.badgeClass}`}>
+                    {bmiInfo.category}
                   </span>
                 </div>
-                <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full border ${bmiInfo.badgeClass}`}>
-                  {bmiInfo.category}
-                </span>
-              </div>
 
-              <div className="grid grid-cols-3 gap-2 sm:gap-3 text-center">
-                <div className="p-2 sm:p-2.5 rounded-lg bg-card border border-border/50">
-                  <div className="text-[10px] sm:text-[11px] text-muted-foreground">BMI</div>
-                  <div className="text-sm sm:text-base font-bold text-foreground mt-0.5">{bmiInfo.bmi}</div>
-                </div>
-                <div className="p-2 sm:p-2.5 rounded-lg bg-card border border-border/50">
-                  <div className="text-[10px] sm:text-[11px] text-muted-foreground truncate">BMR / Base</div>
-                  <div className="text-sm sm:text-base font-bold text-foreground mt-0.5 truncate">{bmiInfo.bmr} kcal</div>
-                </div>
-                <div className="p-2 sm:p-2.5 rounded-lg bg-primary/10 border border-primary/20">
-                  <div className="text-[10px] sm:text-[11px] text-primary font-medium truncate">Daily Target</div>
-                  <div className="text-sm sm:text-base font-bold text-primary mt-0.5 truncate">{bmiInfo.targetCalories} kcal</div>
+                <div className="grid grid-cols-3 gap-2 sm:gap-3 text-center">
+                  <div className="p-2.5 rounded-xl bg-card border border-border/50">
+                    <div className="text-[10px] sm:text-[11px] text-muted-foreground">BMI</div>
+                    <div className="text-sm sm:text-base font-bold text-foreground mt-0.5">{bmiInfo.bmi}</div>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-card border border-border/50">
+                    <div className="text-[10px] sm:text-[11px] text-muted-foreground truncate">BMR / Base</div>
+                    <div className="text-sm sm:text-base font-bold text-foreground mt-0.5 truncate">{bmiInfo.bmr} kcal</div>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-primary/10 border border-primary/20">
+                    <div className="text-[10px] sm:text-[11px] text-primary font-medium truncate">Daily Target</div>
+                    <div className="text-sm sm:text-base font-bold text-primary mt-0.5 truncate">{bmiInfo.targetCalories} kcal</div>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
-          <div className="grid gap-1">
-            <label className="text-sm text-muted-foreground">Training Goal</label>
-            <select
-              value={goalType}
-              onChange={(e) => setGoalType(e.target.value as "strength" | "endurance" | "skill")}
-              className="rounded-lg border bg-card px-3 py-2 cursor-pointer"
-            >
-              <option value="strength">Strength (Muscle Building Surplus)</option>
-              <option value="endurance">Endurance (Performance Maintenance)</option>
-              <option value="skill">Skill (Lean Athletic)</option>
-            </select>
-          </div>
-
-          <div className="grid gap-3 rounded-lg border p-3">
-            <div className="text-sm font-medium">Targets</div>
-            {goals.map((g, idx) => {
-              const exercise = exercises.find((e) => e.id === g.exerciseId)
-              return (
-                <div key={idx} className="grid grid-cols-1 sm:grid-cols-3 items-end gap-2.5 sm:gap-3 pb-3 border-b sm:border-b-0 border-border/40">
-                  <div>
-                    <label className="text-xs text-muted-foreground">Exercise</label>
-                    <select
-                      value={g.exerciseId}
-                      onChange={(e) => {
-                        const v = e.target.value
-                        setGoals((arr) => arr.map((x, i) => (i === idx ? { ...x, exerciseId: v } : x)))
-                      }}
-                      className="mt-1 w-full rounded-lg border bg-card px-3 py-2 text-sm"
-                    >
-                      {exercises.map((ex) => (
-                        <option key={ex.id} value={ex.id}>
-                          {ex.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-xs text-muted-foreground">Target Reps</label>
-                    <input
-                      type="number"
-                      value={g.targetReps ?? ""}
-                      onChange={(e) =>
-                        setGoals((arr) =>
-                          arr.map((x, i) => (i === idx ? { ...x, targetReps: Number(e.target.value) } : x)),
-                        )
-                      }
-                      className="mt-1 w-full rounded-lg border bg-card px-3 py-2 text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs text-muted-foreground">Target Volume</label>
-                    <input
-                      type="number"
-                      value={g.targetVolume ?? ""}
-                      onChange={(e) =>
-                        setGoals((arr) =>
-                          arr.map((x, i) => (i === idx ? { ...x, targetVolume: Number(e.target.value) } : x)),
-                        )
-                      }
-                      className="mt-1 w-full rounded-lg border bg-card px-3 py-2 text-sm"
-                    />
-                  </div>
-                </div>
-              )
-            })}
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setGoals((arr) => [...arr, { exerciseId: exercises[0]?.id ?? "", targetReps: 10 }])}
-                className="rounded-md bg-secondary px-3 py-2 text-sm"
+            <div className="grid gap-1.5">
+              <label className="text-xs font-medium text-muted-foreground">Training Goal</label>
+              <select
+                value={goalType}
+                onChange={(e) => setGoalType(e.target.value as "strength" | "endurance" | "skill")}
+                className="rounded-xl border bg-card px-3 py-2 text-sm cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary"
               >
-                Add Target
-              </button>
-              <button
-                type="button"
-                onClick={() => setGoals((arr) => arr.slice(0, -1))}
-                className="rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted"
-                disabled={goals.length === 0}
-              >
-                Remove Last
-              </button>
+                <option value="strength">Strength (Muscle Building Surplus)</option>
+                <option value="endurance">Endurance (Performance Maintenance)</option>
+                <option value="skill">Skill (Lean Athletic)</option>
+              </select>
             </div>
-          </div>
 
-          <button type="submit" className="rounded-lg bg-primary px-4 py-2 text-primary-foreground flex items-center justify-center gap-2">
-            <Save className="h-4 w-4" />
-            Save Profile
-          </button>
-
-          <div className="rounded-lg border p-3">
-            <div className="text-sm font-medium">Current vs Target</div>
-            <ul className="mt-2 grid gap-2">
-              {goals.length === 0 && <li className="text-sm text-muted-foreground">No targets defined.</li>}
+            {/* Target Exercises Setup */}
+            <div className="grid gap-3 rounded-xl border border-border/70 bg-muted/20 p-4">
+              <div className="text-sm font-semibold text-foreground">Exercise Targets</div>
               {goals.map((g, idx) => {
-                const ex = exercises.find((e) => e.id === g.exerciseId)
+                const exercise = exercises.find((e) => e.id === g.exerciseId)
                 return (
-                  <li key={idx} className="text-sm">
-                    {`${ex?.name ?? "Exercise"}: Target ${g.targetReps ?? "-"} reps, ${g.targetVolume ?? "-"} vol`}
-                  </li>
+                  <div key={idx} className="grid grid-cols-1 sm:grid-cols-3 items-end gap-2.5 sm:gap-3 pb-3 border-b sm:border-b-0 border-border/40">
+                    <div>
+                      <label className="text-xs text-muted-foreground">Exercise</label>
+                      <select
+                        value={g.exerciseId}
+                        onChange={(e) => {
+                          const v = e.target.value
+                          setGoals((arr) => arr.map((x, i) => (i === idx ? { ...x, exerciseId: v } : x)))
+                        }}
+                        className="mt-1 w-full rounded-xl border bg-card px-3 py-2 text-sm"
+                      >
+                        {exercises.map((ex) => (
+                          <option key={ex.id} value={ex.id}>
+                            {ex.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground">Target Reps</label>
+                      <input
+                        type="number"
+                        value={g.targetReps ?? ""}
+                        onChange={(e) =>
+                          setGoals((arr) =>
+                            arr.map((x, i) => (i === idx ? { ...x, targetReps: Number(e.target.value) } : x)),
+                          )
+                        }
+                        className="mt-1 w-full rounded-xl border bg-card px-3 py-2 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground">Target Volume</label>
+                      <input
+                        type="number"
+                        value={g.targetVolume ?? ""}
+                        onChange={(e) =>
+                          setGoals((arr) =>
+                            arr.map((x, i) => (i === idx ? { ...x, targetVolume: Number(e.target.value) } : x)),
+                          )
+                        }
+                        className="mt-1 w-full rounded-xl border bg-card px-3 py-2 text-sm"
+                      />
+                    </div>
+                  </div>
                 )
               })}
-            </ul>
-          </div>
-        </form>
-
-        {/* Exercise Rep Goals Section */}
-        <div className="grid gap-4 rounded-xl border bg-card p-4 shadow-sm">
-          <div>
-            <h2 className="text-lg font-medium">Exercise Rep Goals</h2>
-            <p className="text-sm text-muted-foreground mt-1">
-              Set target reps for each exercise to track your progress
-            </p>
-          </div>
-
-          {exercises.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No exercises available.</p>
-          ) : (
-            <div className="space-y-3">
-              {exercises.map((ex) => (
-                <div key={ex.id} className="flex items-center gap-3">
-                  <div className="flex-1">
-                    <div className="text-sm font-medium">{ex.name}</div>
-                    {ex.type && (
-                      <div className="text-xs text-muted-foreground capitalize">{ex.type}</div>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      value={exerciseGoals[ex.id] || ""}
-                      onChange={(e) => {
-                        const value = e.target.value ? Number(e.target.value) : 0
-                        setExerciseGoals(prev => ({
-                          ...prev,
-                          [ex.id]: value
-                        }))
-                      }}
-                      className="w-20 rounded-lg border bg-background px-3 py-1.5 text-sm text-center"
-                      placeholder="Goal"
-                      min="1"
-                    />
-                    <span className="text-xs text-muted-foreground">{ex.type === "timer" ? "sec" : "reps"}</span>
-                  </div>
-                </div>
-              ))}
+              <div className="flex items-center gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setGoals((arr) => [...arr, { exerciseId: exercises[0]?.id ?? "", targetReps: 10 }])}
+                  className="rounded-full bg-secondary px-3.5 py-1.5 text-xs font-semibold hover:bg-secondary/80 active:scale-[0.98] transition-all cursor-pointer border border-border/60"
+                >
+                  Add Target
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setGoals((arr) => arr.slice(0, -1))}
+                  className="rounded-full px-3.5 py-1.5 text-xs font-semibold text-muted-foreground hover:bg-muted active:scale-[0.98] transition-all cursor-pointer"
+                  disabled={goals.length === 0}
+                >
+                  Remove Last
+                </button>
+              </div>
             </div>
-          )}
 
-          <button
-            type="button"
-            onClick={handleSaveExerciseGoals}
-            className="rounded-lg bg-primary px-4 py-2 text-primary-foreground flex items-center justify-center gap-2 cursor-pointer hover:bg-primary/90 transition-colors"
-          >
-            <Save className="h-4 w-4" />
-            Save Exercise Goals
-          </button>
-        </div>
+            <button
+              type="submit"
+              className="h-10 px-5 rounded-full bg-primary text-primary-foreground font-semibold text-sm flex items-center justify-center gap-2 hover:bg-primary/90 active:scale-[0.98] transition-all cursor-pointer shadow-xs"
+            >
+              <Save className="h-4 w-4" />
+              <span>Save Profile</span>
+            </button>
 
-        {/* Points System Calibration */}
-        <div className="grid gap-3 rounded-xl border bg-card p-4 shadow-sm">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            {/* Flattened Current vs Target Section (clean integrated summary, no double border) */}
+            <div className="pt-3 border-t border-border/50 space-y-2">
+              <div className="text-sm font-semibold text-foreground">Current vs Target Summary</div>
+              <ul className="grid gap-1.5">
+                {goals.length === 0 ? (
+                  <li className="text-xs text-muted-foreground">No targets defined yet.</li>
+                ) : (
+                  goals.map((g, idx) => {
+                    const ex = exercises.find((e) => e.id === g.exerciseId)
+                    return (
+                      <li key={idx} className="text-xs flex items-center justify-between py-1 border-b border-border/30 last:border-b-0">
+                        <span className="font-medium text-foreground">{ex?.name ?? "Exercise"}</span>
+                        <span className="text-muted-foreground font-mono">
+                          Target {g.targetReps ?? "-"} reps · {g.targetVolume ?? "-"} vol
+                        </span>
+                      </li>
+                    )
+                  })
+                )}
+              </ul>
+            </div>
+          </form>
+
+          {/* Exercise Rep Goals Section */}
+          <div className="grid gap-4 rounded-2xl border bg-card p-5 sm:p-6 shadow-xs">
             <div>
-              <h2 className="text-lg font-medium">Points System Calibration</h2>
+              <h2 className="text-base font-bold tracking-tight text-foreground">Exercise Rep Goals</h2>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Normalize past workouts to the balanced points scale. Preserves 100% of your workouts and history.
+                Set target reps for each exercise to track your progress
               </p>
             </div>
+
+            {exercises.length === 0 ? (
+              <p className="text-xs text-muted-foreground">No exercises available.</p>
+            ) : (
+              <div className="space-y-2.5">
+                {exercises.map((ex) => (
+                  <div key={ex.id} className="flex items-center gap-3 py-1 border-b border-border/30 last:border-b-0">
+                    <div className="flex-1">
+                      <div className="text-sm font-medium text-foreground">{ex.name}</div>
+                      {ex.type && (
+                        <div className="text-xs text-muted-foreground capitalize">{ex.type}</div>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        value={exerciseGoals[ex.id] || ""}
+                        onChange={(e) => {
+                          const value = e.target.value ? Number(e.target.value) : 0
+                          setExerciseGoals(prev => ({
+                            ...prev,
+                            [ex.id]: value
+                          }))
+                        }}
+                        className="w-20 rounded-full border bg-background px-3 py-1.5 text-xs text-center font-mono focus:outline-none focus:ring-1 focus:ring-primary"
+                        placeholder="Goal"
+                        min="1"
+                      />
+                      <span className="text-xs text-muted-foreground font-mono">{ex.type === "timer" ? "sec" : "reps"}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
             <button
               type="button"
-              onClick={handleRecalculatePoints}
-              disabled={isRecalculating}
-              className="rounded-lg bg-secondary border border-border/80 px-3.5 py-2 text-xs font-semibold hover:bg-secondary/80 flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 transition-colors self-start sm:self-auto shrink-0"
+              onClick={handleSaveExerciseGoals}
+              className="h-10 px-5 rounded-full bg-primary text-primary-foreground font-semibold text-sm flex items-center justify-center gap-2 cursor-pointer hover:bg-primary/90 active:scale-[0.98] transition-all shadow-xs"
             >
-              <RefreshCw className={`h-3.5 w-3.5 ${isRecalculating ? "animate-spin" : ""}`} />
-              <span>{isRecalculating ? "Normalizing..." : "Normalize Points"}</span>
+              <Save className="h-4 w-4" />
+              <span>Save Exercise Goals</span>
             </button>
           </div>
-        </div>
 
-        {/* Sound & Vibration Preferences */}
-        <div className="grid gap-3 rounded-xl border bg-card p-4 shadow-sm">
-          <div>
-            <h2 className="text-lg font-medium">Preferences</h2>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Customize audio feedback and haptics during workouts.
-            </p>
-          </div>
-          <div className="divide-y divide-border/60">
-            <div className="flex items-center justify-between py-2.5">
-              <div className="flex items-center gap-2.5">
-                {soundEnabled ? (
-                  <Volume2 className="h-4 w-4 text-primary shrink-0" />
-                ) : (
-                  <VolumeX className="h-4 w-4 text-muted-foreground shrink-0" />
-                )}
-                <div>
-                  <div className="text-sm font-medium">Sound Effects</div>
-                  <div className="text-xs text-muted-foreground">Timer beeps, set completions, and celebration chimes</div>
-                </div>
+          {/* Points System Calibration */}
+          <div className="grid gap-3 rounded-2xl border bg-card p-5 sm:p-6 shadow-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h2 className="text-base font-bold tracking-tight text-foreground">Points System Calibration</h2>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Normalize past workouts to the balanced points scale. Preserves 100% of your workouts and history.
+                </p>
               </div>
-              <Switch
-                checked={soundEnabled}
-                onCheckedChange={handleToggleSound}
-                aria-label="Toggle Sound Effects"
-              />
-            </div>
-            <div className="flex items-center justify-between py-2.5">
-              <div className="flex items-center gap-2.5">
-                <Vibrate className="h-4 w-4 text-primary shrink-0" />
-                <div>
-                  <div className="text-sm font-medium">Vibration & Haptics</div>
-                  <div className="text-xs text-muted-foreground">Tactile feedback for rest countdowns and completed reps</div>
-                </div>
-              </div>
-              <Switch
-                checked={vibrationEnabledState}
-                onCheckedChange={handleToggleVibration}
-                aria-label="Toggle Vibration"
-              />
+              <button
+                type="button"
+                onClick={handleRecalculatePoints}
+                disabled={isRecalculating}
+                className="h-9 px-4 rounded-full bg-secondary border border-border/80 text-xs font-semibold hover:bg-secondary/80 active:scale-[0.98] flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 transition-all self-start sm:self-auto shrink-0"
+              >
+                <RefreshCw className={`h-3.5 w-3.5 ${isRecalculating ? "animate-spin" : ""}`} />
+                <span>{isRecalculating ? "Normalizing..." : "Normalize Points"}</span>
+              </button>
             </div>
           </div>
-        </div>
 
-        {/* Data Backup & Restore Section */}
-        <DataBackup />
-      </section>
-    </main>
+          {/* Sound & Vibration Preferences */}
+          <div className="grid gap-3 rounded-2xl border bg-card p-5 sm:p-6 shadow-xs">
+            <div>
+              <h2 className="text-base font-bold tracking-tight text-foreground">Preferences</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Customize audio feedback and haptics during workouts.
+              </p>
+            </div>
+            <div className="divide-y divide-border/60">
+              <div className="flex items-center justify-between py-2.5">
+                <div className="flex items-center gap-2.5">
+                  {soundEnabled ? (
+                    <Volume2 className="h-4 w-4 text-primary shrink-0" />
+                  ) : (
+                    <VolumeX className="h-4 w-4 text-muted-foreground shrink-0" />
+                  )}
+                  <div>
+                    <div className="text-sm font-medium">Sound Effects</div>
+                    <div className="text-xs text-muted-foreground">Timer beeps, set completions, and celebration chimes</div>
+                  </div>
+                </div>
+                <Switch
+                  checked={soundEnabled}
+                  onCheckedChange={handleToggleSound}
+                  aria-label="Toggle Sound Effects"
+                />
+              </div>
+              <div className="flex items-center justify-between py-2.5">
+                <div className="flex items-center gap-2.5">
+                  <Vibrate className="h-4 w-4 text-primary shrink-0" />
+                  <div>
+                    <div className="text-sm font-medium">Vibration & Haptics</div>
+                    <div className="text-xs text-muted-foreground">Tactile feedback for rest countdowns and completed reps</div>
+                  </div>
+                </div>
+                <Switch
+                  checked={vibrationEnabledState}
+                  onCheckedChange={handleToggleVibration}
+                  aria-label="Toggle Vibration"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Data Backup & Restore Section */}
+          <DataBackup />
+        </section>
+      </main>
+    </PageTransition>
   )
 }

@@ -72,24 +72,24 @@ export function ExerciseCard({ ex, onDelete }: ExerciseCardProps) {
         {/* Floating Action Buttons - Gracefully revealed on hover */}
         {mounted && canEdit && (
           <div
-            className="absolute top-3 right-3 flex items-center gap-1.5 opacity-0 -translate-y-1.5 pointer-events-none group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto transition-all duration-250 ease-out z-20"
+            className="absolute top-3 right-3 flex items-center gap-1.5 opacity-0 -translate-y-1.5 pointer-events-none group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto transition-all duration-200 ease-out z-20"
             onClick={(e) => e.stopPropagation()}
           >
             <button
               onClick={handleEdit}
-              className="p-2 rounded-xl bg-background/90 backdrop-blur-md border border-border/80 text-foreground shadow-lg hover:bg-primary hover:text-primary-foreground hover:scale-110 active:scale-95 transition-all duration-150 cursor-pointer"
+              className="min-w-[40px] min-h-[40px] flex items-center justify-center rounded-full bg-background/95 backdrop-blur-md border border-border/80 text-foreground shadow-md hover:bg-primary hover:text-primary-foreground hover:scale-105 active:scale-95 transition-all duration-150 cursor-pointer"
               title="Edit Exercise"
               aria-label="Edit Exercise"
             >
-              <Edit className="h-3.5 w-3.5" />
+              <Edit className="h-4 w-4" />
             </button>
             <button
               onClick={handleDelete}
-              className="p-2 rounded-xl bg-background/90 backdrop-blur-md border border-border/80 text-muted-foreground shadow-lg hover:bg-destructive hover:text-destructive-foreground hover:border-destructive hover:scale-110 active:scale-95 transition-all duration-150 cursor-pointer"
+              className="min-w-[40px] min-h-[40px] flex items-center justify-center rounded-full bg-background/95 backdrop-blur-md border border-border/80 text-foreground shadow-md hover:bg-destructive hover:text-destructive-foreground hover:border-destructive hover:scale-105 active:scale-95 transition-all duration-150 cursor-pointer"
               title="Delete Exercise"
               aria-label="Delete Exercise"
             >
-              <Trash2 className="h-3.5 w-3.5" />
+              <Trash2 className="h-4 w-4" />
             </button>
           </div>
         )}
@@ -103,20 +103,20 @@ export function ExerciseCard({ ex, onDelete }: ExerciseCardProps) {
           </h3>
         </div>
 
-        {/* Clean Badges: Level, Split, Type */}
+        {/* Standardised Badges: Level, Split, Type */}
         <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
           {ex.level !== undefined && (
-            <span className="rounded-lg bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 text-[11px] font-bold">
+            <span className="rounded-full border border-primary/25 bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary select-none">
               Level {ex.level}
             </span>
           )}
           {ex.split && (
-            <span className="rounded-lg bg-secondary border border-border/60 px-2 py-0.5 text-[11px] font-medium capitalize text-secondary-foreground">
+            <span className="rounded-full border border-border/80 bg-secondary/80 px-2.5 py-0.5 text-xs font-semibold capitalize text-secondary-foreground select-none">
               {ex.split}
             </span>
           )}
           {ex.type && ex.type.split(',').map((t, idx) => (
-            <span key={idx} className="rounded-lg bg-muted px-2 py-0.5 text-[11px] font-medium capitalize text-muted-foreground">
+            <span key={idx} className="rounded-full border border-border/80 bg-secondary/80 px-2.5 py-0.5 text-xs font-semibold capitalize text-secondary-foreground select-none">
               {t.trim()}
             </span>
           ))}

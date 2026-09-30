@@ -8,6 +8,8 @@ import { Plus, Lock, AlertCircle, Loader2, Search, X } from "lucide-react"
 import type { Exercise } from "@/lib/types"
 import { useSession } from "@/lib/auth-client"
 import { toast } from "sonner"
+import { motion } from "framer-motion"
+import { PageTransition } from "@/components/ui/page-transition"
 
 const BODY_PARTS = [
   "Chest",
@@ -136,42 +138,43 @@ export default function ExercisesPage() {
   }, [exercises, debouncedQuery, levelFilter, splitFilter, typeFilter, sortBy])
 
   return (
-    <main className="pb-32 md:pb-12">
-      <section className="mx-auto max-w-5xl px-3 pt-6 md:px-4">
-        {mounted && session && typeof window !== "undefined" && !localStorage.getItem("bearer_token") && (
-          <div className="mb-4 rounded-lg border border-destructive bg-destructive/10 p-4 flex items-start gap-3">
-            <AlertCircle className="h-5 w-5 text-destructive mt-0.5" />
-            <div className="flex-1">
-              <h3 className="font-medium text-destructive mb-1">Session Expired</h3>
-              <p className="text-sm text-muted-foreground mb-2">
-                Your authentication session has expired. Please log out and log back in to continue.
-              </p>
-              <button
-                onClick={() => {
-                  localStorage.removeItem("currentUser")
-                  localStorage.removeItem("bearer_token")
-                  router.push("/login")
-                }}
-                className="text-sm font-medium text-destructive hover:underline cursor-pointer"
-              >
-                Log Out Now
-              </button>
+    <PageTransition>
+      <main className="pb-32 md:pb-12">
+        <section className="mx-auto max-w-5xl px-3 pt-6 md:px-4">
+          {mounted && session && typeof window !== "undefined" && !localStorage.getItem("bearer_token") && (
+            <div className="mb-4 rounded-xl border border-destructive bg-destructive/10 p-4 flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 text-destructive mt-0.5" />
+              <div className="flex-1">
+                <h3 className="font-semibold text-destructive mb-1">Session Expired</h3>
+                <p className="text-sm text-muted-foreground mb-2">
+                  Your authentication session has expired. Please log out and log back in to continue.
+                </p>
+                <button
+                  onClick={() => {
+                    localStorage.removeItem("currentUser")
+                    localStorage.removeItem("bearer_token")
+                    router.push("/login")
+                  }}
+                  className="text-sm font-semibold text-destructive hover:underline cursor-pointer"
+                >
+                  Log Out Now
+                </button>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Header: Title + Action */}
-        <div className="flex items-center justify-between gap-3">
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Exercises</h1>
-          <button
-            type="button"
-            className="inline-flex items-center justify-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs sm:text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors min-h-[44px] cursor-pointer shadow-xs"
-            onClick={() => setShowForm((s) => !s)}
-          >
-            <Plus className="h-4 w-4" />
-            <span>{showForm ? "Close" : "New Exercise"}</span>
-          </button>
-        </div>
+          {/* Header: Title + Action */}
+          <div className="flex items-center justify-between gap-3">
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">Exercises</h1>
+            <button
+              type="button"
+              className="h-9 px-4 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 text-xs sm:text-sm font-semibold shadow-xs inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-[0.97] shrink-0"
+              onClick={() => setShowForm((s) => !s)}
+            >
+              <Plus className="h-4 w-4 stroke-[2.5]" />
+              <span>{showForm ? "Close" : "New Exercise"}</span>
+            </button>
+          </div>
 
         {/* Search Bar + Filters (reference: Hevy exercise search) */}
         <div className="mt-3 flex flex-col gap-2.5">
@@ -298,11 +301,18 @@ export default function ExercisesPage() {
           </div>
         ) : (
           <div className="flex flex-col gap-2.5">
-            {filtered.map((e) => (
-              <ExerciseCard key={e.id} ex={e} onDelete={remove} />
+            {filtered.map((e, idx) => (
+              <motion.div
+                key={e.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2, delay: Math.min(idx * 0.03, 0.25) }}
+              >
+                <ExerciseCard ex={e} onDelete={remove} />
+              </motion.div>
             ))}
             {filtered.length === 0 && (
-              <div className="rounded-xl border bg-card p-6 text-center text-sm text-muted-foreground">
+              <div className="rounded-2xl border border-dashed border-border/80 bg-card/40 p-8 text-center text-sm text-muted-foreground">
                 No exercises found.
               </div>
             )}
@@ -310,6 +320,7 @@ export default function ExercisesPage() {
         )}
       </section>
     </main>
+    </PageTransition>
   )
 }
 

@@ -106,7 +106,7 @@ export function TodayWorkoutCard({
 
   return (
     <>
-      <article className="group rounded-xl border bg-card shadow-sm overflow-hidden transition-shadow hover:shadow-md">
+      <article className="group rounded-2xl border border-border/80 bg-card shadow-sm overflow-hidden transition-all duration-200 hover:shadow-md">
         {/* Header */}
         <div className="bg-muted/30 px-3.5 sm:px-4 py-2.5 sm:py-3 border-b">
           <div className="flex items-center justify-between gap-2">
@@ -127,19 +127,19 @@ export function TodayWorkoutCard({
               {onEdit && (
                 <button
                   onClick={() => setShowEditDialog(true)}
-                  className="rounded-lg p-2 md:p-1.5 text-muted-foreground opacity-100 md:opacity-0 transition-all hover:text-primary hover:bg-primary/10 md:group-hover:opacity-100 cursor-pointer"
+                  className="min-h-[40px] min-w-[40px] flex items-center justify-center rounded-xl text-foreground/80 transition-all hover:text-foreground hover:bg-secondary cursor-pointer active:scale-95"
                   aria-label="Edit workout"
                 >
-                  <Edit className="h-4 w-4" />
+                  <Edit className="h-4.5 w-4.5" />
                 </button>
               )}
               {onDelete && (
                 <button
                   onClick={handleDelete}
-                  className="rounded-lg p-2 md:p-1.5 text-muted-foreground opacity-100 md:opacity-0 transition-all hover:text-destructive hover:bg-destructive/10 md:group-hover:opacity-100 cursor-pointer"
+                  className="min-h-[40px] min-w-[40px] flex items-center justify-center rounded-xl text-foreground/80 transition-all hover:text-destructive hover:bg-destructive/10 cursor-pointer active:scale-95"
                   aria-label="Delete workout"
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <Trash2 className="h-4.5 w-4.5" />
                 </button>
               )}
             </div>

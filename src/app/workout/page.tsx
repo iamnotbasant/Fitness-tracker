@@ -11,6 +11,7 @@ import soundManager, { triggerVibration } from "@/lib/sounds"
 import LiveExerciseCard from "@/components/workout/live-exercise-card"
 import WorkoutConfirmationDialog from "@/components/workout/workout-confirmation-dialog"
 import AddExercisePicker from "@/components/workout/add-exercise-picker"
+import { PageTransition } from "@/components/ui/page-transition"
 import type { SessionExercise } from "@/lib/types"
 
 export default function WorkoutHub() {
@@ -956,7 +957,8 @@ export default function WorkoutHub() {
 
   // Show workout hub if no active session
   return (
-    <main className="min-h-screen bg-background pb-32 md:pb-16">
+    <PageTransition>
+      <main className="min-h-screen bg-background pb-32 md:pb-16">
       {startingRoutine && (
         <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="flex flex-col items-center gap-3 p-6 rounded-2xl bg-card border border-border/60 shadow-xl">
@@ -974,7 +976,7 @@ export default function WorkoutHub() {
         <div className="mx-auto max-w-4xl px-4 py-3.5 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div>
-              <h1 className="text-xl font-bold tracking-tight">Start Workout</h1>
+              <h1 className="text-2xl font-bold tracking-tight text-foreground">Start Workout</h1>
               <p className="text-xs text-muted-foreground hidden sm:block">Choose an empty workout or launch a saved routine</p>
             </div>
           </div>
@@ -983,7 +985,7 @@ export default function WorkoutHub() {
 
       <div className="mx-auto max-w-4xl px-4 pt-6 space-y-6">
         {/* Option 1: Blank Workout Card */}
-        <div className="rounded-2xl border border-border/60 bg-gradient-to-br from-card via-card to-card/60 p-5 md:p-6 shadow-sm hover:border-primary/40 transition-colors">
+        <div className="rounded-2xl border border-border/80 bg-gradient-to-br from-card via-card to-card/60 p-5 md:p-6 shadow-sm hover:border-foreground/20 transition-colors">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
@@ -996,7 +998,7 @@ export default function WorkoutHub() {
             </div>
             <button
               onClick={handleStartWorkout}
-              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-primary font-semibold text-sm text-primary-foreground hover:bg-primary/90 shadow-sm transition-all shrink-0"
+              className="h-9 px-4 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 text-xs sm:text-sm font-semibold shadow-xs inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-[0.97] shrink-0"
             >
               <Play className="h-4 w-4 fill-current" />
               <span>Start Blank</span>
@@ -1009,12 +1011,12 @@ export default function WorkoutHub() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
               <h2 className="text-base md:text-lg font-bold tracking-tight">Routines</h2>
-              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+              <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-muted text-muted-foreground">
                 {filteredRoutines.length}
               </span>
               <button
                 onClick={() => router.push("/workout/routines/new")}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-semibold shadow-xs hover:shadow transition-all cursor-pointer"
+                className="h-9 px-4 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-semibold shadow-xs inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-[0.97] shrink-0"
                 title="Create New Routine"
                 aria-label="Create New Routine"
               >
@@ -1092,24 +1094,21 @@ export default function WorkoutHub() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-              {filteredRoutines.map((routine) => {
+              {filteredRoutines.map((routine, idx) => {
                 const isStarting = startingRoutine ? String(startingRoutine) === String(routine.id) : false
                 const nameLower = (routine.name || "").toLowerCase()
-                const isL1 = nameLower.includes("level 1") || routine.exercises?.some((e: any) => e.level === 1)
-                const isL2 = nameLower.includes("level 2") || routine.exercises?.some((e: any) => e.level === 2)
-                const splitTag = nameLower.includes("push") ? "Push" : nameLower.includes("pull") ? "Pull" : (nameLower.includes("leg") || nameLower.includes("legs")) ? "Legs" : null
+                const matchL = nameLower.match(/l(?:evel)?\s*(\d+)/i)
+                const routineLevel = matchL ? Number(matchL[1]) : (routine.exercises?.find((e: any) => e.level != null)?.level ?? 1)
                 const isPinned = pinnedRoutineIds.includes(String(routine.id))
-                const usageCount = routineUsageMap.get(String(routine.id)) || 0
 
                 return (
-                  <div
+                  <motion.div
                     key={routine.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.2, delay: Math.min(idx * 0.04, 0.2) }}
                     onContextMenu={(e) => handleRoutineContextMenu(e, routine)}
-                    className={`group rounded-2xl border p-4 transition-all flex items-center justify-between gap-3 shadow-xs hover:shadow-md cursor-pointer select-none ${
-                      isPinned
-                        ? "border-primary/50 bg-card ring-1 ring-primary/20"
-                        : "border-border/60 bg-card hover:border-primary/40"
-                    }`}
+                    className="group rounded-2xl border border-border/80 bg-card p-4 transition-all flex items-center justify-between gap-3 shadow-xs hover:shadow-md hover:border-foreground/30 cursor-pointer select-none"
                     onClick={() => {
                       soundManager.play('click', 0.2)
                       setOverviewRoutine(routine)
@@ -1117,8 +1116,17 @@ export default function WorkoutHub() {
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
+                        {routineLevel ? (
+                          <span
+                            className="h-2 w-2 rounded-full bg-amber-500 shrink-0"
+                            title={`Level ${routineLevel}`}
+                            aria-label={`Level ${routineLevel}`}
+                          />
+                        ) : null}
                         {isPinned && (
-                          <span className="h-2 w-2 rounded-full bg-amber-400 shrink-0" title="Pinned Routine" />
+                          <span title="Pinned Routine" className="flex items-center shrink-0">
+                            <Pin className="h-3.5 w-3.5 text-amber-500 fill-amber-500" />
+                          </span>
                         )}
                         <h3 className="font-bold text-base tracking-tight truncate group-hover:text-primary transition-colors">
                           {routine.name}
@@ -1133,7 +1141,7 @@ export default function WorkoutHub() {
                       <button
                         onClick={() => handleStartRoutine(routine.id)}
                         disabled={isStarting}
-                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-primary text-xs font-semibold text-primary-foreground hover:bg-primary/90 shadow-xs transition-all disabled:opacity-60 cursor-pointer"
+                        className="h-9 px-4 rounded-full bg-primary text-xs font-semibold text-primary-foreground hover:bg-primary/90 shadow-xs inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-[0.97] disabled:opacity-60 shrink-0"
                       >
                         {isStarting ? (
                           <>
@@ -1150,16 +1158,28 @@ export default function WorkoutHub() {
 
                       <button
                         onClick={(e) => handleRoutineMenuClick(e, routine)}
-                        className="p-1.5 rounded-xl hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                        className="min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl hover:bg-secondary text-foreground/80 hover:text-foreground transition-colors cursor-pointer active:scale-95"
                         title="Options (Right-click card also works)"
                         aria-label="Routine Options"
                       >
-                        <MoreVertical className="h-4 w-4" />
+                        <MoreVertical className="h-4.5 w-4.5" />
                       </button>
                     </div>
-                  </div>
+                  </motion.div>
                 )
               })}
+
+              {/* Balance empty slot when odd number of routines exist on 2-col desktop grid */}
+              {filteredRoutines.length % 2 !== 0 && (
+                <button
+                  type="button"
+                  onClick={() => router.push("/workout/routines/new")}
+                  className="rounded-2xl border border-dashed border-border/80 hover:border-foreground/40 hover:bg-card/40 p-4 transition-all flex items-center justify-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground cursor-pointer min-h-[72px] active:scale-[0.98]"
+                >
+                  <Plus className="h-4 w-4 stroke-[2.5]" />
+                  <span>Create New Routine</span>
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -1443,6 +1463,7 @@ export default function WorkoutHub() {
         </AnimatePresence>
       </div>
     </main>
+    </PageTransition>
   )
 }
 

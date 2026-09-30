@@ -316,15 +316,7 @@ export function WeeklyOverview({
                   aria-label={`${day.dayName}, ${day.dayNumber} ${hasWorkout ? "workout day" : "rest day"}${day.isToday ? " (today)" : ""}`}
                 >
                   {/* Day Label (S M T W T F S) */}
-                  <span
-                    className={`text-[11px] font-medium font-body leading-none mb-1 ${
-                      day.isToday
-                        ? "text-white font-bold"
-                        : hasWorkout
-                        ? "text-zinc-300"
-                        : "text-zinc-500"
-                    }`}
-                  >
+                  <span className="text-[11px] font-medium font-body leading-none mb-1 text-zinc-400">
                     {day.dayAbbr}
                   </span>
 
@@ -503,7 +495,9 @@ export function WeeklyOverview({
           </span>
           <span className="text-xl sm:text-2xl font-bold text-white font-display tabular-nums">
             {currentStreak}{" "}
-            <span className="text-xs text-zinc-500 font-normal">days</span>
+            <span className="text-xs text-zinc-500 font-normal">
+              {currentStreak === 1 ? "day" : "days"}
+            </span>
           </span>
         </div>
       </div>

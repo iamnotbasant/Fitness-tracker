@@ -17,6 +17,7 @@ import { MonthlyReportModal } from "@/components/progress/monthly-report-modal"
 import { MuscleDistributionModal } from "@/components/progress/muscle-distribution-modal"
 import { WeeklyOverview } from "@/components/progress/weekly-overview"
 import { PersonalRecords } from "@/components/charts/personal-records"
+import { PageTransition } from "@/components/ui/page-transition"
 
 const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
@@ -211,71 +212,58 @@ export default function ProgressPage() {
   }
 
   return (
-    <main
-      className={`${spaceGrotesk.variable} ${inter.variable} font-body min-h-screen bg-black text-zinc-100 pb-32 max-w-lg mx-auto px-4 pt-4 space-y-6 sm:space-y-7`}
-    >
-      {/* ─── 1. MINIMAL HEADER: "REPORT" + Small Quiet Period Segmented Control + Monthly Quick Link ─── */}
-      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-2">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white font-display uppercase">
-            REPORT
-          </h1>
-
-          {/* Quick Monthly Report Action Button (mobile view) */}
-          <button
-            type="button"
-            onClick={() => {
-              soundManager.play("click", 0.2)
-              setMonthlyReportOpen(true)
-            }}
-            className="sm:hidden min-h-[44px] px-3 rounded-xl border border-zinc-800 bg-zinc-900 hover:bg-zinc-800 text-xs font-medium text-zinc-300 hover:text-white flex items-center gap-1.5 transition-all cursor-pointer shadow-xs shrink-0"
-            title="Open Monthly Report"
-          >
-            <CalendarIcon className="w-4 h-4 text-zinc-400" />
-            <span>Monthly</span>
-          </button>
-        </div>
-
-        <div className="flex items-center justify-between sm:justify-end gap-1.5 sm:gap-2">
-          {/* Minimal Period Segmented Control (Today | Week | Month | Year | All - tap >= 44px) */}
-          <div className="flex items-center p-0.5 rounded-xl bg-zinc-900 border border-zinc-800 w-full sm:w-auto">
-            {PERIOD_FILTERS.map((f) => {
-              const isActive = period === f.id
-              return (
-                <button
-                  key={f.id}
-                  type="button"
-                  onClick={() => {
-                    soundManager.play("click", 0.15)
-                    setPeriod(f.id)
-                  }}
-                  className={`flex-1 sm:flex-none px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer min-h-[44px] flex items-center justify-center ${
-                    isActive
-                      ? "bg-zinc-800 text-white shadow-xs"
-                      : "text-zinc-400 hover:text-white"
-                  }`}
-                >
-                  {f.label}
-                </button>
-              )
-            })}
+    <PageTransition>
+      <main
+        className={`${spaceGrotesk.variable} ${inter.variable} font-body min-h-screen bg-black text-zinc-100 pb-32 max-w-lg mx-auto px-4 pt-4 space-y-6 sm:space-y-7`}
+      >
+        {/* ─── 1. HEADER: "Report" + Period Segmented Control + Monthly Quick Link (Same Row) ─── */}
+        <header className="flex flex-col gap-3 pt-2">
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold tracking-tight text-white">
+              Report
+            </h1>
           </div>
 
-          {/* Quick Monthly Report Action Button (desktop view) */}
-          <button
-            type="button"
-            onClick={() => {
-              soundManager.play("click", 0.2)
-              setMonthlyReportOpen(true)
-            }}
-            className="hidden sm:flex min-h-[44px] px-3 rounded-xl border border-zinc-800 bg-zinc-900 hover:bg-zinc-800 text-xs font-medium text-zinc-300 hover:text-white items-center gap-1.5 transition-all cursor-pointer shadow-xs shrink-0"
-            title="Open Monthly Report"
-          >
-            <CalendarIcon className="w-3.5 h-3.5 text-zinc-400" />
-            <span>Monthly</span>
-          </button>
-        </div>
-      </header>
+          {/* Unified Period Tabs + Monthly Button on SAME Row with no squeezing */}
+          <div className="flex items-center justify-between gap-2 overflow-x-auto no-scrollbar py-0.5">
+            <div className="flex items-center p-1 rounded-full bg-zinc-900 border border-zinc-800 shrink-0">
+              {PERIOD_FILTERS.map((f) => {
+                const isActive = period === f.id
+                return (
+                  <button
+                    key={f.id}
+                    type="button"
+                    onClick={() => {
+                      soundManager.play("click", 0.15)
+                      setPeriod(f.id)
+                    }}
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer min-h-[36px] flex items-center justify-center shrink-0 active:scale-95 whitespace-nowrap ${
+                      isActive
+                        ? "bg-white text-zinc-950 font-bold shadow-xs"
+                        : "text-zinc-400 hover:text-white"
+                    }`}
+                  >
+                    {f.label}
+                  </button>
+                )
+              })}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                soundManager.play("click", 0.2)
+                setMonthlyReportOpen(true)
+              }}
+              className="min-h-[38px] px-3.5 rounded-full border border-zinc-800 bg-zinc-900 hover:bg-zinc-800 text-xs font-semibold text-zinc-200 hover:text-white flex items-center gap-1.5 transition-all cursor-pointer shadow-xs shrink-0 active:scale-95 whitespace-nowrap"
+              title="Open Monthly Report"
+              aria-label="Open Monthly Report"
+            >
+              <CalendarIcon className="w-3.5 h-3.5 text-zinc-400" />
+              <span>Monthly</span>
+            </button>
+          </div>
+        </header>
 
       {/* ─── 2. TOTAL SECTION (Reference 01: Workouts, Time, Volume + Weekly Bar Chart) ─── */}
       <section className="space-y-2">
@@ -310,7 +298,7 @@ export default function ProgressPage() {
 
       {/* ─── 5. SECONDARY FEATURES BEHIND CLEAN ENTRY CARDS (Task 6: Minimal IA) ─── */}
       <section className="space-y-2.5">
-        <h2 className="text-xs font-semibold text-zinc-400 font-display uppercase tracking-wider">
+        <h2 className="text-sm font-semibold text-zinc-400 font-display">
           More Analytics
         </h2>
 
@@ -392,5 +380,6 @@ export default function ProgressPage() {
         previousLabel={previousPeriodLabel}
       />
     </main>
+    </PageTransition>
   )
 }

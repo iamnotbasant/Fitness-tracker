@@ -7,6 +7,8 @@ import { Plus, ChevronLeft, ChevronRight, Loader2, Play, ListCheck, ArrowRight, 
 import { useMemo, useEffect, useState } from "react"
 import { toast } from "sonner"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { CountUp } from "@/components/ui/count-up"
+import { PageTransition } from "@/components/ui/page-transition"
 
 const todayISO = () => new Date().toISOString().slice(0, 10)
 
@@ -471,152 +473,152 @@ export default function DashboardPage() {
   }
 
   return (
-    <main className="pb-32 md:pb-12">
-      {/* Overview Stat Cards */}
-      <section className="w-full px-4 lg:px-8 pt-4">
-        <div className="mx-auto max-w-7xl">
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-            <SummaryCard 
-              label="Streak" 
-              value={streak} 
-            />
-            <SummaryCard 
-              label="Workouts" 
-              value={totals.workouts} 
-            />
-            <SummaryCard 
-              label="Total Points" 
-              value={totals.points} 
-            />
-            <SummaryCard 
-              label="Sets" 
-              value={totals.sets} 
-            />
+    <PageTransition>
+      <main className="pb-32 md:pb-12">
+        {/* Overview Stat Cards */}
+        <section className="w-full px-4 lg:px-8 pt-4">
+          <div className="mx-auto max-w-7xl">
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+              <SummaryCard 
+                label="Streak" 
+                value={streak} 
+              />
+              <SummaryCard 
+                label="Workouts" 
+                value={totals.workouts} 
+              />
+              <SummaryCard 
+                label="Total Points" 
+                value={totals.points} 
+              />
+              <SummaryCard 
+                label="Sets" 
+                value={totals.sets} 
+              />
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <section className="w-full px-4 lg:px-8 pt-4">
-        <div className="mx-auto max-w-7xl">
-          <button
-            onClick={() => router.push("/workout")}
-            aria-label="Start workout"
-            className="w-full rounded-xl bg-primary px-5 py-4 text-base font-semibold text-primary-foreground hover:bg-primary/90 flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer hover:shadow-md"
-          >
-            <Plus className="h-5 w-5" />
-            <span>Start Workout</span>
-          </button>
-        </div>
-      </section>
+        <section className="w-full px-4 lg:px-8 pt-4">
+          <div className="mx-auto max-w-7xl">
+            <button
+              onClick={() => router.push("/workout")}
+              aria-label="Start workout"
+              className="w-full rounded-full bg-primary px-5 py-3.5 text-base font-semibold text-primary-foreground hover:bg-primary/90 flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer hover:shadow-md active:scale-[0.98]"
+            >
+              <Plus className="h-5 w-5 stroke-[2.5]" />
+              <span>Start Workout</span>
+            </button>
+          </div>
+        </section>
 
-      <section className="w-full px-4 lg:px-8 pt-4">
-        <div className="mx-auto max-w-7xl grid gap-3">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <h2 className="text-base font-semibold text-foreground">Workouts</h2>
-            
-            <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
-              {/* Date Range Navigation */}
-              <div className="flex items-center gap-1 border rounded-lg px-1.5 py-1 bg-card flex-1 sm:flex-none justify-between sm:justify-start">
-                <button
-                    onClick={() => navigatePeriod("prev")}
-                    disabled={timePeriod === "all"}
-                    aria-label="Previous period"
-                    className="p-1 hover:bg-secondary rounded disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </button>
-                
-                <div className="px-1 text-xs sm:text-sm font-medium min-w-[100px] sm:min-w-[140px] text-center text-foreground truncate">
-                  {formatDateRange(dateRange.start, dateRange.end, timePeriod)}
+        <section className="w-full px-4 lg:px-8 pt-6">
+          <div className="mx-auto max-w-7xl grid gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <h2 className="text-2xl font-bold tracking-tight text-foreground">Workouts</h2>
+              
+              <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+                {/* Date Range Navigation */}
+                <div className="flex items-center gap-1 border border-border/80 rounded-xl px-2 py-1 bg-card flex-1 sm:flex-none justify-between sm:justify-start">
+                  <button
+                      onClick={() => navigatePeriod("prev")}
+                      disabled={timePeriod === "all"}
+                      aria-label="Previous period"
+                      className="p-1 hover:bg-secondary rounded-lg disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors active:scale-95"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </button>
+                  
+                  <div className="px-1.5 text-xs sm:text-sm font-medium min-w-[100px] sm:min-w-[140px] text-center text-foreground truncate select-none">
+                    {formatDateRange(dateRange.start, dateRange.end, timePeriod)}
+                  </div>
+                  
+                  <button
+                      onClick={() => navigatePeriod("next")}
+                      disabled={timePeriod === "all"}
+                      aria-label="Next period"
+                      className="p-1 hover:bg-secondary rounded-lg disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors active:scale-95"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
                 </div>
-                
-                <button
-                    onClick={() => navigatePeriod("next")}
-                    disabled={timePeriod === "all"}
-                    aria-label="Next period"
-                    className="p-1 hover:bg-secondary rounded disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </button>
-              </div>
 
-              {/* View Dropdown */}
-              <label htmlFor="time-period-select" className="sr-only">Time period</label>
-              <select
-                id="time-period-select"
-                value={timePeriod}
-                onChange={(e) => handlePeriodChange(e.target.value as TimePeriod)}
-                className="px-2.5 py-1.5 text-xs sm:text-sm font-medium rounded-lg border bg-background hover:bg-secondary transition-colors cursor-pointer text-foreground shrink-0"
-              >
-                <option value="weekly">Weekly</option>
-                <option value="monthly">Monthly</option>
-                <option value="yearly">Yearly</option>
-                <option value="all">All Time</option>
-              </select>
+                {/* View Dropdown */}
+                <label htmlFor="time-period-select" className="sr-only">Time period</label>
+                <select
+                  id="time-period-select"
+                  value={timePeriod}
+                  onChange={(e) => handlePeriodChange(e.target.value as TimePeriod)}
+                  className="px-3 py-1.5 text-xs sm:text-sm font-semibold rounded-xl border border-border/80 bg-background hover:bg-secondary transition-colors cursor-pointer text-foreground shrink-0 focus:outline-none focus:ring-1 focus:ring-primary"
+                >
+                  <option value="weekly">Weekly</option>
+                  <option value="monthly">Monthly</option>
+                  <option value="yearly">Yearly</option>
+                  <option value="all">All Time</option>
+                </select>
+              </div>
             </div>
+
+            {workoutsLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                  <span>Loading workouts...</span>
+                </div>
+              </div>
+            ) : groupedWorkouts.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-border/80 p-8 text-center bg-card/40">
+                <p className="text-sm font-semibold text-foreground">No workouts found</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  No workouts logged for this period. Start a session!
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <AnimatePresence initial={false}>
+                  {groupedWorkouts.map((workout, idx) => (
+                    <motion.div
+                      key={workout.date}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -8 }}
+                      transition={{ duration: 0.22, delay: Math.min(idx * 0.04, 0.2) }}
+                    >
+                      <TodayWorkoutCard workout={workout} onDelete={handleDelete} onEdit={handleEdit} />
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              </div>
+            )}
           </div>
+        </section>
 
-
-
-          {workoutsLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                <span>Loading workouts...</span>
-              </div>
-            </div>
-          ) : groupedWorkouts.length === 0 ? (
-            <div className="rounded-xl border border-dashed p-8 text-center bg-card/40">
-              <p className="text-sm font-medium text-foreground">No workouts found</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                No workouts logged for this period. Start a session!
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              <AnimatePresence initial={false}>
-                {groupedWorkouts.map((workout) => (
-                  <motion.div
-                    key={workout.date}
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -6 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <TodayWorkoutCard workout={workout} onDelete={handleDelete} onEdit={handleEdit} />
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-            </div>
-          )}
-        </div>
-      </section>
-
-      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete Workout</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete this workout? This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <button
-              onClick={() => setDeleteDialogOpen(false)}
-              className="rounded-lg border bg-background px-4 py-2 text-sm font-medium hover:bg-accent cursor-pointer"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={confirmDelete}
-              className="rounded-lg bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground hover:bg-destructive/90 cursor-pointer"
-            >
-              Delete
-            </button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </main>
+        <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Delete Workout</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to delete this workout? This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <button
+                onClick={() => setDeleteDialogOpen(false)}
+                className="rounded-full border border-border/80 bg-background px-4 py-2 text-sm font-medium hover:bg-secondary cursor-pointer active:scale-95 transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="rounded-full bg-destructive px-4 py-2 text-sm font-semibold text-destructive-foreground hover:bg-destructive/90 cursor-pointer active:scale-95 transition-all"
+              >
+                Delete
+              </button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </main>
+    </PageTransition>
   )
 }
 
@@ -628,12 +630,12 @@ function SummaryCard({
   value: number
 }) {
   return (
-    <div className="rounded-2xl border border-border/80 bg-card p-3.5 sm:p-5 md:p-6 flex flex-col items-center justify-center text-center transition-all hover:border-border min-w-0">
+    <div className="rounded-2xl border border-border/80 bg-card p-3.5 sm:p-5 md:p-6 flex flex-col items-center justify-center text-center transition-all hover:border-foreground/20 min-w-0 shadow-xs">
       <span className="text-xs md:text-sm font-medium text-muted-foreground mb-1 sm:mb-1.5 truncate max-w-full">
         {label}
       </span>
       <span className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight text-foreground truncate max-w-full">
-        {value.toLocaleString()}
+        <CountUp value={value} />
       </span>
     </div>
   )

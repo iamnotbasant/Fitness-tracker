@@ -9,6 +9,8 @@ import { Line, LineChart, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { Trophy, TrendingUp, Award, ChevronLeft, ChevronRight, Save, X, Lock, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { PageTransition } from "@/components/ui/page-transition"
+import { AnimatedTabs } from "@/components/ui/animated-tabs"
 
 import type { Exercise, Workout } from "@/lib/types"
 
@@ -515,30 +517,30 @@ export default function ExerciseDetailPage() {
   }
 
   const TimePeriodFilter = () => (
-    <div className="flex items-center gap-1.5 sm:gap-2 w-full sm:w-auto justify-between sm:justify-end">
-      <div className="flex items-center gap-1 rounded-lg border bg-card px-1.5 sm:px-2 py-1 sm:py-1.5 flex-1 sm:flex-none justify-between sm:justify-start">
-        <button
-          onClick={handlePrevious}
-          disabled={timePeriod === "all"}
-          className="p-1 sm:p-0.5 hover:bg-muted rounded disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
-          aria-label="Previous period"
-        >
-          <ChevronLeft className="h-3.5 w-3.5" />
-        </button>
-        
-        <div className="min-w-[90px] sm:min-w-[140px] text-center text-xs font-medium px-1 truncate">
-          {dateRange.label}
+    <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+      {timePeriod !== "all" && (
+        <div className="flex items-center gap-1 rounded-xl border border-border/80 bg-card px-2 py-1 flex-1 sm:flex-none justify-between sm:justify-start shadow-xs">
+          <button
+            onClick={handlePrevious}
+            className="p-1 hover:bg-secondary rounded-lg transition-colors cursor-pointer text-foreground/80 hover:text-foreground active:scale-95"
+            aria-label="Previous period"
+          >
+            <ChevronLeft className="h-3.5 w-3.5" />
+          </button>
+          
+          <div className="min-w-[90px] sm:min-w-[130px] text-center text-xs font-semibold px-1 truncate select-none text-foreground">
+            {dateRange.label}
+          </div>
+          
+          <button
+            onClick={handleNext}
+            className="p-1 hover:bg-secondary rounded-lg transition-colors cursor-pointer text-foreground/80 hover:text-foreground active:scale-95"
+            aria-label="Next period"
+          >
+            <ChevronRight className="h-3.5 w-3.5" />
+          </button>
         </div>
-        
-        <button
-          onClick={handleNext}
-          disabled={timePeriod === "all"}
-          className="p-1 sm:p-0.5 hover:bg-muted rounded disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
-          aria-label="Next period"
-        >
-          <ChevronRight className="h-3.5 w-3.5" />
-        </button>
-      </div>
+      )}
 
       <select
         value={timePeriod}
@@ -546,7 +548,8 @@ export default function ExerciseDetailPage() {
           setTimePeriod(e.target.value as any)
           setCurrentDate(new Date())
         }}
-        className="rounded-lg border bg-card px-2 py-1.5 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-ring cursor-pointer shrink-0"
+        className="rounded-xl border border-border/80 bg-card px-3 py-1.5 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer shrink-0 text-foreground hover:border-foreground/30 transition-colors shadow-xs"
+        aria-label="Select time period"
       >
         <option value="all">All Time</option>
         <option value="weekly">Weekly</option>
@@ -897,65 +900,61 @@ export default function ExerciseDetailPage() {
   }
 
   return (
-    <main className="mx-auto max-w-4xl px-3 pb-32 md:pb-16 md:px-4">
-      <header className="sticky top-0 z-20 bg-background/70 backdrop-blur supports-[backdrop-filter]:bg-background/50 md:border-b">
-        <div className="flex items-center justify-between py-3 md:py-4">
-          <Link href="/exercises" className="text-sm text-muted-foreground hover:underline">
-            ← Back to Exercises
-          </Link>
-          {isAdmin ? (
-            <Link
-              href={`/exercises/${exercise.id}?mode=edit`}
-              className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-            >
-              Edit Exercise
+    <PageTransition>
+      <main className="mx-auto max-w-4xl px-3 pb-32 md:pb-16 md:px-4">
+        <header className="sticky top-0 z-20 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border/40 pb-3">
+          <div className="flex items-center justify-between py-3 md:py-4">
+            <Link href="/exercises" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+              ← Back to Exercises
             </Link>
-          ) : (
-            <div className="flex items-center gap-2 rounded-lg border bg-muted px-4 py-2 text-sm text-muted-foreground">
-              <Lock className="h-4 w-4" />
-              <span>View Only</span>
-            </div>
-          )}
-        </div>
-        <div className="pb-2 md:pb-3">
-          <h1 className="text-pretty text-xl font-semibold tracking-tight sm:text-2xl md:text-3xl">{exercise.name}</h1>
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            {exercise.split ? (
-              <span className="rounded-full border px-2.5 py-1 text-xs font-medium capitalize">{exercise.split}</span>
-            ) : null}
-            {typeof exercise.level === "number" ? (
-              <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium">L{exercise.level}</span>
-            ) : null}
-            {exercise.repGoal ? (
-              <span className="rounded-full bg-primary/10 text-primary border border-primary/20 px-2.5 py-1 text-xs font-semibold">
-                {isTimerExercise ? `Target: ${exercise.repGoal}s` : `Target: ${exercise.repGoal} reps`}
-              </span>
-            ) : null}
+            {isAdmin ? (
+              <Link
+                href={`/exercises/${exercise.id}?mode=edit`}
+                className="h-9 px-4 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-semibold shadow-xs inline-flex items-center justify-center transition-all cursor-pointer active:scale-[0.97]"
+              >
+                Edit Exercise
+              </Link>
+            ) : (
+              <div className="flex items-center gap-1.5 rounded-full border border-border/80 bg-muted/60 px-3 py-1.5 text-xs font-semibold text-muted-foreground">
+                <Lock className="h-3.5 w-3.5" />
+                <span>View Only</span>
+              </div>
+            )}
           </div>
-        </div>
+          <div className="pb-2 md:pb-3">
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">{exercise.name}</h1>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              {typeof exercise.level === "number" ? (
+                <span className="rounded-full border border-primary/25 bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary select-none">
+                  Level {exercise.level}
+                </span>
+              ) : null}
+              {exercise.split ? (
+                <span className="rounded-full border border-border/80 bg-secondary/80 px-2.5 py-0.5 text-xs font-semibold capitalize text-secondary-foreground select-none">
+                  {exercise.split}
+                </span>
+              ) : null}
+              {exercise.repGoal ? (
+                <span className="rounded-full border border-border/80 bg-secondary/80 px-2.5 py-0.5 text-xs font-semibold text-secondary-foreground select-none">
+                  {isTimerExercise ? `Target: ${exercise.repGoal}s` : `Target: ${exercise.repGoal} reps`}
+                </span>
+              ) : null}
+            </div>
+          </div>
 
-        <nav className="flex gap-2 overflow-x-auto md:border-b">
-          {[
-            { key: "analytics", label: "Analytics" },
-            { key: "info", label: "Information" },
-            { key: "history", label: "History" },
-          ].map((t) => (
-            <button
-              key={t.key}
-              onClick={() => setTab(t.key as any)}
-              className={[
-                "relative -mb-px shrink-0 px-2.5 py-2 text-sm font-medium",
-                tab === t.key
-                  ? "text-foreground underline decoration-2 underline-offset-8 md:border-b-2 md:border-foreground md:no-underline"
-                  : "text-muted-foreground md:border-b-2 md:border-transparent",
-              ].join(" ")}
-              aria-current={tab === t.key ? "page" : undefined}
-            >
-              {t.label}
-            </button>
-          ))}
-        </nav>
-      </header>
+          <div className="pt-2">
+            <AnimatedTabs
+              items={[
+                { id: "analytics", label: "Analytics" },
+                { id: "info", label: "Information" },
+                { id: "history", label: "History" },
+              ]}
+              activeId={tab}
+              onChange={(id) => setTab(id as any)}
+              layoutId="exercise-detail-tab"
+            />
+          </div>
+        </header>
 
       {exercise.imageUrl ? (
         <div className="mt-6 overflow-hidden rounded-xl border">
@@ -1362,6 +1361,7 @@ export default function ExerciseDetailPage() {
         )}
       </section>
     </main>
+    </PageTransition>
   )
 }
 

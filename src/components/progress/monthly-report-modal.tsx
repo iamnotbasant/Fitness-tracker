@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useMemo, useRef, useEffect } from "react"
+import { motion, AnimatePresence } from "framer-motion"
 import type { Workout, Exercise } from "@/lib/types"
 import {
   ChevronLeft,
@@ -32,6 +33,19 @@ import {
   calculatePeriodStats,
 } from "./muscle-distribution-helpers"
 import { MuscleDistributionRadar } from "./muscle-distribution-radar"
+
+function normalizeDateStr(raw?: string): string {
+  if (!raw) return ""
+  const clean = raw.slice(0, 10).split("T")[0]
+  const parts = clean.split("-")
+  if (parts.length === 3) {
+    const y = parts[0]
+    const m = parts[1].padStart(2, "0")
+    const d = parts[2].padStart(2, "0")
+    return `${y}-${m}-${d}`
+  }
+  return clean
+}
 
 interface MonthlyReportModalProps {
   isOpen: boolean
@@ -140,6 +154,7 @@ export function MonthlyReportModal({
       key: string
       label: string
       letter: string
+      monthShort: string
       workouts: number
       durationMin: number
       volumeKg: number
@@ -182,6 +197,7 @@ export function MonthlyReportModal({
         key: `${y}-${m}`,
         label: `${monthShort} ${y}`,
         letter,
+        monthShort,
         workouts: count,
         durationMin: duration,
         volumeKg: Math.round(vol),
@@ -209,9 +225,16 @@ export function MonthlyReportModal({
   const calendarLog = useMemo(() => {
     const daysInMonth = periodInfo.daysInCurrentMonth
     const firstDay = periodInfo.firstDayOfWeek // 0 = Sun ... 6 = Sat
-    const trainedDates = new Set(
-      currentMonthSessions.map((s) => s.date).filter(Boolean)
-    )
+    const trainedDates = new Set<string>()
+
+    currentMonthWorkouts.forEach((w) => {
+      const norm = normalizeDateStr(w.date)
+      if (norm) trainedDates.add(norm)
+    })
+    currentMonthSessions.forEach((s) => {
+      const norm = normalizeDateStr(s.date)
+      if (norm) trainedDates.add(norm)
+    })
 
     const slots: {
       type: "empty" | "day"
@@ -247,7 +270,7 @@ export function MonthlyReportModal({
       totalDays: daysInMonth,
       weekStreak,
     }
-  }, [periodInfo, currentMonthSessions, monthIndex, year, workouts])
+  }, [periodInfo, currentMonthWorkouts, currentMonthSessions, monthIndex, year, workouts])
 
   // Share / Download PNG Handler
   const handleShareOrDownload = async () => {
@@ -310,9 +333,7 @@ export function MonthlyReportModal({
     }
   }
 
-  if (!isOpen) return null
-
-  // Delta line under title (Reference 04: "0 -> 0")
+  // Delta line under title
   const currentMetricVal =
     activeMetric === "workouts"
       ? summary.workouts.curr
@@ -328,324 +349,323 @@ export function MonthlyReportModal({
       : `${summary.volume.prev}kg`
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex justify-center overflow-y-auto">
-      <div className="w-full max-w-lg min-h-screen bg-black text-zinc-100 flex flex-col px-4 pt-3 pb-32 sm:px-6">
-        {/* ─── Top Bar: Back button, Month Report Title, Month Switcher ─── */}
-        <div className="sticky top-0 z-40 -mx-4 px-4 py-3 bg-black/95 backdrop-blur-md border-b border-zinc-900 flex items-center justify-between mb-4">
-          <button
-            type="button"
-            onClick={() => {
-              soundManager.play("click", 0.2)
-              onClose()
-            }}
-            className="w-10 h-10 rounded-full flex items-center justify-center text-zinc-300 hover:text-white hover:bg-zinc-900 transition-all cursor-pointer"
-            aria-label="Back"
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex justify-center overflow-y-auto"
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.96 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="w-full max-w-lg min-h-screen bg-black text-zinc-100 flex flex-col px-4 pt-3 pb-32 sm:px-6"
           >
-            <ChevronLeft className="w-6 h-6" />
-          </button>
-
-          <span className="text-base font-semibold text-white font-display">
-            {periodInfo.currentMonthName} Report
-          </span>
-
-          {/* Month Stepper */}
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={handlePrevMonth}
-              className="w-8 h-8 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white flex items-center justify-center transition-all cursor-pointer"
-              aria-label="Previous month"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <button
-              type="button"
-              onClick={handleNextMonth}
-              className="w-8 h-8 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white flex items-center justify-center transition-all cursor-pointer"
-              aria-label="Next month"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-
-        {/* ─── Exportable Report Area (Exact layout from 04-monthly-report.jpg) ─── */}
-        <div ref={reportCardRef} className="bg-black text-white space-y-6 pb-6">
-          {/* 1. Header: Month Year + Delta (e.g. "August 2026", "0 -> 0") */}
-          <div className="space-y-1">
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-white font-display tracking-tight">
-              {periodInfo.currentMonthName} {year}
-            </h1>
-            <p className="text-xs text-zinc-400 font-mono">
-              {prevMetricVal} → {currentMetricVal}
-            </p>
-          </div>
-
-          {/* 2. 12-Month Bar Chart (S O N D J F M A M J J A) */}
-          <div className="space-y-3">
-            <div className="w-full h-44 sm:h-48 pt-1">
-              {!mounted ? (
-                <div className="h-full flex items-center justify-center text-xs text-zinc-600 font-mono">
-                  Loading trend...
-                </div>
-              ) : (
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={twelveMonthsData}
-                    margin={{ top: 8, right: 4, left: -25, bottom: 0 }}
-                  >
-                    <XAxis
-                      dataKey="letter"
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fill: "#71717a", fontSize: 11, fontFamily: "var(--font-mono), monospace" }}
-                    />
-                    <YAxis
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fill: "#52525b", fontSize: 10 }}
-                      allowDecimals={false}
-                      domain={[0, "auto"]}
-                    />
-                    <Tooltip
-                      cursor={{ fill: "rgba(255, 255, 255, 0.05)" }}
-                      content={({ active, payload }) => {
-                        if (active && payload && payload.length) {
-                          const d = payload[0].payload
-                          const val =
-                            activeMetric === "workouts"
-                              ? `${d.workouts} workouts`
-                              : activeMetric === "duration"
-                              ? `${d.durationMin} min`
-                              : `${d.volumeKg} kg`
-                          return (
-                            <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-2 text-xs shadow-xl space-y-0.5">
-                              <p className="text-[10px] text-zinc-400 font-mono">{d.label}</p>
-                              <p className="text-white font-bold font-display">{val}</p>
-                            </div>
-                          )
-                        }
-                        return null
-                      }}
-                    />
-                    <Bar
-                      dataKey={
-                        activeMetric === "workouts"
-                          ? "workouts"
-                          : activeMetric === "duration"
-                          ? "durationMin"
-                          : "volumeKg"
-                      }
-                      radius={[4, 4, 0, 0]}
-                      maxBarSize={24}
-                    >
-                      {twelveMonthsData.map((entry, index) => (
-                        <Cell
-                          key={`cell-${index}`}
-                          fill={entry.isCurrent ? "#3b82f6" : "#27272a"}
-                        />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              )}
-            </div>
-
-            {/* 3 Metric Pills (Workouts | Duration | Volume) */}
-            <div className="flex items-center gap-2 pt-1">
+            {/* ─── Top Bar: Back button, Monthly Report Title, Month Switcher ─── */}
+            <div className="sticky top-0 z-40 -mx-4 px-4 py-3 bg-black/95 backdrop-blur-md border-b border-zinc-900 flex items-center justify-between mb-4">
               <button
                 type="button"
                 onClick={() => {
-                  soundManager.play("click", 0.15)
-                  setActiveMetric("workouts")
+                  soundManager.play("click", 0.2)
+                  onClose()
                 }}
-                className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
-                  activeMetric === "workouts"
-                    ? "bg-[#2563eb] text-white shadow-sm"
-                    : "bg-zinc-900 text-zinc-300 hover:text-white"
-                }`}
+                className="w-10 h-10 rounded-full flex items-center justify-center text-zinc-300 hover:text-white hover:bg-zinc-900 transition-all cursor-pointer"
+                aria-label="Back"
               >
-                Workouts
+                <ChevronLeft className="w-6 h-6" />
               </button>
-              <button
-                type="button"
-                onClick={() => {
-                  soundManager.play("click", 0.15)
-                  setActiveMetric("duration")
-                }}
-                className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
-                  activeMetric === "duration"
-                    ? "bg-[#2563eb] text-white shadow-sm"
-                    : "bg-zinc-900 text-zinc-300 hover:text-white"
-                }`}
-              >
-                Duration
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  soundManager.play("click", 0.15)
-                  setActiveMetric("volume")
-                }}
-                className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
-                  activeMetric === "volume"
-                    ? "bg-[#2563eb] text-white shadow-sm"
-                    : "bg-zinc-900 text-zinc-300 hover:text-white"
-                }`}
-              >
-                Volume
-              </button>
-            </div>
-          </div>
 
-          {/* 3. Section: "Summary" (2x2 grid cards matching Reference 04) */}
-          <div className="space-y-3 pt-2">
-            <h2 className="text-sm font-semibold text-white font-display">
-              Summary
-            </h2>
-            <div className="grid grid-cols-2 gap-3">
-              {/* Card 1: Workouts */}
-              <div className="rounded-2xl border border-zinc-850 bg-zinc-950 p-4 space-y-1">
-                <span className="text-xs text-zinc-400 font-medium block">Workouts</span>
-                <div className="text-2xl font-bold text-white font-display tabular-nums">
-                  {summary.workouts.curr}
-                </div>
-                <div className="text-xs text-zinc-500 font-mono">
-                  → {summary.workouts.prev}
-                </div>
-              </div>
+              <span className="text-base font-semibold text-white font-display">
+                Monthly Report
+              </span>
 
-              {/* Card 2: Duration */}
-              <div className="rounded-2xl border border-zinc-850 bg-zinc-950 p-4 space-y-1">
-                <span className="text-xs text-zinc-400 font-medium block">Duration</span>
-                <div className="text-2xl font-bold text-white font-display tabular-nums">
-                  {summary.duration.curr}min
-                </div>
-                <div className="text-xs text-zinc-500 font-mono">
-                  → {summary.duration.prev}min
-                </div>
-              </div>
-
-              {/* Card 3: Volume */}
-              <div className="rounded-2xl border border-zinc-850 bg-zinc-950 p-4 space-y-1">
-                <span className="text-xs text-zinc-400 font-medium block">Volume</span>
-                <div className="text-2xl font-bold text-white font-display tabular-nums">
-                  {summary.volume.curr} kg
-                </div>
-                <div className="text-xs text-zinc-500 font-mono">
-                  → {summary.volume.prev} kg
-                </div>
-              </div>
-
-              {/* Card 4: Sets */}
-              <div className="rounded-2xl border border-zinc-850 bg-zinc-950 p-4 space-y-1">
-                <span className="text-xs text-zinc-400 font-medium block">Sets</span>
-                <div className="text-2xl font-bold text-white font-display tabular-nums">
-                  {summary.sets.curr}
-                </div>
-                <div className="text-xs text-zinc-500 font-mono">
-                  → {summary.sets.prev}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* 4. Section: "Workout Days Log" (Flame + Streak + Calendar Grid) */}
-          <div className="space-y-4 pt-2">
-            <h2 className="text-sm font-semibold text-white font-display">
-              Workout Days Log
-            </h2>
-
-            {/* Streak Hero (Amber flame + streak label) */}
-            <div className="flex flex-col items-center justify-center py-2 space-y-1">
-              <Flame className="w-8 h-8 text-orange-500 fill-orange-500" />
-              <div className="text-sm font-bold text-white font-display">
-                {`${calendarLog.weekStreak} Week Streak`}
+              {/* Month Stepper */}
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={handlePrevMonth}
+                  className="w-8 h-8 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white flex items-center justify-center transition-all cursor-pointer"
+                  aria-label="Previous month"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={handleNextMonth}
+                  className="w-8 h-8 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white flex items-center justify-center transition-all cursor-pointer"
+                  aria-label="Next month"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
               </div>
             </div>
 
-            {/* Calendar Table */}
-            <div className="space-y-2">
-              <div className="grid grid-cols-7 text-center">
-                {CALENDAR_HEADERS.map((h, i) => (
-                  <span key={i} className="text-xs text-zinc-400 font-medium py-1">
-                    {h}
-                  </span>
-                ))}
+            {/* ─── Exportable Report Area (Exact layout from 04-monthly-report.jpg) ─── */}
+            <div ref={reportCardRef} className="bg-black text-white space-y-6 pb-6">
+              {/* 1. Header: Month Year + Delta (e.g. "August 2026", "0 -> 0") */}
+              <div className="space-y-1">
+                <h1 className="text-2xl sm:text-3xl font-extrabold text-white font-display tracking-tight">
+                  {periodInfo.currentMonthName} {year}
+                </h1>
+                <p className="text-xs text-zinc-400 font-mono">
+                  {currentMetricVal} (prev month: {prevMetricVal})
+                </p>
               </div>
 
-              <div className="grid grid-cols-7 gap-y-2 text-center">
-                {calendarLog.slots.map((slot, idx) => {
-                  if (slot.type === "empty") {
-                    return <div key={`empty-${idx}`} className="h-8" />
-                  }
-
-                  return (
-                    <div
-                      key={`day-${slot.dayNum}`}
-                      className="h-8 flex items-center justify-center relative"
-                    >
-                      <span
-                        className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-display tabular-nums ${
-                          slot.hasWorkout
-                            ? "bg-white text-zinc-950 font-bold"
-                            : "text-zinc-300 font-normal"
-                        }`}
-                      >
-                        {slot.dayNum}
-                      </span>
+              {/* 2. 12-Month Bar Chart (S O N D J F M A M J J A) */}
+              <div className="space-y-3">
+                <div className="w-full h-44 sm:h-48 pt-1">
+                  {!mounted ? (
+                    <div className="h-full flex items-center justify-center text-xs text-zinc-600 font-mono">
+                      Loading trend...
                     </div>
-                  )
-                })}
+                  ) : (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={twelveMonthsData}
+                        margin={{ top: 16, right: 4, left: -25, bottom: 0 }}
+                      >
+                        <XAxis
+                          dataKey="monthShort"
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{ fill: "#a1a1aa", fontSize: 10, fontFamily: "inherit" }}
+                        />
+                        <YAxis
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{ fill: "#52525b", fontSize: 10 }}
+                          allowDecimals={false}
+                          domain={[0, (dataMax: number) => Math.max(4, Math.ceil(dataMax * 1.25))]}
+                        />
+                        <Tooltip
+                          cursor={{ fill: "rgba(255, 255, 255, 0.05)" }}
+                          content={({ active, payload }) => {
+                            if (active && payload && payload.length) {
+                              const d = payload[0].payload
+                              const val =
+                                activeMetric === "workouts"
+                                  ? `${d.workouts} workouts`
+                                  : activeMetric === "duration"
+                                  ? `${d.durationMin} min`
+                                  : `${d.volumeKg} kg`
+                              return (
+                                <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-2 text-xs shadow-xl space-y-0.5">
+                                  <p className="text-[10px] text-zinc-400 font-mono">{d.label}</p>
+                                  <p className="text-white font-bold font-display">{val}</p>
+                                </div>
+                              )
+                            }
+                            return null
+                          }}
+                        />
+                        <Bar
+                          dataKey={
+                            activeMetric === "workouts"
+                              ? "workouts"
+                              : activeMetric === "duration"
+                              ? "durationMin"
+                              : "volumeKg"
+                          }
+                          radius={[4, 4, 0, 0]}
+                          maxBarSize={24}
+                        >
+                          {twelveMonthsData.map((entry, index) => (
+                            <Cell
+                              key={`cell-${index}`}
+                              fill={entry.isCurrent ? "#3b82f6" : "#27272a"}
+                            />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  )}
+                </div>
+
+                {/* 3 Metric Pills (Workouts | Duration | Volume) */}
+                <div className="inline-flex items-center p-1 rounded-full bg-zinc-900 border border-zinc-800 gap-1 pt-0.5">
+                  {(["workouts", "duration", "volume"] as const).map((tab) => (
+                    <button
+                      key={tab}
+                      type="button"
+                      onClick={() => {
+                        soundManager.play("click", 0.15)
+                        setActiveMetric(tab)
+                      }}
+                      className={`px-3.5 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer capitalize ${
+                        activeMetric === tab
+                          ? "bg-white text-zinc-950 font-bold shadow-xs"
+                          : "text-zinc-400 hover:text-zinc-200"
+                      }`}
+                    >
+                      {tab}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 3. Section: "Summary" (2x2 grid cards matching Reference 04) */}
+              <div className="space-y-3 pt-2">
+                <h2 className="text-sm font-semibold text-white font-display">
+                  Summary
+                </h2>
+                <div className="grid grid-cols-2 gap-3">
+                  {/* Card 1: Workouts */}
+                  <div className="rounded-2xl border border-zinc-850 bg-zinc-950 p-4 space-y-1">
+                    <span className="text-xs text-zinc-400 font-medium block">Workouts</span>
+                    <div className="text-2xl font-bold text-white font-display tabular-nums">
+                      {summary.workouts.curr}
+                    </div>
+                    <div className="text-xs text-zinc-500 font-medium">
+                      prev month: {summary.workouts.prev}
+                    </div>
+                  </div>
+
+                  {/* Card 2: Duration */}
+                  <div className="rounded-2xl border border-zinc-850 bg-zinc-950 p-4 space-y-1">
+                    <span className="text-xs text-zinc-400 font-medium block">Duration</span>
+                    <div className="text-2xl font-bold text-white font-display tabular-nums">
+                      {summary.duration.curr}min
+                    </div>
+                    <div className="text-xs text-zinc-500 font-medium">
+                      prev month: {summary.duration.prev}min
+                    </div>
+                  </div>
+
+                  {/* Card 3: Volume */}
+                  <div className="rounded-2xl border border-zinc-850 bg-zinc-950 p-4 space-y-1">
+                    <span className="text-xs text-zinc-400 font-medium block">Volume</span>
+                    <div className="text-2xl font-bold text-white font-display tabular-nums">
+                      {summary.volume.curr} kg
+                    </div>
+                    <div className="text-xs text-zinc-500 font-medium">
+                      prev month: {summary.volume.prev} kg
+                    </div>
+                  </div>
+
+                  {/* Card 4: Sets */}
+                  <div className="rounded-2xl border border-zinc-850 bg-zinc-950 p-4 space-y-1">
+                    <span className="text-xs text-zinc-400 font-medium block">Sets</span>
+                    <div className="text-2xl font-bold text-white font-display tabular-nums">
+                      {summary.sets.curr}
+                    </div>
+                    <div className="text-xs text-zinc-500 font-medium">
+                      prev month: {summary.sets.prev}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 4. Section: "Workout Days Log" (Flame + Streak + Calendar Grid) */}
+              <div className="space-y-4 pt-2">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-sm font-semibold text-white font-display">
+                    Workout Days Log
+                  </h2>
+                  <span className="text-xs text-zinc-400 font-medium">
+                    {calendarLog.activeDaysCount} {calendarLog.activeDaysCount === 1 ? "day" : "days"} active
+                  </span>
+                </div>
+
+                {/* Streak Hero (Amber flame + streak label) */}
+                <div className="flex flex-col items-center justify-center py-2 space-y-1">
+                  <Flame className="w-8 h-8 text-orange-500 fill-orange-500" />
+                  <div className="text-sm font-bold text-white font-display">
+                    {`${calendarLog.weekStreak} Week Streak`}
+                  </div>
+                </div>
+
+                {/* Calendar Table */}
+                <div className="space-y-2">
+                  <div className="grid grid-cols-7 text-center">
+                    {CALENDAR_HEADERS.map((h, i) => (
+                      <span key={i} className="text-xs text-zinc-400 font-medium py-1">
+                        {h}
+                      </span>
+                    ))}
+                  </div>
+
+                  <div className="grid grid-cols-7 gap-y-2 text-center">
+                    {calendarLog.slots.map((slot, idx) => {
+                      if (slot.type === "empty") {
+                        return <div key={`empty-${idx}`} className="h-9" />
+                      }
+
+                      return (
+                        <div
+                          key={`day-${slot.dayNum}`}
+                          className="h-9 flex flex-col items-center justify-center relative"
+                        >
+                          <span
+                            className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-display tabular-nums transition-colors ${
+                              slot.hasWorkout
+                                ? "bg-white text-zinc-950 font-bold shadow-xs ring-1 ring-white/20"
+                                : "text-zinc-400 font-normal hover:text-zinc-200"
+                            }`}
+                          >
+                            {slot.dayNum}
+                          </span>
+                          {slot.hasWorkout && (
+                            <span className="absolute bottom-0 w-1 h-1 rounded-full bg-blue-500" />
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* 5. Section: "Muscle Distribution" (Hexagon Radar with 2 Month Comparison) */}
+              <div className="space-y-3 pt-2">
+                <h2 className="text-sm font-semibold text-white font-display">
+                  Muscle Distribution
+                </h2>
+                <MuscleDistributionRadar
+                  workouts={workouts}
+                  exercises={exercises}
+                  customCurrentWorkouts={currentMonthWorkouts}
+                  customPreviousWorkouts={previousMonthWorkouts}
+                  currentLabel={`${periodInfo.currentMonthName} ${year}`}
+                  previousLabel={`${periodInfo.previousMonthName} ${
+                    monthIndex === 0 ? year - 1 : year
+                  }`}
+                  hidePeriodSelector={true}
+                  hideStatCards={true}
+                  title=""
+                  subtitle=""
+                  className="border-none bg-transparent p-0 shadow-none"
+                />
               </div>
             </div>
-          </div>
 
-          {/* 5. Section: "Muscle Distribution" (Hexagon Radar with 2 Month Comparison) */}
-          <div className="space-y-3 pt-2">
-            <h2 className="text-sm font-semibold text-white font-display">
-              Muscle Distribution
-            </h2>
-            <MuscleDistributionRadar
-              workouts={workouts}
-              exercises={exercises}
-              customCurrentWorkouts={currentMonthWorkouts}
-              customPreviousWorkouts={previousMonthWorkouts}
-              currentLabel={`${periodInfo.currentMonthName} ${year}`}
-              previousLabel={`${periodInfo.previousMonthName} ${
-                monthIndex === 0 ? year - 1 : year
-              }`}
-              hidePeriodSelector={true}
-              hideStatCards={true}
-              title=""
-              subtitle=""
-              className="border-none bg-transparent p-0 shadow-none"
-            />
-          </div>
-        </div>
-
-        {/* ─── 6. Bottom Sticky Full-width Blue Share Button ─── */}
-        <div className="sticky bottom-0 z-40 -mx-4 px-4 py-3 bg-black/95 backdrop-blur-md border-t border-zinc-900 mt-auto">
-          <button
-            type="button"
-            onClick={handleShareOrDownload}
-            disabled={isExporting}
-            className="w-full h-12 rounded-2xl bg-[#2563eb] hover:bg-blue-600 text-white font-semibold text-sm flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg disabled:opacity-50"
-          >
-            {isExporting ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Generating Image...</span>
-              </>
-            ) : (
-              <>
-                <Share2 className="w-4 h-4" />
-                <span>Share</span>
-              </>
-            )}
-          </button>
-        </div>
-      </div>
-    </div>
+            {/* ─── 6. Bottom Sticky Full-width Primary Share Button ─── */}
+            <div className="sticky bottom-0 z-40 -mx-4 px-4 py-3 bg-black/95 backdrop-blur-md border-t border-zinc-900 mt-auto">
+              <button
+                type="button"
+                onClick={handleShareOrDownload}
+                disabled={isExporting}
+                className="w-full h-11 rounded-full bg-white text-zinc-950 hover:bg-zinc-200 font-semibold text-sm flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md disabled:opacity-50 active:scale-[0.98]"
+              >
+                {isExporting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin text-zinc-950" />
+                    <span>Generating Image...</span>
+                  </>
+                ) : (
+                  <>
+                    <Share2 className="w-4 h-4 text-zinc-950" />
+                    <span>Share Report</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   )
 }
