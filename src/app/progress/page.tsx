@@ -118,7 +118,7 @@ export default function ProgressPage() {
         <SmartInsights workouts={filtered} exercises={exercises} />
       </section>
 
-      {/* ─── 4. MUSCLES: Primary Focus + Anatomy Figure + White Intensity Scale ─── */}
+      {/* ─── 4. MUSCLES: Activation Overview + Anatomy Figure (Both/Front/Back) ─── */}
       <section>
         <MuscleAnatomyMap workouts={filtered} exercises={exercises} />
       </section>

@@ -23,7 +23,7 @@ export interface MuscleStat {
   reps: number
   points: number
   exercises: { name: string; sets: number; reps: number }[]
-  intensity: number // 0 to 1 relative load
+  intensity: number // 0 to 1 relative load for heatmap shading
   volumePercent: number // 0 to 100% share of total training sets
 }
 
@@ -69,6 +69,7 @@ const NEUTRAL_SLUGS = new Set([
   "ankles",
 ])
 
+// Calisthenics-focused suggested target movements
 const SUGGESTED_EXERCISES: Record<string, string[]> = {
   chest: ["Push-ups", "Dips", "Archer Push-ups", "Diamond Push-ups"],
   shoulders: ["Pike Push-ups", "Handstand Hold", "Elevated Pike"],
@@ -77,18 +78,28 @@ const SUGGESTED_EXERCISES: Record<string, string[]> = {
   forearms: ["Dead Hang", "False Grip Hang", "Wrist Curls"],
   core: ["Hanging Leg Raises", "Plank Hold", "Hollow Body Hold", "L-Sit"],
   obliques: ["Side Plank", "Russian Twists", "Windshield Wipers"],
-  traps: ["Scapular Pull-ups", "Inverted Rows", "Farmer's Walk"],
-  neck: ["Isometric Neck Holds", "Neck Flexion / Extension"],
+  traps: ["Scapular Pull-ups", "Inverted Rows", "Farmer's Walk", "Neck Holds"],
   lats: ["Pull-ups", "Wide-grip Pull-ups", "Inverted Rows"],
   "lower back": ["Superman Hold", "Bird Dogs", "Back Extensions"],
   glutes: ["Glute Bridges", "Single-leg Hip Thrusts", "Deep Squats"],
-  quads: ["Bodyweight Squats", "Pistol Squats", "Sissy Squats", "Lunges"],
-  adductors: ["Cossack Squats", "Side Lunges", "Adductor Plank"],
+  quads: [
+    "Bodyweight Squats",
+    "Pistol Squats",
+    "Sissy Squats",
+    "Lunges",
+    "Cossack Squats",
+    "Side Lunges",
+  ],
   hamstrings: ["Nordic Curls", "Single-leg Deadlifts", "Glute-Ham Bridges"],
   calves: ["Standing Calf Raises", "Single-leg Calf Raises", "Jump Rope"],
 }
 
-function slugToMuscleKey(slug: string): string | null {
+/**
+ * Maps SVG path slugs to canonical calisthenics muscle keys.
+ * Adductors are folded into the thigh region (quads on front, hamstrings on back).
+ * Neck is folded into traps.
+ */
+function slugToMuscleKey(slug: string, view?: "front" | "back"): string | null {
   switch (slug) {
     case "chest":
     case "upperChest":
@@ -111,9 +122,8 @@ function slugToMuscleKey(slug: string): string | null {
     case "rearDeltoid":
       return "shoulders"
     case "trapezius":
-      return "traps"
     case "neck":
-      return "neck"
+      return "traps"
     case "upperBack":
       return "lats"
     case "lowerBack":
@@ -130,7 +140,7 @@ function slugToMuscleKey(slug: string): string | null {
     case "tibialis":
       return "calves"
     case "adductors":
-      return "adductors"
+      return view === "back" ? "hamstrings" : "quads"
     case "forearm":
       return "forearms"
     default:
@@ -147,7 +157,7 @@ function normalizeBodyPart(part: string): string {
   if (clean.includes("tricep")) return "triceps"
   if (clean.includes("forearm") || clean.includes("grip") || clean.includes("wrist")) return "forearms"
   if (clean.includes("oblique") || clean.includes("serratus")) return "obliques"
-  if (clean.includes("neck") || clean.includes("cervical")) return "neck"
+  if (clean.includes("neck") || clean.includes("cervical")) return "traps"
   if (clean.includes("trap") || clean.includes("upper back")) return "traps"
   if (clean.includes("lower back") || clean.includes("lumbar")) return "lower back"
   if (clean.includes("lat") || clean.includes("back")) return "lats"
@@ -155,7 +165,8 @@ function normalizeBodyPart(part: string): string {
   if (clean.includes("quad")) return "quads"
   if (clean.includes("hamstring")) return "hamstrings"
   if (clean.includes("calv") || clean.includes("tibialis")) return "calves"
-  if (clean.includes("adductor") || clean.includes("inner thigh")) return "adductors"
+  if (clean.includes("adductor") || clean.includes("inner thigh") || clean.includes("groin")) return "quads"
+  if (clean.includes("leg")) return "quads"
   return clean
 }
 
@@ -192,29 +203,28 @@ const EXERCISE_TARGET_DICTIONARY: Record<string, { primary: string[]; secondary?
 }
 
 export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps) {
-  const [activeView, setActiveView] = useState<"front" | "back">("front")
+  // Toggle: Both | Front | Back (defaults to Both view)
+  const [activeView, setActiveView] = useState<"both" | "front" | "back">("both")
   const [selectedMuscle, setSelectedMuscle] = useState<string | null>(null)
   const [hoveredMuscle, setHoveredMuscle] = useState<string | null>(null)
 
-  // Compute stats and percentages per muscle
+  // Compute stats and percentages per muscle (14 calisthenics-sensible groups)
   const muscleStats = useMemo(() => {
     const stats: Record<string, MuscleStat> = {
-      chest: { key: "chest", name: "Pectorals (Chest)", view: "front", category: "push", sets: 0, reps: 0, points: 0, exercises: [], intensity: 0, volumePercent: 0 },
-      shoulders: { key: "shoulders", name: "Deltoids (Shoulders)", view: "both", category: "push", sets: 0, reps: 0, points: 0, exercises: [], intensity: 0, volumePercent: 0 },
+      chest: { key: "chest", name: "Chest", view: "front", category: "push", sets: 0, reps: 0, points: 0, exercises: [], intensity: 0, volumePercent: 0 },
+      shoulders: { key: "shoulders", name: "Shoulders", view: "both", category: "push", sets: 0, reps: 0, points: 0, exercises: [], intensity: 0, volumePercent: 0 },
       biceps: { key: "biceps", name: "Biceps", view: "front", category: "arms", sets: 0, reps: 0, points: 0, exercises: [], intensity: 0, volumePercent: 0 },
       triceps: { key: "triceps", name: "Triceps", view: "back", category: "arms", sets: 0, reps: 0, points: 0, exercises: [], intensity: 0, volumePercent: 0 },
       forearms: { key: "forearms", name: "Forearms", view: "both", category: "arms", sets: 0, reps: 0, points: 0, exercises: [], intensity: 0, volumePercent: 0 },
-      core: { key: "core", name: "Abdominals (Core)", view: "front", category: "core", sets: 0, reps: 0, points: 0, exercises: [], intensity: 0, volumePercent: 0 },
+      core: { key: "core", name: "Abdominals", view: "front", category: "core", sets: 0, reps: 0, points: 0, exercises: [], intensity: 0, volumePercent: 0 },
       obliques: { key: "obliques", name: "Obliques", view: "front", category: "core", sets: 0, reps: 0, points: 0, exercises: [], intensity: 0, volumePercent: 0 },
-      traps: { key: "traps", name: "Trapezius (Upper Back)", view: "back", category: "pull", sets: 0, reps: 0, points: 0, exercises: [], intensity: 0, volumePercent: 0 },
-      neck: { key: "neck", name: "Neck (Cervical)", view: "both", category: "pull", sets: 0, reps: 0, points: 0, exercises: [], intensity: 0, volumePercent: 0 },
-      lats: { key: "lats", name: "Latissimus Dorsi (Lats)", view: "back", category: "pull", sets: 0, reps: 0, points: 0, exercises: [], intensity: 0, volumePercent: 0 },
+      lats: { key: "lats", name: "Lats", view: "back", category: "pull", sets: 0, reps: 0, points: 0, exercises: [], intensity: 0, volumePercent: 0 },
+      traps: { key: "traps", name: "Traps", view: "back", category: "pull", sets: 0, reps: 0, points: 0, exercises: [], intensity: 0, volumePercent: 0 },
       "lower back": { key: "lower back", name: "Lower Back", view: "back", category: "pull", sets: 0, reps: 0, points: 0, exercises: [], intensity: 0, volumePercent: 0 },
-      glutes: { key: "glutes", name: "Gluteals", view: "back", category: "legs", sets: 0, reps: 0, points: 0, exercises: [], intensity: 0, volumePercent: 0 },
-      quads: { key: "quads", name: "Quadriceps", view: "front", category: "legs", sets: 0, reps: 0, points: 0, exercises: [], intensity: 0, volumePercent: 0 },
-      adductors: { key: "adductors", name: "Adductors", view: "both", category: "legs", sets: 0, reps: 0, points: 0, exercises: [], intensity: 0, volumePercent: 0 },
+      glutes: { key: "glutes", name: "Glutes", view: "back", category: "legs", sets: 0, reps: 0, points: 0, exercises: [], intensity: 0, volumePercent: 0 },
+      quads: { key: "quads", name: "Quads", view: "front", category: "legs", sets: 0, reps: 0, points: 0, exercises: [], intensity: 0, volumePercent: 0 },
       hamstrings: { key: "hamstrings", name: "Hamstrings", view: "back", category: "legs", sets: 0, reps: 0, points: 0, exercises: [], intensity: 0, volumePercent: 0 },
-      calves: { key: "calves", name: "Calves & Tibialis", view: "both", category: "legs", sets: 0, reps: 0, points: 0, exercises: [], intensity: 0, volumePercent: 0 },
+      calves: { key: "calves", name: "Calves", view: "both", category: "legs", sets: 0, reps: 0, points: 0, exercises: [], intensity: 0, volumePercent: 0 },
     }
 
     const exIdMap = new Map<string, Exercise>()
@@ -310,10 +320,15 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
     return stats
   }, [workouts, exercises])
 
-  const getFillColor = (slug: string, isHovered: boolean, isSelected: boolean) => {
+  const getFillColor = (
+    slug: string,
+    isHovered: boolean,
+    isSelected: boolean,
+    view: "front" | "back"
+  ) => {
     if (NEUTRAL_SLUGS.has(slug)) return "#09090b"
 
-    const muscleKey = slugToMuscleKey(slug)
+    const muscleKey = slugToMuscleKey(slug, view)
     if (!muscleKey) return "#09090b"
 
     const stat = muscleStats[muscleKey]
@@ -326,12 +341,17 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
     return tier.color
   }
 
-  const getStrokeColor = (slug: string, isHovered: boolean, isSelected: boolean) => {
+  const getStrokeColor = (
+    slug: string,
+    isHovered: boolean,
+    isSelected: boolean,
+    view: "front" | "back"
+  ) => {
     if (NEUTRAL_SLUGS.has(slug)) return "#18181b"
     if (isSelected) return "#ffffff"
     if (isHovered) return "#ffffff"
 
-    const muscleKey = slugToMuscleKey(slug)
+    const muscleKey = slugToMuscleKey(slug, view)
     const intensity = muscleKey ? muscleStats[muscleKey]?.intensity ?? 0 : 0
     const tier = getWhiteIntensityTier(intensity)
 
@@ -347,16 +367,16 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
     []
   )
 
-  const renderPart = (part: BodyPartPaths, index: number) => {
+  const renderPart = (part: BodyPartPaths, index: number, view: "front" | "back") => {
     const isNeutral = NEUTRAL_SLUGS.has(part.slug)
-    const muscleKey = slugToMuscleKey(part.slug)
+    const muscleKey = slugToMuscleKey(part.slug, view)
     const isSelected = !!muscleKey && selectedMuscle === muscleKey
     const isHovered = !!muscleKey && hoveredMuscle === muscleKey
     const stat = muscleKey ? muscleStats[muscleKey] : null
     const isTrained = (stat?.sets ?? 0) > 0
 
-    const fill = getFillColor(part.slug, isHovered, isSelected)
-    const stroke = getStrokeColor(part.slug, isHovered, isSelected)
+    const fill = getFillColor(part.slug, isHovered, isSelected, view)
+    const stroke = getStrokeColor(part.slug, isHovered, isSelected, view)
     const strokeWidth = isSelected ? 2.5 : isHovered ? 1.8 : isTrained ? 1.2 : 0.8
 
     return (
@@ -391,7 +411,7 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
     )
   }
 
-  // Floating Numeric % Badge Pin on SVG (Strict Monochrome)
+  // Floating Numeric % Badge Pin on SVG (Large, Bold, High Contrast, Readable on 360px phones)
   const renderSvgNumericBadge = (
     muscleKey: string,
     x: number,
@@ -403,8 +423,15 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
 
     const isSelected = selectedMuscle === muscleKey
     const isHovered = hoveredMuscle === muscleKey
-    const pct = Math.round(stat.intensity * 100)
+    const pct = stat.volumePercent
     const isTrained = stat.sets > 0
+
+    // Capsule dimensions: much larger, high contrast pill readable without zooming
+    const w = 126
+    const h = 58
+    const rx = 16
+
+    const labelFontSize = label.length > 8 ? 11 : label.length > 6 ? 13 : 15
 
     return (
       <g
@@ -420,43 +447,46 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
       >
         {/* Background Capsule Pill */}
         <rect
-          x="-43"
-          y="-14"
-          width="86"
-          height="28"
-          rx="14"
-          ry="14"
-          fill={isSelected ? "#27272a" : "#09090bf0"}
-          stroke={isSelected ? "#ffffff" : isHovered ? "#ffffff" : isTrained ? "#52525b" : "#27272a"}
-          strokeWidth={isSelected ? "2" : isHovered ? "1.8" : "1"}
-        />
-        {/* Swatch Indicator Dot */}
-        <circle
-          cx="-29"
-          cy="0"
-          r="3"
-          fill={isTrained ? "#ffffff" : "#3f3f46"}
+          x={-w / 2}
+          y={-h / 2}
+          width={w}
+          height={h}
+          rx={rx}
+          ry={rx}
+          fill="#09090b"
+          stroke={
+            isSelected
+              ? "#ffffff"
+              : isHovered
+              ? "#ffffff"
+              : isTrained
+              ? "#e4e4e7"
+              : "#3f3f46"
+          }
+          strokeWidth={isSelected ? 3 : isHovered ? 2.5 : isTrained ? 2 : 1.5}
         />
         {/* Label */}
         <text
-          x="-21"
-          y="-2"
-          fill={isSelected ? "#ffffff" : "#a1a1aa"}
-          fontSize="8.5"
-          fontFamily="system-ui, sans-serif"
-          fontWeight="600"
-          letterSpacing="0.4"
+          x={0}
+          y={-7}
+          textAnchor="middle"
+          fill={isSelected ? "#ffffff" : isTrained ? "#d4d4d8" : "#a1a1aa"}
+          fontSize={labelFontSize}
+          fontFamily="system-ui, -apple-system, sans-serif"
+          fontWeight="700"
+          letterSpacing="0.5"
         >
           {label.toUpperCase()}
         </text>
-        {/* BIG & Unmissable % */}
+        {/* BIG & Unmissable % (Volume Share) */}
         <text
-          x="-21"
-          y="9.5"
+          x={0}
+          y={20}
+          textAnchor="middle"
           fill={isSelected || isTrained ? "#ffffff" : "#71717a"}
-          fontSize="12.5"
+          fontSize={30}
           fontFamily="var(--font-display), Space Grotesk, sans-serif"
-          fontWeight="700"
+          fontWeight="800"
         >
           {pct}%
         </text>
@@ -464,10 +494,37 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
     )
   }
 
+  // Front badges: spaced cleanly across front body landmarks
+  const renderFrontBadges = () => (
+    <>
+      {renderSvgNumericBadge("chest", 363.5, 365, "Chest")}
+      {renderSvgNumericBadge("shoulders", 195, 310, "Delts")}
+      {renderSvgNumericBadge("biceps", 145, 435, "Biceps")}
+      {renderSvgNumericBadge("forearms", 120, 590, "Forearms")}
+      {renderSvgNumericBadge("core", 363.5, 520, "Abs")}
+      {renderSvgNumericBadge("obliques", 495, 575, "Obliques")}
+      {renderSvgNumericBadge("quads", 310, 800, "Quads")}
+      {renderSvgNumericBadge("calves", 300, 1080, "Calves")}
+    </>
+  )
+
+  // Back badges: spaced cleanly across back body landmarks
+  const renderBackBadges = () => (
+    <>
+      {renderSvgNumericBadge("traps", 1081.5, 290, "Traps")}
+      {renderSvgNumericBadge("lats", 1185, 470, "Lats")}
+      {renderSvgNumericBadge("triceps", 885, 430, "Triceps")}
+      {renderSvgNumericBadge("lower back", 1081.5, 595, "Lower Back")}
+      {renderSvgNumericBadge("glutes", 1081.5, 720, "Glutes")}
+      {renderSvgNumericBadge("hamstrings", 1025, 875, "Hamstrings")}
+      {renderSvgNumericBadge("calves", 1025, 1080, "Calves")}
+    </>
+  )
+
   // Sorted muscle list & summary stats
-  const { sortedMuscles, topMuscle, activeCount, totalSetsSum } = useMemo(() => {
+  const { sortedMuscles, topMuscle, activeCount, totalSetsSum, totalMuscleGroups } = useMemo(() => {
     const list = Object.values(muscleStats).sort((a, b) => {
-      if (b.intensity !== a.intensity) return b.intensity - a.intensity
+      if (b.volumePercent !== a.volumePercent) return b.volumePercent - a.volumePercent
       if (b.sets !== a.sets) return b.sets - a.sets
       return a.name.localeCompare(b.name)
     })
@@ -478,6 +535,7 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
       topMuscle: active[0] || list[0],
       activeCount: active.length,
       totalSetsSum: sum,
+      totalMuscleGroups: list.length,
     }
   }, [muscleStats])
 
@@ -485,7 +543,7 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
 
   return (
     <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4 sm:p-6 shadow-sm space-y-6">
-      {/* ─── Section Header (Monochrome Icon + Title) & Front/Back Toggle ─── */}
+      {/* ─── Section Header (Monochrome Icon + Title) & Both/Front/Back Toggle (Tap >= 44px) ─── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-zinc-800">
         <div className="flex items-center gap-2.5">
           <div className="p-2 rounded-xl bg-zinc-800 border border-zinc-700/60 text-white">
@@ -497,60 +555,101 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
           </div>
         </div>
 
-        {/* Front / Back Toggle (Tap >= 44px) */}
+        {/* View Toggle: Both | Front | Back (Tap Targets >= 44px) */}
         <div className="flex items-center gap-1 bg-zinc-950 p-1 rounded-xl border border-zinc-800 self-start sm:self-auto min-h-[44px]">
-          <button
-            type="button"
-            onClick={() => {
-              soundManager.play("click", 0.2)
-              setActiveView("front")
-            }}
-            className={`h-9 px-3.5 text-xs font-semibold rounded-lg transition-all cursor-pointer flex items-center justify-center ${
-              activeView === "front"
-                ? "bg-white text-zinc-950 shadow-xs"
-                : "text-zinc-400 hover:text-white"
-            }`}
-          >
-            Front
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              soundManager.play("click", 0.2)
-              setActiveView("back")
-            }}
-            className={`h-9 px-3.5 text-xs font-semibold rounded-lg transition-all cursor-pointer flex items-center justify-center ${
-              activeView === "back"
-                ? "bg-white text-zinc-950 shadow-xs"
-                : "text-zinc-400 hover:text-white"
-            }`}
-          >
-            Back
-          </button>
+          {(["both", "front", "back"] as const).map((view) => (
+            <button
+              key={view}
+              type="button"
+              onClick={() => {
+                soundManager.play("click", 0.2)
+                setActiveView(view)
+              }}
+              className={`min-h-[44px] px-3.5 sm:px-4 text-xs font-semibold rounded-lg transition-all cursor-pointer flex items-center justify-center capitalize ${
+                activeView === view
+                  ? "bg-white text-zinc-950 shadow-xs"
+                  : "text-zinc-400 hover:text-white"
+              }`}
+            >
+              {view === "both" ? "Both" : view === "front" ? "Front" : "Back"}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* ─── Hero Metric: Primary Target Focus ─── */}
-      <div className="pb-1">
-        <span className="text-[11px] font-body uppercase tracking-wider text-zinc-400 block mb-1">
-          Primary Focus
-        </span>
-        <div className="flex items-baseline gap-2">
-          <span className="text-3xl sm:text-4xl font-bold tracking-tight text-white font-display tabular-nums">
-            {topMuscle && topMuscle.sets > 0
-              ? `${topMuscle.name.split(" ")[0]} · ${Math.round(topMuscle.intensity * 100)}%`
-              : "No Target Data"}
-          </span>
+      {/* ─── Neutral Overview Header (Shown unprompted when nothing selected) ─── */}
+      <div className="pb-1 space-y-2">
+        <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2">
+          <div>
+            <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-white font-display">
+              Muscle Activation
+            </h3>
+            <p className="text-xs text-zinc-400 font-body mt-0.5">
+              <span className="font-display font-semibold tabular-nums text-zinc-300">
+                {activeCount}
+              </span>{" "}
+              of {totalMuscleGroups} muscle groups trained ·{" "}
+              <span className="font-display font-semibold tabular-nums text-zinc-300">
+                {totalSetsSum}
+              </span>{" "}
+              total {totalSetsSum === 1 ? "set" : "sets"}
+            </p>
+          </div>
+
+          {topMuscle && topMuscle.sets > 0 && (
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-950 border border-zinc-800 text-xs font-body text-zinc-300 self-start sm:self-auto">
+              <span className="text-zinc-500">Most trained:</span>
+              <span className="font-semibold text-white">{topMuscle.name}</span>
+              <span className="text-zinc-500">·</span>
+              <span className="font-display font-semibold tabular-nums text-zinc-200">
+                {topMuscle.volumePercent}% of sets
+              </span>
+            </div>
+          )}
         </div>
-        <p className="text-xs text-zinc-400 font-body mt-1">
-          <span className="font-display font-semibold tabular-nums text-zinc-300">{activeCount}</span> of 16 muscle groups trained · <span className="font-display font-semibold tabular-nums text-zinc-300">{totalSetsSum}</span> total sets logged
-        </p>
       </div>
 
       {/* ─── Anatomy Figure SVG Canvas ─── */}
       <div className="w-full flex justify-center py-2 relative">
         <AnimatePresence mode="wait">
-          {activeView === "front" ? (
+          {activeView === "both" ? (
+            <motion.div
+              key="both"
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.98 }}
+              transition={{ duration: 0.15 }}
+              className="w-full flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-4 md:gap-8"
+            >
+              {/* Front Figure */}
+              <div className="w-full max-w-[320px] flex flex-col items-center">
+                <span className="text-[11px] font-mono uppercase tracking-wider text-zinc-400 mb-1">
+                  Front
+                </span>
+                <svg
+                  viewBox={MALE_FRONT_VIEWBOX}
+                  className="w-full h-auto select-none max-h-[460px]"
+                >
+                  {frontParts.map((p, i) => renderPart(p, i, "front"))}
+                  {renderFrontBadges()}
+                </svg>
+              </div>
+
+              {/* Back Figure */}
+              <div className="w-full max-w-[320px] flex flex-col items-center">
+                <span className="text-[11px] font-mono uppercase tracking-wider text-zinc-400 mb-1">
+                  Back
+                </span>
+                <svg
+                  viewBox={MALE_BACK_VIEWBOX}
+                  className="w-full h-auto select-none max-h-[460px]"
+                >
+                  {backParts.map((p, i) => renderPart(p, i, "back"))}
+                  {renderBackBadges()}
+                </svg>
+              </div>
+            </motion.div>
+          ) : activeView === "front" ? (
             <motion.div
               key="front"
               initial={{ opacity: 0, scale: 0.98 }}
@@ -563,15 +662,8 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
                 viewBox={MALE_FRONT_VIEWBOX}
                 className="w-full h-auto select-none max-h-[460px]"
               >
-                {frontParts.map(renderPart)}
-                {/* Clear Numeric % Labels over Front Muscles */}
-                {renderSvgNumericBadge("chest", 363.5, 365, "Pec")}
-                {renderSvgNumericBadge("shoulders", 215, 320, "Delt")}
-                {renderSvgNumericBadge("biceps", 160, 440, "Arm")}
-                {renderSvgNumericBadge("core", 363.5, 520, "Abs")}
-                {renderSvgNumericBadge("obliques", 265, 590, "Obl")}
-                {renderSvgNumericBadge("quads", 310, 800, "Quad")}
-                {renderSvgNumericBadge("calves", 300, 1080, "Calf")}
+                {frontParts.map((p, i) => renderPart(p, i, "front"))}
+                {renderFrontBadges()}
               </svg>
             </motion.div>
           ) : (
@@ -587,15 +679,8 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
                 viewBox={MALE_BACK_VIEWBOX}
                 className="w-full h-auto select-none max-h-[460px]"
               >
-                {backParts.map(renderPart)}
-                {/* Clear Numeric % Labels over Back Muscles */}
-                {renderSvgNumericBadge("traps", 1081.5, 290, "Trap")}
-                {renderSvgNumericBadge("lats", 1025, 470, "Lat")}
-                {renderSvgNumericBadge("triceps", 915, 430, "Tri")}
-                {renderSvgNumericBadge("lower back", 1081.5, 600, "Low")}
-                {renderSvgNumericBadge("glutes", 1030, 715, "Glut")}
-                {renderSvgNumericBadge("hamstrings", 1025, 870, "Ham")}
-                {renderSvgNumericBadge("calves", 1025, 1080, "Calf")}
+                {backParts.map((p, i) => renderPart(p, i, "back"))}
+                {renderBackBadges()}
               </svg>
             </motion.div>
           )}
@@ -608,7 +693,7 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
           Activation Scale
         </span>
         <div className="flex items-center gap-2">
-          <span className="text-[11px] text-zinc-500 font-body">0%</span>
+          <span className="text-[11px] text-zinc-500 font-body">None</span>
           <div className="flex gap-1 items-center">
             {WHITE_HEATMAP_SCALE.map((tier) => (
               <div
@@ -619,7 +704,7 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
               />
             ))}
           </div>
-          <span className="text-[11px] text-zinc-500 font-body">100%</span>
+          <span className="text-[11px] text-zinc-500 font-body">Max</span>
         </div>
       </div>
 
@@ -632,7 +717,6 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
 
         <div className="space-y-2">
           {sortedMuscles.map((muscle) => {
-            const pct = Math.round(muscle.intensity * 100)
             const isTrained = muscle.sets > 0
 
             return (
@@ -644,14 +728,14 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
                 }}
                 className="p-3.5 rounded-xl transition-all cursor-pointer flex items-center justify-between gap-3 border min-h-[56px] bg-zinc-950/60 border-zinc-800/80 hover:border-zinc-700 hover:bg-zinc-850"
               >
-                {/* BIG unmissable percentage on the left */}
+                {/* BIG unmissable percentage on the left (Volume Share) */}
                 <div className="flex items-center gap-3.5 min-w-0 flex-1">
                   <span
                     className={`font-display font-bold text-2xl sm:text-3xl tabular-nums min-w-[3.5rem] text-right shrink-0 ${
                       isTrained ? "text-white" : "text-zinc-600"
                     }`}
                   >
-                    {pct}%
+                    {muscle.volumePercent}%
                   </span>
 
                   <div className="min-w-0 flex-1">
@@ -669,7 +753,7 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
                       <div
                         className="h-full bg-white rounded-full transition-all duration-300"
                         style={{
-                          width: `${Math.max(pct, isTrained ? 4 : 0)}%`,
+                          width: `${Math.max(muscle.volumePercent, isTrained ? 4 : 0)}%`,
                         }}
                       />
                     </div>
@@ -679,7 +763,7 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
                 {/* Right side: Share & sets info */}
                 <div className="flex flex-col items-end shrink-0 pl-2 text-right">
                   <span className="font-display font-semibold text-xs tabular-nums text-zinc-300">
-                    {muscle.volumePercent}% share
+                    {muscle.volumePercent}% of sets
                   </span>
                   <span className="text-[11px] text-zinc-500 font-body">
                     {muscle.sets} {muscle.sets === 1 ? "set" : "sets"}
@@ -699,7 +783,7 @@ export function MuscleAnatomyMap({ workouts, exercises }: MuscleAnatomyMapProps)
         badge={activeModalMuscle?.category}
         subtitle={
           activeModalMuscle
-            ? `${Math.round(activeModalMuscle.intensity * 100)}% activation · ${activeModalMuscle.volumePercent}% volume share · ${activeModalMuscle.sets} sets logged`
+            ? `${activeModalMuscle.volumePercent}% of total sets · ${activeModalMuscle.sets} ${activeModalMuscle.sets === 1 ? "set" : "sets"} logged`
             : undefined
         }
       >
