@@ -8,7 +8,6 @@ import {
   ChevronLeft,
   RotateCcw,
   X,
-  Flame,
 } from "lucide-react"
 import { useWorkouts, useExercises } from "@/hooks/use-local-data"
 import soundManager from "@/lib/sounds"
@@ -16,10 +15,10 @@ import {
   groupWorkoutsIntoSessions,
   toLocalDateStr,
   getMondayOfWeek,
-  calculateCurrentStreak,
   formatDateDisplay,
 } from "@/components/progress/workout-helpers"
 import { TotalStatsCard } from "@/components/progress/total-stats-card"
+import { WorkoutDaysLog } from "@/components/progress/workout-days-log"
 import { WorkoutHeatmap } from "@/components/charts/workout-heatmap"
 import { TrainingFrequencyCard } from "@/components/progress/training-frequency-card"
 import { MuscleDistributionRadar } from "@/components/progress/muscle-distribution-radar"
@@ -272,15 +271,17 @@ export default function ProgressPage() {
     [filteredWorkouts]
   )
 
-  // Sunday-safe streak calculation for Streak Hero (f3bcae6)
-  const { currentStreakDays, weekStreak } = useMemo(() => {
-    const dates = workouts.map((w) => (w.date || "").slice(0, 10)).filter(Boolean)
-    const streakDays = calculateCurrentStreak(dates)
-    return {
-      currentStreakDays: streakDays,
-      weekStreak: Math.floor(streakDays / 6),
+  // Navigated month & year for Workout Days Log calendar
+  const { streakMonth, streakYear } = useMemo(() => {
+    if (startDateStr && startDateStr !== "1970-01-01") {
+      const parts = startDateStr.split("-").map(Number)
+      if (parts.length >= 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+        return { streakMonth: parts[1] - 1, streakYear: parts[0] }
+      }
     }
-  }, [workouts])
+    const now = new Date()
+    return { streakMonth: now.getMonth(), streakYear: now.getFullYear() }
+  }, [startDateStr])
 
   const currentMonthName = useMemo(() => {
     return new Date().toLocaleDateString("en-US", { month: "long" })
@@ -427,44 +428,31 @@ export default function ProgressPage() {
           </div>
         </header>
 
-        {/* ─── 2. TOTAL & STREAK HERO (Side-by-side on desktop) ─── */}
-        <div className="grid gap-6 sm:gap-7 lg:grid-cols-2 lg:gap-8 items-stretch">
-          {/* Total Section */}
-          <section className="space-y-2 min-w-0 flex flex-col">
-            <div className="flex items-center justify-between min-h-[32px]">
-              <h2 className="text-base sm:text-lg font-bold text-white font-display">
-                Total
-              </h2>
-            </div>
-            <TotalStatsCard
-              sessions={filteredSessions}
-              allSessions={allSessions}
-              className="flex-1 h-full"
-            />
-          </section>
+        {/* ─── 2. TOTAL SECTION ─── */}
+        <section className="space-y-2 min-w-0">
+          <div className="flex items-center justify-between min-h-[32px]">
+            <h2 className="text-base sm:text-lg font-bold text-white font-display">
+              Total
+            </h2>
+          </div>
+          <TotalStatsCard
+            sessions={filteredSessions}
+            allSessions={allSessions}
+          />
+        </section>
 
-          {/* Streak Section (Monthly-Report-Style Streak Hero) */}
-          <section className="space-y-2 min-w-0 flex flex-col">
-            <div className="flex items-center justify-between min-h-[32px]">
-              <h2 className="text-base sm:text-lg font-bold text-white font-display">
-                Streak
-              </h2>
-            </div>
-            <div className="rounded-3xl border border-zinc-800/90 bg-[#121316] p-6 shadow-xl flex-1 flex flex-col items-center justify-center text-center min-h-[220px]">
-              <div className="flex flex-col items-center justify-center space-y-2">
-                <Flame className="w-12 h-12 text-orange-500 fill-orange-500" />
-                <div className="text-2xl sm:text-3xl font-extrabold text-white font-display tracking-tight">
-                  {`${weekStreak} Week Streak`}
-                </div>
-                <p className="text-xs text-zinc-400 font-body">
-                  {currentStreakDays} {currentStreakDays === 1 ? "day" : "days"} logged · Sundays excluded
-                </p>
-              </div>
-            </div>
-          </section>
-        </div>
+        {/* ─── 3. STREAK / WORKOUT DAYS LOG SECTION ─── */}
+        <section className="space-y-2 min-w-0">
+          <WorkoutDaysLog
+            workouts={workouts}
+            sessions={allSessions}
+            month={streakMonth}
+            year={streakYear}
+            title="Streak"
+          />
+        </section>
 
-        {/* ─── 3. TRAINING FREQUENCY / MASCOT (Coral Anatomical Figures) ─── */}
+        {/* ─── 4. TRAINING FREQUENCY / MASCOT (Coral Anatomical Figures) ─── */}
         <section className="space-y-2 min-w-0">
           <h2 className="text-base sm:text-lg font-bold text-white font-display">
             Training Frequency
@@ -476,7 +464,7 @@ export default function ProgressPage() {
           />
         </section>
 
-        {/* ─── 4. GITHUB-STYLE WORKOUT HEATMAP (Contribution Graph) ─── */}
+        {/* ─── 5. GITHUB-STYLE WORKOUT HEATMAP (Contribution Graph) ─── */}
         <section className="space-y-2 min-w-0">
           <WorkoutHeatmap
             workouts={workouts}
@@ -486,7 +474,7 @@ export default function ProgressPage() {
           />
         </section>
 
-        {/* ─── 5. MUSCLE DISTRIBUTION (Expanded Inline Radar + Delta Stats) ─── */}
+        {/* ─── 6. MUSCLE DISTRIBUTION (Expanded Inline Radar + Delta Stats) ─── */}
         <section className="space-y-2 min-w-0">
           <h2 className="text-base sm:text-lg font-bold text-white font-display">
             Muscle Distribution
@@ -504,7 +492,7 @@ export default function ProgressPage() {
           />
         </section>
 
-        {/* ─── 6. MORE ANALYTICS (Monthly Report Entry Card) ─── */}
+        {/* ─── 7. MORE ANALYTICS (Monthly Report Entry Card) ─── */}
         <section className="space-y-2 min-w-0">
           <h2 className="text-base sm:text-lg font-bold text-white font-display">
             More Analytics
@@ -546,7 +534,7 @@ export default function ProgressPage() {
           </div>
         </section>
 
-        {/* ─── 7. PERSONAL PR RECORDS (Follows Period Filter) ─── */}
+        {/* ─── 8. PERSONAL PR RECORDS (Follows Period Filter) ─── */}
         <section className="space-y-2 min-w-0">
           <h2 className="text-base sm:text-lg font-bold text-white font-display">
             Personal Records
