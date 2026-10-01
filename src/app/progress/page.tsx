@@ -194,7 +194,7 @@ export default function ProgressPage() {
   if (activeTab === "weekly") {
     return (
       <main
-        className={`${spaceGrotesk.variable} ${inter.variable} font-body min-h-screen bg-black text-zinc-100 pb-32 max-w-lg mx-auto px-4 pt-4 space-y-6`}
+        className={`${spaceGrotesk.variable} ${inter.variable} font-body min-h-screen bg-black text-zinc-100 pb-32 max-w-lg md:max-w-3xl lg:max-w-5xl xl:max-w-6xl mx-auto px-4 pt-4 space-y-6`}
       >
         <WeeklyOverview
           workouts={workouts}
@@ -214,7 +214,7 @@ export default function ProgressPage() {
   return (
     <PageTransition>
       <main
-        className={`${spaceGrotesk.variable} ${inter.variable} font-body min-h-screen bg-black text-zinc-100 pb-32 max-w-lg mx-auto px-4 pt-4 space-y-6 sm:space-y-7`}
+        className={`${spaceGrotesk.variable} ${inter.variable} font-body min-h-screen bg-black text-zinc-100 pb-32 max-w-lg md:max-w-3xl lg:max-w-5xl xl:max-w-6xl mx-auto px-4 pt-4 space-y-6 sm:space-y-7`}
       >
         {/* ─── 1. HEADER: "Report" + Period Segmented Control + Monthly Quick Link (Same Row) ─── */}
         <header className="flex flex-col gap-3 pt-2">
@@ -249,8 +249,10 @@ export default function ProgressPage() {
           </div>
         </header>
 
+      {/* ─── 2+3. TOTAL + THIS WEEK (side-by-side on desktop) ─── */}
+      <div className="grid gap-6 sm:gap-7 lg:grid-cols-2 lg:gap-8">
       {/* ─── 2. TOTAL SECTION (Reference 01: Workouts, Time, Volume + Weekly Bar Chart) ─── */}
-      <section className="space-y-2">
+      <section className="space-y-2 min-w-0">
         <h2 className="text-base sm:text-lg font-bold text-white font-display">
           Total
         </h2>
@@ -258,7 +260,7 @@ export default function ProgressPage() {
       </section>
 
       {/* ─── 3. THIS WEEK SECTION (Reference 01: 7 Circles + Today & Avg min) ─── */}
-      <section>
+      <section className="min-w-0">
         <ThisWeekCard
           sessions={filteredSessions}
           onOpenWeeklyOverview={() => {
@@ -267,6 +269,7 @@ export default function ProgressPage() {
           }}
         />
       </section>
+      </div>
 
       {/* ─── 4. TRAINING FREQUENCY / MASCOT (Reference 08: Coral Anatomical Figures) ─── */}
       <section className="space-y-2">
@@ -286,7 +289,7 @@ export default function ProgressPage() {
           More Analytics
         </h2>
 
-        <div className="grid gap-2.5">
+        <div className="grid gap-2.5 sm:grid-cols-2">
           {/* Muscle Distribution Radar Entry Card */}
           <div
             role="button"

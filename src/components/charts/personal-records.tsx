@@ -105,11 +105,11 @@ export function PersonalRecords({ workouts }: { workouts: Workout[] }) {
   }
 
   return (
-    <div className="rounded-2xl border border-zinc-850 bg-[#121316] divide-y divide-zinc-800/60 px-4 sm:px-5 shadow-xs">
+    <div className="rounded-2xl border border-zinc-850 bg-[#121316] divide-y divide-zinc-800/60 px-4 sm:px-5 shadow-xs lg:grid lg:grid-cols-2 lg:divide-y-0 lg:gap-x-8">
       {records.map((r) => (
         <div
           key={r.name}
-          className="flex items-center justify-between py-3 min-h-[44px] gap-3"
+          className="flex items-center justify-between py-3 min-h-[44px] gap-3 lg:border-b lg:border-zinc-800/60"
         >
           <span className="text-sm font-medium text-zinc-300 font-body truncate">
             {r.name}
