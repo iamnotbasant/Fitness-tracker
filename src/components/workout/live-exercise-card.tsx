@@ -272,7 +272,7 @@ function LiveExerciseCard({
       } else {
         const prevSet = getPreviousSet(i)
         const prevVal = getPreviousValue(i)
-        const fallbackReps = prevSet?.reps ?? (prevVal ? Number(prevVal) : undefined) ?? repGoal
+        const fallbackReps = prevSet?.reps ?? (prevVal ? Number(prevVal) : undefined) ?? repGoal ?? 1
         const resolvedReps = !wasDone && (next[i].reps === undefined || next[i].reps === null)
           ? fallbackReps
           : next[i].reps

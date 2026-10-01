@@ -35,15 +35,28 @@ export function PersonalRecords({ workouts }: { workouts: Workout[] }) {
       }
     >()
 
+    // Build a lookup: exerciseId -> exercise name (for records missing exerciseName)
+    const exerciseNameById = new Map<string, string>()
+    ;(exercises || []).forEach((e: any) => {
+      if (e?.id != null && e?.name) exerciseNameById.set(String(e.id), e.name)
+    })
+
     workouts.forEach((w) => {
-      const exName = (w.exerciseName || w.name || "").trim()
-      if (!exName) return
+      // Resolve the exercise name robustly: exerciseName -> name -> exerciseId lookup.
+      // Never silently drop a record just because the name field is missing —
+      // fall back to a generic label so the exercise still appears in PRs.
+      const rawExName = (w.exerciseName || (w as any).name || "").trim()
+      const idKey = w.exerciseId != null ? String(w.exerciseId) : ""
+      const exName =
+        rawExName || (idKey && exerciseNameById.get(idKey)) || (idKey ? `Exercise ${idKey}` : "Unknown Exercise")
+      // Group by exerciseId when available (stable), else by resolved name
+      const groupKey = idKey || exName.toLowerCase()
 
       const lowerName = exName.toLowerCase()
       const isTimer =
         timerExerciseNames.has(lowerName) || Boolean(w.timeSeconds && w.timeSeconds > 0)
 
-      const existing = exerciseMap.get(exName) || {
+      const existing = exerciseMap.get(groupKey) || {
         name: exName,
         isTimer,
         maxReps: 0,
@@ -68,7 +81,7 @@ export function PersonalRecords({ workouts }: { workouts: Workout[] }) {
         }
       }
 
-      exerciseMap.set(exName, existing)
+      exerciseMap.set(groupKey, existing)
     })
 
     const list: { name: string; valueDisplay: string }[] = []
