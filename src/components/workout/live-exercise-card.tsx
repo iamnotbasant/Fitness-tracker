@@ -938,12 +938,12 @@ function LiveExerciseCard({
                 onTouchStart={(e) => handleTouchStart(i, e)}
                 onTouchEnd={handleTouchEnd}
                 onTouchMove={handleTouchMove}
-                className={`group grid items-center gap-2 py-2 border-b text-sm transition-colors duration-200 rounded-xl px-1 ${
+                className={`group grid items-center gap-2 py-2 text-sm transition-all duration-200 rounded-xl px-1.5 my-0.5 ${
                   isThisSetRunning 
-                    ? "bg-primary/5 border-l-2 border-l-primary border-b-border/40" 
+                    ? "bg-primary/5 border border-transparent border-l-2 border-l-primary border-b-border/40" 
                     : s.done
-                    ? "bg-emerald-500/10 dark:bg-emerald-950/50 border-b-emerald-500/20 dark:border-b-emerald-800/40 hover:bg-emerald-500/15 dark:hover:bg-emerald-950/60"
-                    : "border-b-border/40 hover:bg-muted/30"
+                    ? "bg-emerald-500/15 dark:bg-emerald-900/40 border border-emerald-500/60 dark:border-emerald-500/50 hover:bg-emerald-500/20 dark:hover:bg-emerald-900/55 hover:border-emerald-500/80 dark:hover:border-emerald-400/60 shadow-xs"
+                    : "border border-transparent border-b-border/40 hover:bg-muted/30"
                 } ${
                   isWeightedExercise ? "grid-cols-[2.2rem_1fr_1fr_1fr_2.5rem]" : "grid-cols-[2.2rem_1fr_1fr_2.5rem]"
                 }`}
@@ -1039,7 +1039,7 @@ function LiveExerciseCard({
                         onChange={(e) => updateTimeSeconds(i, e.target.value)}
                         className={`flex-1 min-w-0 w-full rounded-xl border px-2.5 py-1.5 outline-none focus:border-primary focus:ring-1 focus:ring-primary text-xs font-medium transition-colors ${
                           s.done
-                            ? "bg-background/60 border-emerald-500/25 dark:border-emerald-800/60 text-foreground placeholder:text-muted-foreground/40"
+                            ? "bg-background/70 border-emerald-500/35 dark:border-emerald-700/60 text-foreground placeholder:text-muted-foreground/40"
                             : "border-border/80 bg-background text-foreground placeholder:text-muted-foreground/50"
                         }`}
                         placeholder={
@@ -1061,7 +1061,7 @@ function LiveExerciseCard({
                     onChange={(e) => updateReps(i, e.target.value)}
                     className={`w-full rounded-xl border px-2.5 py-1.5 outline-none focus:border-primary focus:ring-1 focus:ring-primary text-xs font-medium transition-colors ${
                       s.done
-                        ? "bg-background/60 border-emerald-500/25 dark:border-emerald-800/60 text-foreground placeholder:text-muted-foreground/40"
+                        ? "bg-background/70 border-emerald-500/35 dark:border-emerald-700/60 text-foreground placeholder:text-muted-foreground/40"
                         : "border-border/80 bg-background text-foreground placeholder:text-muted-foreground/50"
                     }`}
                     placeholder={
@@ -1085,7 +1085,7 @@ function LiveExerciseCard({
                     onChange={(e) => updateWeight(i, e.target.value)}
                     className={`w-full rounded-xl border px-2.5 py-1.5 outline-none focus:border-primary focus:ring-1 focus:ring-primary text-xs font-medium transition-colors ${
                       s.done
-                        ? "bg-background/60 border-emerald-500/25 dark:border-emerald-800/60 text-foreground placeholder:text-muted-foreground/40"
+                        ? "bg-background/70 border-emerald-500/35 dark:border-emerald-700/60 text-foreground placeholder:text-muted-foreground/40"
                         : "border-border/80 bg-background text-foreground placeholder:text-muted-foreground/50"
                     }`}
                     placeholder={

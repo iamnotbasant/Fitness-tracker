@@ -224,44 +224,28 @@ export default function ProgressPage() {
             </h1>
           </div>
 
-          {/* Unified Period Tabs + Monthly Button on SAME Row with no squeezing */}
-          <div className="flex items-center justify-between gap-2 overflow-x-auto no-scrollbar py-0.5">
-            <div className="flex items-center p-1 rounded-full bg-zinc-900 border border-zinc-800 shrink-0">
-              {PERIOD_FILTERS.map((f) => {
-                const isActive = period === f.id
-                return (
-                  <button
-                    key={f.id}
-                    type="button"
-                    onClick={() => {
-                      soundManager.play("click", 0.15)
-                      setPeriod(f.id)
-                    }}
-                    className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer min-h-[36px] flex items-center justify-center shrink-0 active:scale-95 whitespace-nowrap ${
-                      isActive
-                        ? "bg-white text-zinc-950 shadow-xs"
-                        : "text-zinc-400 hover:text-white"
-                    }`}
-                  >
-                    {f.label}
-                  </button>
-                )
-              })}
-            </div>
-
-            <button
-              type="button"
-              onClick={() => {
-                soundManager.play("click", 0.2)
-                setMonthlyReportOpen(true)
-              }}
-              className="min-h-[38px] px-3.5 rounded-full border border-zinc-800 bg-zinc-900 hover:bg-zinc-800 text-xs font-medium text-zinc-200 hover:text-white flex items-center gap-1.5 transition-all cursor-pointer shadow-xs shrink-0 active:scale-95 whitespace-nowrap"
-              title="Open Monthly Report"
-              aria-label="Open Monthly Report"
-            >
-              <CalendarIcon className="w-3.5 h-3.5 text-zinc-400" />
-              <span>Monthly</span>
-            </button>
+          {/* Period Segmented Control */}
+          <div className="flex items-center p-1 rounded-full bg-zinc-900 border border-zinc-800 w-full">
+            {PERIOD_FILTERS.map((f) => {
+              const isActive = period === f.id
+              return (
+                <button
+                  key={f.id}
+                  type="button"
+                  onClick={() => {
+                    soundManager.play("click", 0.15)
+                    setPeriod(f.id)
+                  }}
+                  className={`flex-1 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer min-h-[36px] flex items-center justify-center active:scale-95 whitespace-nowrap ${
+                    isActive
+                      ? "bg-white text-zinc-950 shadow-xs"
+                      : "text-zinc-400 hover:text-white"
+                  }`}
+                >
+                  {f.label}
+                </button>
+              )
+            })}
           </div>
         </header>
 
@@ -298,56 +282,80 @@ export default function ProgressPage() {
 
       {/* ─── 5. SECONDARY FEATURES BEHIND CLEAN ENTRY CARDS (Task 6: Minimal IA) ─── */}
       <section className="space-y-2.5">
-        <h2 className="text-xs font-semibold text-zinc-400 font-display">
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-400 font-display">
           More Analytics
         </h2>
 
-        {/* Muscle Distribution Radar Entry Card */}
-        <div
-          onClick={() => {
-            soundManager.play("click", 0.2)
-            setRadarModalOpen(true)
-          }}
-          className="rounded-2xl border border-zinc-850 bg-zinc-950/80 p-4 sm:p-4.5 flex items-center justify-between gap-3 hover:bg-zinc-900 hover:border-zinc-800 transition-all cursor-pointer shadow-sm min-h-[56px]"
-        >
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/20 text-[#3b82f6] flex items-center justify-center shrink-0">
-              <Activity className="w-4 h-4" />
+        <div className="grid gap-2.5">
+          {/* Muscle Distribution Radar Entry Card */}
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={() => {
+              soundManager.play("click", 0.2)
+              setRadarModalOpen(true)
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault()
+                soundManager.play("click", 0.2)
+                setRadarModalOpen(true)
+              }
+            }}
+            className="group rounded-2xl border border-zinc-800 bg-[#121316] p-3.5 sm:p-4 flex items-center justify-between gap-3 hover:bg-zinc-900/90 hover:border-zinc-700 transition-all duration-200 cursor-pointer shadow-sm active:scale-[0.99] min-h-[60px]"
+          >
+            <div className="flex items-center gap-3.5 min-w-0">
+              <div className="w-10 h-10 rounded-xl bg-zinc-800/80 border border-zinc-700/60 text-zinc-200 flex items-center justify-center shrink-0 group-hover:bg-zinc-800 group-hover:border-zinc-600 group-hover:text-white transition-colors">
+                <Activity className="w-5 h-5 stroke-[1.75]" />
+              </div>
+              <div className="min-w-0">
+                <h3 className="text-sm font-semibold text-white font-display tracking-tight truncate">
+                  Muscle Distribution
+                </h3>
+                <p className="text-xs text-zinc-400 font-body truncate mt-0.5">
+                  6-zone balance radar & delta stats ({currentPeriodLabel})
+                </p>
+              </div>
             </div>
-            <div className="min-w-0">
-              <h3 className="text-sm font-semibold text-white font-display truncate">
-                Muscle Distribution
-              </h3>
-              <p className="text-xs text-zinc-400 font-body truncate">
-                6-zone balance radar & delta stats ({currentPeriodLabel})
-              </p>
+            <div className="w-7 h-7 rounded-full flex items-center justify-center text-zinc-500 group-hover:text-zinc-300 group-hover:translate-x-0.5 transition-all shrink-0">
+              <ChevronRight className="w-4 h-4 stroke-[2]" />
             </div>
           </div>
-          <ChevronRight className="w-4 h-4 text-zinc-500 shrink-0" />
-        </div>
 
-        {/* Monthly Report Entry Card */}
-        <div
-          onClick={() => {
-            soundManager.play("click", 0.2)
-            setMonthlyReportOpen(true)
-          }}
-          className="rounded-2xl border border-zinc-850 bg-zinc-950/80 p-4 sm:p-4.5 flex items-center justify-between gap-3 hover:bg-zinc-900 hover:border-zinc-800 transition-all cursor-pointer shadow-sm min-h-[56px]"
-        >
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="w-9 h-9 rounded-xl bg-zinc-850 border border-zinc-750 text-white flex items-center justify-center shrink-0">
-              <CalendarIcon className="w-4 h-4" />
+          {/* Monthly Report Entry Card */}
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={() => {
+              soundManager.play("click", 0.2)
+              setMonthlyReportOpen(true)
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault()
+                soundManager.play("click", 0.2)
+                setMonthlyReportOpen(true)
+              }
+            }}
+            className="group rounded-2xl border border-zinc-800 bg-[#121316] p-3.5 sm:p-4 flex items-center justify-between gap-3 hover:bg-zinc-900/90 hover:border-zinc-700 transition-all duration-200 cursor-pointer shadow-sm active:scale-[0.99] min-h-[60px]"
+          >
+            <div className="flex items-center gap-3.5 min-w-0">
+              <div className="w-10 h-10 rounded-xl bg-zinc-800/80 border border-zinc-700/60 text-zinc-200 flex items-center justify-center shrink-0 group-hover:bg-zinc-800 group-hover:border-zinc-600 group-hover:text-white transition-colors">
+                <CalendarIcon className="w-5 h-5 stroke-[1.75]" />
+              </div>
+              <div className="min-w-0">
+                <h3 className="text-sm font-semibold text-white font-display tracking-tight truncate">
+                  Monthly Report
+                </h3>
+                <p className="text-xs text-zinc-400 font-body truncate mt-0.5">
+                  {`${currentMonthName} ${currentYear} · 12-mo trend, calendar log & share`}
+                </p>
+              </div>
             </div>
-            <div className="min-w-0">
-              <h3 className="text-sm font-semibold text-white font-display truncate">
-                Monthly Report
-              </h3>
-              <p className="text-xs text-zinc-400 font-body truncate">
-                {`${currentMonthName} ${currentYear} · 12-mo trend, calendar log & share`}
-              </p>
+            <div className="w-7 h-7 rounded-full flex items-center justify-center text-zinc-500 group-hover:text-zinc-300 group-hover:translate-x-0.5 transition-all shrink-0">
+              <ChevronRight className="w-4 h-4 stroke-[2]" />
             </div>
           </div>
-          <ChevronRight className="w-4 h-4 text-zinc-500 shrink-0" />
         </div>
       </section>
 
@@ -356,7 +364,7 @@ export default function ProgressPage() {
         <h2 className="text-base sm:text-lg font-bold text-white font-display">
           Personal Records
         </h2>
-        <PersonalRecords workouts={filteredWorkouts} />
+        <PersonalRecords workouts={workouts} />
       </section>
 
       {/* ─── MODALS ─── */}
