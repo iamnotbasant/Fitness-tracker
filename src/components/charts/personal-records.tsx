@@ -98,27 +98,29 @@ export function PersonalRecords({ workouts }: { workouts: Workout[] }) {
 
   if (records.length === 0) {
     return (
-      <div className="rounded-2xl border border-zinc-850 bg-[#121316] p-5 text-center shadow-xs">
+      <div className="rounded-3xl border border-zinc-800/90 bg-[#121316] p-5 sm:p-6 text-center shadow-xl">
         <p className="text-xs text-zinc-500 font-body">No personal records logged yet</p>
       </div>
     )
   }
 
   return (
-    <div className="rounded-2xl border border-zinc-850 bg-[#121316] divide-y divide-zinc-800/60 px-4 sm:px-5 shadow-xs lg:grid lg:grid-cols-2 lg:divide-y-0 lg:gap-x-8">
-      {records.map((r) => (
-        <div
-          key={r.name}
-          className="flex items-center justify-between py-3 min-h-[44px] gap-3 lg:border-b lg:border-zinc-800/60"
-        >
-          <span className="text-sm font-medium text-zinc-300 font-body truncate">
-            {r.name}
-          </span>
-          <span className="text-sm font-semibold text-white font-display tabular-nums shrink-0">
-            {r.valueDisplay}
-          </span>
-        </div>
-      ))}
+    <div className="rounded-3xl border border-zinc-800/90 bg-[#121316] p-5 sm:p-6 shadow-xl">
+      <div className="divide-y divide-zinc-800/60 lg:grid lg:grid-cols-2 lg:divide-y-0 lg:gap-x-8">
+        {records.map((r) => (
+          <div
+            key={r.name}
+            className="flex items-center justify-between py-3 min-h-[44px] gap-3 lg:border-b lg:border-zinc-800/60"
+          >
+            <span className="text-sm font-medium text-zinc-300 font-body truncate">
+              {r.name}
+            </span>
+            <span className="text-sm font-semibold text-white font-display tabular-nums shrink-0">
+              {r.valueDisplay}
+            </span>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }

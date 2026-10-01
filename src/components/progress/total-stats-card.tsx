@@ -20,9 +20,10 @@ import {
 interface TotalStatsCardProps {
   sessions: AggregatedWorkoutSession[]
   allSessions?: AggregatedWorkoutSession[]
+  className?: string
 }
 
-export function TotalStatsCard({ sessions, allSessions }: TotalStatsCardProps) {
+export function TotalStatsCard({ sessions, allSessions, className = "" }: TotalStatsCardProps) {
   // Stats calculation
   const workoutCount = sessions.length
   const totalTimeMin = sessions.reduce((acc, s) => acc + s.durationMin, 0)
@@ -102,31 +103,33 @@ export function TotalStatsCard({ sessions, allSessions }: TotalStatsCardProps) {
   }, [chartData])
 
   return (
-    <div className="rounded-3xl border border-zinc-800/90 bg-[#121316] p-5 sm:p-6 shadow-xl space-y-6">
+    <div
+      className={`rounded-3xl border border-zinc-800/90 bg-[#121316] p-5 sm:p-6 shadow-xl flex flex-col justify-between space-y-6 ${className}`}
+    >
       {/* ─── Top Stats: Workout | Time(min) | Volume(kg) (Reference 01) ─── */}
       <div className="grid grid-cols-3 gap-2">
         {/* Workout */}
-        <div>
-          <span className="text-xs text-zinc-400 font-medium block">Workout</span>
-          <span className="text-2xl sm:text-3xl font-extrabold text-[#2563eb] font-display tabular-nums mt-1 block">
+        <div className="min-w-0">
+          <span className="text-xs text-zinc-400 font-medium block truncate">Workout</span>
+          <span className="text-2xl sm:text-3xl font-extrabold text-[#2563eb] font-display tabular-nums mt-1 block truncate">
             {workoutCount}
           </span>
         </div>
 
         {/* Time(min) */}
-        <div>
-          <span className="text-xs text-zinc-400 font-medium block">Time(min)</span>
-          <span className="text-2xl sm:text-3xl font-extrabold text-[#2563eb] font-display tabular-nums mt-1 block">
+        <div className="min-w-0">
+          <span className="text-xs text-zinc-400 font-medium block truncate">Time(min)</span>
+          <span className="text-2xl sm:text-3xl font-extrabold text-[#2563eb] font-display tabular-nums mt-1 block truncate">
             {totalTimeMin}
           </span>
         </div>
 
         {/* Volume(kg) or Total Reps */}
-        <div>
-          <span className="text-xs text-zinc-400 font-medium block">
+        <div className="min-w-0">
+          <span className="text-xs text-zinc-400 font-medium block truncate">
             {totalWeightVolume > 0 ? "Volume (kg)" : "Total Reps"}
           </span>
-          <span className="text-2xl sm:text-3xl font-extrabold text-[#2563eb] font-display tabular-nums mt-1 block">
+          <span className="text-2xl sm:text-3xl font-extrabold text-[#2563eb] font-display tabular-nums mt-1 block truncate">
             {totalWeightVolume > 0
               ? totalWeightVolume.toLocaleString()
               : totalReps.toLocaleString()}

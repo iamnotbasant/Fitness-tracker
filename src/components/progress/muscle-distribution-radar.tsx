@@ -155,61 +155,67 @@ export function MuscleDistributionRadar({
 
   return (
     <div
-      className={`rounded-2xl border border-zinc-800 bg-zinc-900 p-5 sm:p-6 shadow-xs space-y-5 ${className}`}
+      className={`rounded-3xl border border-zinc-800/90 bg-[#121316] p-5 sm:p-6 shadow-xl space-y-6 ${className}`}
     >
       {/* ─── Header: Title & Period Dropdown ─── */}
-      <div className="flex items-center justify-between gap-3 pb-1">
-        <div>
-          <h2 className="text-base sm:text-lg font-semibold text-white tracking-tight font-display">
-            {title}
-          </h2>
-          <p className="text-xs text-zinc-400 font-body mt-0.5">{subtitle}</p>
-        </div>
+      {(title || subtitle || !hidePeriodSelector) && (
+        <div className="flex items-center justify-between gap-3 pb-1">
+          <div>
+            {title && (
+              <h2 className="text-base sm:text-lg font-semibold text-white tracking-tight font-display">
+                {title}
+              </h2>
+            )}
+            {subtitle && (
+              <p className="text-xs text-zinc-400 font-body mt-0.5">{subtitle}</p>
+            )}
+          </div>
 
-        {!hidePeriodSelector && (
-          <Popover open={dropdownOpen} onOpenChange={setDropdownOpen}>
-            <PopoverTrigger asChild>
-              <button
-                type="button"
-                className="h-11 min-h-[44px] px-3.5 rounded-xl border border-zinc-800 bg-zinc-950 hover:bg-zinc-850 hover:border-zinc-700 text-xs font-medium text-white flex items-center justify-between gap-2 transition-all shadow-xs cursor-pointer min-w-[130px]"
+          {!hidePeriodSelector && (
+            <Popover open={dropdownOpen} onOpenChange={setDropdownOpen}>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  className="h-11 min-h-[44px] px-3.5 rounded-xl border border-zinc-800 bg-zinc-950 hover:bg-zinc-850 hover:border-zinc-700 text-xs font-medium text-white flex items-center justify-between gap-2 transition-all shadow-xs cursor-pointer min-w-[130px]"
+                >
+                  <span>{activePeriodLabel}</span>
+                  <ChevronDown className="h-3.5 w-3.5 text-zinc-400 shrink-0" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent
+                align="end"
+                sideOffset={6}
+                className="w-44 p-1 rounded-xl border border-zinc-800 bg-zinc-900 shadow-2xl text-xs z-50"
               >
-                <span>{activePeriodLabel}</span>
-                <ChevronDown className="h-3.5 w-3.5 text-zinc-400 shrink-0" />
-              </button>
-            </PopoverTrigger>
-            <PopoverContent
-              align="end"
-              sideOffset={6}
-              className="w-44 p-1 rounded-xl border border-zinc-800 bg-zinc-900 shadow-2xl text-xs z-50"
-            >
-              <div className="space-y-0.5">
-                {PERIOD_OPTIONS.map((opt) => {
-                  const isSelected = selectedPeriod === opt.id
-                  return (
-                    <button
-                      key={opt.id}
-                      type="button"
-                      onClick={() => {
-                        soundManager.play("click", 0.2)
-                        setSelectedPeriod(opt.id)
-                        setDropdownOpen(false)
-                      }}
-                      className={`w-full min-h-[40px] flex items-center justify-between px-3 py-2 rounded-lg text-left transition-all cursor-pointer text-xs ${
-                        isSelected
-                          ? "bg-zinc-800 text-white font-semibold border border-zinc-700 shadow-xs"
-                          : "text-zinc-400 hover:text-white hover:bg-zinc-850"
-                      }`}
-                    >
-                      <span>{opt.label}</span>
-                      {isSelected && <Check className="h-3.5 w-3.5 text-white stroke-[2.5]" />}
-                    </button>
-                  )
-                })}
-              </div>
-            </PopoverContent>
-          </Popover>
-        )}
-      </div>
+                <div className="space-y-0.5">
+                  {PERIOD_OPTIONS.map((opt) => {
+                    const isSelected = selectedPeriod === opt.id
+                    return (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => {
+                          soundManager.play("click", 0.2)
+                          setSelectedPeriod(opt.id)
+                          setDropdownOpen(false)
+                        }}
+                        className={`w-full min-h-[40px] flex items-center justify-between px-3 py-2 rounded-lg text-left transition-all cursor-pointer text-xs ${
+                          isSelected
+                            ? "bg-zinc-800 text-white font-semibold border border-zinc-700 shadow-xs"
+                            : "text-zinc-400 hover:text-white hover:bg-zinc-850"
+                        }`}
+                      >
+                        <span>{opt.label}</span>
+                        {isSelected && <Check className="h-3.5 w-3.5 text-white stroke-[2.5]" />}
+                      </button>
+                    )
+                  })}
+                </div>
+              </PopoverContent>
+            </Popover>
+          )}
+        </div>
+      )}
 
       {/* ─── Legend Indicator (Reference 03) ─── */}
       <div className="flex items-center justify-center gap-6 text-xs text-zinc-400 font-body">
@@ -217,21 +223,23 @@ export function MuscleDistributionRadar({
           <span className="w-2.5 h-2.5 rounded-full bg-[#3b82f6]" />
           <span className="text-white font-medium">{currentLabel}</span>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="w-2.5 h-2.5 rounded-full bg-zinc-600" />
-          <span>{previousLabel}</span>
-        </div>
+        {previousLabel && (
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-zinc-600" />
+            <span>{previousLabel}</span>
+          </div>
+        )}
       </div>
 
-      {/* ─── 6-Axis Radar Chart ─── */}
-      <div className="w-full h-[270px] sm:h-[300px] flex items-center justify-center py-1">
+      {/* ─── 6-Axis Radar Chart (Expanded inline sizing) ─── */}
+      <div className="w-full h-[300px] sm:h-[360px] lg:h-[400px] flex items-center justify-center py-2">
         {!mounted ? (
           <div className="h-48 flex items-center justify-center text-xs text-zinc-500 font-mono">
             Loading radar chart...
           </div>
         ) : (
           <ResponsiveContainer width="100%" height="100%">
-            <RadarChart cx="50%" cy="50%" outerRadius="72%" data={radarData}>
+            <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
               <PolarGrid stroke="#27272a" strokeDasharray="3 3" />
               <PolarAngleAxis
                 dataKey="muscle"
@@ -318,64 +326,64 @@ export function MuscleDistributionRadar({
 
       {/* ─── 4 Stat Cards: Workouts, Duration, Volume, Sets (Honest Deltas) ─── */}
       {!hideStatCards && (
-        <div className="grid grid-cols-2 gap-3 pt-2 border-t border-zinc-800">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 pt-4 border-t border-zinc-800/80">
           {/* Card 1: Workouts */}
-          <div className="rounded-2xl border border-zinc-850 bg-zinc-950 p-4 flex flex-col justify-between space-y-1">
+          <div className="rounded-2xl border border-zinc-850 bg-zinc-950/80 p-3.5 sm:p-4 flex flex-col justify-between space-y-1 min-w-0">
             <span className="text-xs text-zinc-400 font-medium font-body truncate">
               Workouts
             </span>
-            <div className="space-y-0.5">
-              <span className="text-2xl font-bold text-white font-display tabular-nums block">
+            <div className="space-y-0.5 min-w-0">
+              <span className="text-xl sm:text-2xl font-bold text-white font-display tabular-nums block truncate">
                 {currentStats.workouts}
               </span>
-              <span className={`text-xs font-semibold flex items-center gap-0.5 font-mono ${workoutDelta.className}`}>
+              <span className={`text-[11px] sm:text-xs font-semibold flex items-center gap-0.5 font-mono truncate ${workoutDelta.className}`}>
                 {workoutDelta.text}
               </span>
             </div>
           </div>
 
           {/* Card 2: Duration */}
-          <div className="rounded-2xl border border-zinc-850 bg-zinc-950 p-4 flex flex-col justify-between space-y-1">
+          <div className="rounded-2xl border border-zinc-850 bg-zinc-950/80 p-3.5 sm:p-4 flex flex-col justify-between space-y-1 min-w-0">
             <span className="text-xs text-zinc-400 font-medium font-body truncate">
               Duration
             </span>
-            <div className="space-y-0.5">
-              <span className="text-2xl font-bold text-white font-display tabular-nums block">
+            <div className="space-y-0.5 min-w-0">
+              <span className="text-xl sm:text-2xl font-bold text-white font-display tabular-nums block truncate">
                 {currentStats.durationMin}min
               </span>
-              <span className={`text-xs font-semibold flex items-center gap-0.5 font-mono ${durationDelta.className}`}>
+              <span className={`text-[11px] sm:text-xs font-semibold flex items-center gap-0.5 font-mono truncate ${durationDelta.className}`}>
                 {durationDelta.text}
               </span>
             </div>
           </div>
 
           {/* Card 3: Volume */}
-          <div className="rounded-2xl border border-zinc-850 bg-zinc-950 p-4 flex flex-col justify-between space-y-1">
+          <div className="rounded-2xl border border-zinc-850 bg-zinc-950/80 p-3.5 sm:p-4 flex flex-col justify-between space-y-1 min-w-0">
             <span className="text-xs text-zinc-400 font-medium font-body truncate">
               Volume
             </span>
-            <div className="space-y-0.5">
-              <span className="text-2xl font-bold text-white font-display tabular-nums block">
+            <div className="space-y-0.5 min-w-0">
+              <span className="text-xl sm:text-2xl font-bold text-white font-display tabular-nums block truncate">
                 {currentStats.volumeKg > 0
                   ? `${currentStats.volumeKg.toLocaleString()} kg`
                   : `${currentStats.reps.toLocaleString()} reps`}
               </span>
-              <span className={`text-xs font-semibold flex items-center gap-0.5 font-mono ${volumeDelta.className}`}>
+              <span className={`text-[11px] sm:text-xs font-semibold flex items-center gap-0.5 font-mono truncate ${volumeDelta.className}`}>
                 {volumeDelta.text}
               </span>
             </div>
           </div>
 
           {/* Card 4: Sets */}
-          <div className="rounded-2xl border border-zinc-850 bg-zinc-950 p-4 flex flex-col justify-between space-y-1">
+          <div className="rounded-2xl border border-zinc-850 bg-zinc-950/80 p-3.5 sm:p-4 flex flex-col justify-between space-y-1 min-w-0">
             <span className="text-xs text-zinc-400 font-medium font-body truncate">
               Sets
             </span>
-            <div className="space-y-0.5">
-              <span className="text-2xl font-bold text-white font-display tabular-nums block">
+            <div className="space-y-0.5 min-w-0">
+              <span className="text-xl sm:text-2xl font-bold text-white font-display tabular-nums block truncate">
                 {currentStats.sets}
               </span>
-              <span className={`text-xs font-semibold flex items-center gap-0.5 font-mono ${setsDelta.className}`}>
+              <span className={`text-[11px] sm:text-xs font-semibold flex items-center gap-0.5 font-mono truncate ${setsDelta.className}`}>
                 {setsDelta.text}
               </span>
             </div>
