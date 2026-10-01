@@ -341,11 +341,16 @@ export default function ExerciseDetailPage() {
     return filtered
   }, [workouts, exercise, timePeriod, dateRange])
 
-  const sessionPoints = useMemo(() => {
+  // ALL workouts for this exercise (no time-period filter) — used for Personal Records,
+  // which must always reflect all-time bests regardless of the selected range.
+  const allExerciseWorkouts = useMemo(() => {
     if (!exercise) return []
+    return workouts.filter((w) => String(w.exerciseId) === String(exercise.id))
+  }, [workouts, exercise])
 
+  const buildSessionPoints = (list: typeof filteredWorkoutsByPeriod) => {
     const grouped = new Map<string, typeof filteredWorkoutsByPeriod>()
-    filteredWorkoutsByPeriod.forEach((w) => {
+    list.forEach((w) => {
       if (!grouped.has(w.date)) {
         grouped.set(w.date, [])
       }
@@ -378,7 +383,18 @@ export default function ExerciseDetailPage() {
         }
       })
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+  }
+
+  const sessionPoints = useMemo(() => {
+    if (!exercise) return []
+    return buildSessionPoints(filteredWorkoutsByPeriod)
   }, [filteredWorkoutsByPeriod, exercise])
+
+  // All-time session points for Personal Records (never affected by time filter)
+  const allTimeSessionPoints = useMemo(() => {
+    if (!exercise) return []
+    return buildSessionPoints(allExerciseWorkouts)
+  }, [allExerciseWorkouts, exercise])
 
   const oneRMProgression = useMemo(() => {
     if (isTimerExercise) return []
@@ -399,32 +415,37 @@ export default function ExerciseDetailPage() {
   }, [sessionPoints, isTimerExercise])
 
   const personalRecords = useMemo(() => {
-    if (sessionPoints.length === 0) return null
-    
+    // Always computed from ALL-TIME data — never affected by the time-period filter
+    const pts = allTimeSessionPoints
+    if (pts.length === 0) return null
+
     if (isTimerExercise) {
-      const bestTime = Math.max(...sessionPoints.map(p => p.totalTime))
-      const totalVolume = sessionPoints.reduce((sum, p) => sum + p.totalTime, 0)
-      
+      const bestTime = Math.max(...pts.map(p => p.totalTime))
+      const totalVolume = pts.reduce((sum, p) => sum + p.totalTime, 0)
+
       return {
         bestTime,
         bestVolume: totalVolume,
-        totalSessions: sessionPoints.length
+        totalSessions: pts.length
       }
     } else {
-      const bestReps = Math.max(...sessionPoints.map(p => p.totalReps))
-      const bestVolume = Math.max(...sessionPoints.map(p => p.totalVolume))
-      const bestWeight = Math.max(...sessionPoints.filter(p => p.maxWeight > 0).map(p => p.maxWeight))
-      const best1RM = oneRMProgression.length > 0 ? Math.max(...oneRMProgression.map(p => p.oneRM)) : 0
-      
+      const bestReps = Math.max(...pts.map(p => p.totalReps))
+      const bestVolume = Math.max(...pts.map(p => p.totalVolume))
+      const bestWeight = Math.max(...pts.filter(p => p.maxWeight > 0).map(p => p.maxWeight))
+      const allTime1RM = pts
+        .filter(p => p.maxWeight > 0)
+        .map(p => Math.round(p.maxWeight * (1 + p.bestReps / 30)))
+      const best1RM = allTime1RM.length > 0 ? Math.max(...allTime1RM) : 0
+
       return {
         bestReps,
         bestVolume,
         bestWeight: bestWeight > 0 ? bestWeight : null,
         best1RM: best1RM > 0 ? best1RM : null,
-        totalSessions: sessionPoints.length
+        totalSessions: pts.length
       }
     }
-  }, [sessionPoints, oneRMProgression, isTimerExercise])
+  }, [allTimeSessionPoints, isTimerExercise])
 
   const stats = useMemo(() => {
     if (!sessionPoints.length) return { total: 0, best: 0, avg: 0, isTime: isTimerExercise }
