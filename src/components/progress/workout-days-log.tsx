@@ -37,8 +37,7 @@ export function WorkoutDaysLog({
   const streakInfo = useMemo(() => {
     const allWorkoutDates = workouts.map((w) => (w.date || "").slice(0, 10)).filter(Boolean)
     const currentStreakDays = calculateCurrentStreak(allWorkoutDates)
-    const weekStreak = Math.floor(currentStreakDays / 6)
-    return { currentStreakDays, weekStreak }
+    return { currentStreakDays }
   }, [workouts])
 
   // Calendar Log for the given month & year
@@ -112,12 +111,15 @@ export function WorkoutDaysLog({
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 items-stretch">
+      <div className="grid grid-cols-1 gap-4 items-stretch">
         {/* Streak Hero (Amber flame + streak label) */}
-        <div className="lg:col-span-4 rounded-3xl border border-zinc-800/90 bg-[#121316] p-6 flex flex-col items-center justify-center space-y-2 text-center h-full min-h-[160px] shadow-xl">
+        <div className="rounded-3xl border border-zinc-800/90 bg-[#121316] p-6 flex flex-col items-center justify-center space-y-2 text-center min-h-[160px] shadow-xl">
           <Flame className="w-10 h-10 sm:w-12 sm:h-12 text-orange-500 fill-orange-500" />
           <div className="text-2xl sm:text-3xl font-extrabold text-white font-display tracking-tight">
-            {`${streakInfo.weekStreak} Week Streak`}
+            {streakInfo.currentStreakDays}
+          </div>
+          <div className="text-sm font-semibold text-zinc-300">
+            {streakInfo.currentStreakDays === 1 ? "day" : "days"} streak
           </div>
           <span className="text-xs text-zinc-400 font-body">
             {calendarLog.activeDaysCount} {calendarLog.activeDaysCount === 1 ? "day" : "days"} active this month · Sundays excluded
@@ -125,7 +127,7 @@ export function WorkoutDaysLog({
         </div>
 
         {/* Calendar Table */}
-        <div className="lg:col-span-8 space-y-2 rounded-3xl border border-zinc-800/90 bg-[#121316] p-4 sm:p-6 shadow-xl">
+        <div className="space-y-2 rounded-3xl border border-zinc-800/90 bg-[#121316] p-4 sm:p-6 shadow-xl">
           <div className="grid grid-cols-7 text-center">
             {CALENDAR_HEADERS.map((h, i) => (
               <span key={i} className="text-xs text-zinc-400 font-medium py-1">
