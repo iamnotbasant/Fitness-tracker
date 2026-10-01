@@ -140,7 +140,7 @@ export default function ExercisesPage() {
   return (
     <PageTransition>
       <main className="pb-32 md:pb-12">
-        <section className="mx-auto max-w-5xl px-3 pt-6 md:px-4">
+        <section className="mx-auto max-w-7xl px-3 pt-6 md:px-4">
           {mounted && session && typeof window !== "undefined" && !localStorage.getItem("bearer_token") && (
             <div className="mb-4 rounded-xl border border-destructive bg-destructive/10 p-4 flex items-start gap-3">
               <AlertCircle className="h-5 w-5 text-destructive mt-0.5" />
@@ -291,7 +291,7 @@ export default function ExercisesPage() {
         )}
       </section>
 
-      <section className="mx-auto max-w-5xl px-3 pt-4 md:px-4">
+      <section className="mx-auto max-w-7xl px-3 pt-4 md:px-4">
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
             <div className="text-center">

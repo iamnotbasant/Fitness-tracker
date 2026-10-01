@@ -194,7 +194,7 @@ export default function ProgressPage() {
   if (activeTab === "weekly") {
     return (
       <main
-        className={`${spaceGrotesk.variable} ${inter.variable} font-body min-h-screen bg-black text-zinc-100 pb-32 max-w-lg md:max-w-3xl lg:max-w-5xl xl:max-w-6xl mx-auto px-4 pt-4 space-y-6`}
+        className={`${spaceGrotesk.variable} ${inter.variable} font-body min-h-screen bg-black text-zinc-100 pb-32 max-w-lg md:max-w-3xl lg:max-w-6xl xl:max-w-7xl mx-auto px-4 pt-4 space-y-6`}
       >
         <WeeklyOverview
           workouts={workouts}
@@ -214,7 +214,7 @@ export default function ProgressPage() {
   return (
     <PageTransition>
       <main
-        className={`${spaceGrotesk.variable} ${inter.variable} font-body min-h-screen bg-black text-zinc-100 pb-32 max-w-lg md:max-w-3xl lg:max-w-5xl xl:max-w-6xl mx-auto px-4 pt-4 space-y-6 sm:space-y-7`}
+        className={`${spaceGrotesk.variable} ${inter.variable} font-body min-h-screen bg-black text-zinc-100 pb-32 max-w-lg md:max-w-3xl lg:max-w-6xl xl:max-w-7xl mx-auto px-4 pt-4 space-y-6 sm:space-y-7`}
       >
         {/* ─── 1. HEADER: "Report" + Period Segmented Control + Monthly Quick Link (Same Row) ─── */}
         <header className="flex flex-col gap-3 pt-2">
