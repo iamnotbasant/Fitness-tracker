@@ -1096,9 +1096,6 @@ export default function WorkoutHub() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
               {filteredRoutines.map((routine, idx) => {
                 const isStarting = startingRoutine ? String(startingRoutine) === String(routine.id) : false
-                const nameLower = (routine.name || "").toLowerCase()
-                const matchL = nameLower.match(/l(?:evel)?\s*(\d+)/i)
-                const routineLevel = matchL ? Number(matchL[1]) : (routine.exercises?.find((e: any) => e.level != null)?.level ?? 1)
                 const isPinned = pinnedRoutineIds.includes(String(routine.id))
 
                 return (
@@ -1116,13 +1113,6 @@ export default function WorkoutHub() {
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        {routineLevel ? (
-                          <span
-                            className="h-2 w-2 rounded-full bg-amber-500 shrink-0"
-                            title={`Level ${routineLevel}`}
-                            aria-label={`Level ${routineLevel}`}
-                          />
-                        ) : null}
                         {isPinned && (
                           <span title="Pinned Routine" className="flex items-center shrink-0">
                             <Pin className="h-3.5 w-3.5 text-amber-500 fill-amber-500" />

@@ -64,6 +64,9 @@ export function AppNavigation() {
     { href: "/profile", label: "Profile", icon: <User size={16} className="text-current" /> },
   ]
 
+  // Bottom nav excludes Profile (accessible via hamburger menu)
+  const bottomNavItems = navItems.filter((it) => it.href !== "/profile")
+
   return (
     <>
       {/* Desktop Navigation */}
@@ -172,7 +175,7 @@ export function AppNavigation() {
       {/* Mobile Bottom Navigation (5 core tabs) */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-background/90 backdrop-blur-lg border-t border-border/80 px-1 pt-1 pb-[max(0.375rem,env(safe-area-inset-bottom))] shadow-lg">
         <div className="flex items-center justify-around">
-          {navItems.map((item) => (
+          {bottomNavItems.map((item) => (
             <NavItem key={item.href} {...item} />
           ))}
         </div>
