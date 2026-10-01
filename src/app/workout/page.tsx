@@ -976,7 +976,7 @@ export default function WorkoutHub() {
         <div className="mx-auto max-w-4xl px-4 py-3.5 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div>
-              <h1 className="text-2xl font-bold tracking-tight text-foreground">Start Workout</h1>
+              <h1 className="text-xl font-bold tracking-tight text-foreground">Start Workout</h1>
               <p className="text-xs text-muted-foreground hidden sm:block">Choose an empty workout or launch a saved routine</p>
             </div>
           </div>
@@ -998,7 +998,7 @@ export default function WorkoutHub() {
             </div>
             <button
               onClick={handleStartWorkout}
-              className="h-9 px-4 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 text-xs sm:text-sm font-semibold shadow-xs inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-[0.97] shrink-0"
+              className="h-9 px-4 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 text-sm font-semibold shadow-xs inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-[0.97] shrink-0"
             >
               <Play className="h-4 w-4 fill-current" />
               <span>Start Blank</span>

@@ -528,7 +528,7 @@ export default function ExerciseDetailPage() {
             <ChevronLeft className="h-3.5 w-3.5" />
           </button>
           
-          <div className="min-w-[90px] sm:min-w-[130px] text-center text-xs font-semibold px-1 truncate select-none text-foreground">
+          <div className="min-w-[90px] sm:min-w-[130px] text-center text-xs font-medium px-1 truncate select-none text-foreground">
             {dateRange.label}
           </div>
           
@@ -548,7 +548,7 @@ export default function ExerciseDetailPage() {
           setTimePeriod(e.target.value as any)
           setCurrentDate(new Date())
         }}
-        className="rounded-xl border border-border/80 bg-card px-3 py-1.5 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer shrink-0 text-foreground hover:border-foreground/30 transition-colors shadow-xs"
+        className="rounded-xl border border-border/80 bg-card px-3 py-1.5 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer shrink-0 text-foreground hover:border-foreground/30 transition-colors shadow-xs"
         aria-label="Select time period"
       >
         <option value="all">All Time</option>
@@ -904,33 +904,33 @@ export default function ExerciseDetailPage() {
       <main className="mx-auto max-w-4xl px-3 pb-32 md:pb-16 md:px-4">
         <header className="sticky top-0 z-20 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border/40 pb-3">
           <div className="flex items-center justify-between py-3 md:py-4">
-            <Link href="/exercises" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+            <Link href="/exercises" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
               ← Back to Exercises
             </Link>
             {isAdmin ? (
               <Link
                 href={`/exercises/${exercise.id}?mode=edit`}
-                className="h-9 px-4 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-semibold shadow-xs inline-flex items-center justify-center transition-all cursor-pointer active:scale-[0.97]"
+                className="h-9 px-4 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 text-sm font-medium shadow-xs inline-flex items-center justify-center transition-all cursor-pointer active:scale-[0.97]"
               >
                 Edit Exercise
               </Link>
             ) : (
-              <div className="flex items-center gap-1.5 rounded-full border border-border/80 bg-muted/60 px-3 py-1.5 text-xs font-semibold text-muted-foreground">
+              <div className="flex items-center gap-1.5 rounded-full border border-border/80 bg-muted/60 px-3 py-1.5 text-sm text-muted-foreground">
                 <Lock className="h-3.5 w-3.5" />
                 <span>View Only</span>
               </div>
             )}
           </div>
           <div className="pb-2 md:pb-3">
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">{exercise.name}</h1>
+            <h1 className="text-pretty text-xl font-semibold tracking-tight sm:text-2xl md:text-3xl text-foreground">{exercise.name}</h1>
             <div className="mt-2 flex flex-wrap items-center gap-2">
               {typeof exercise.level === "number" ? (
-                <span className="rounded-full border border-primary/25 bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary select-none">
+                <span className="rounded-full border border-primary/25 bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary select-none">
                   Level {exercise.level}
                 </span>
               ) : null}
               {exercise.split ? (
-                <span className="rounded-full border border-border/80 bg-secondary/80 px-2.5 py-0.5 text-xs font-semibold capitalize text-secondary-foreground select-none">
+                <span className="rounded-full border border-border/80 bg-secondary/80 px-2.5 py-0.5 text-xs font-medium capitalize text-secondary-foreground select-none">
                   {exercise.split}
                 </span>
               ) : null}

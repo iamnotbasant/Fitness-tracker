@@ -94,7 +94,7 @@ export function ThisWeekCard({ sessions, onOpenWeeklyOverview }: ThisWeekCardPro
               {/* Day of Week Label */}
               <span
                 className={`text-xs font-medium font-body mb-2 ${
-                  day.isToday ? "text-white font-semibold" : "text-zinc-500"
+                  day.isToday ? "text-white font-bold" : "text-zinc-500"
                 }`}
               >
                 {day.dayName}
@@ -111,8 +111,8 @@ export function ThisWeekCard({ sessions, onOpenWeeklyOverview }: ThisWeekCardPro
                     : day.isToday
                     ? "bg-blue-600/20 text-blue-400 ring-2 ring-[#3b82f6] ring-offset-2 ring-offset-[#121316] font-bold"
                     : day.hasWorkout
-                    ? "bg-white text-zinc-950 font-bold shadow-xs"
-                    : "bg-zinc-900/80 text-zinc-500 border border-zinc-800/80 font-normal"
+                    ? "bg-white text-zinc-950 font-semibold shadow-xs"
+                    : "bg-zinc-900/80 text-zinc-500 border border-zinc-800/80"
                 }`}
               >
                 {day.dateNumber}

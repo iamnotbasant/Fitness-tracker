@@ -203,7 +203,7 @@ export default function ProfilePage() {
     <PageTransition>
       <main className="pb-32 md:pb-12">
         <header className="mx-auto max-w-3xl px-4 pt-6">
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Profile</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Profile</h1>
           <p className="text-sm text-muted-foreground mt-0.5">Set your info and targets.</p>
         </header>
 
@@ -227,7 +227,7 @@ export default function ProfilePage() {
             }}
           >
             <div className="grid gap-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Name</label>
+              <label className="text-sm text-muted-foreground">Name</label>
               <input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -237,7 +237,7 @@ export default function ProfilePage() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-medium text-muted-foreground">Height (cm)</label>
+                <label className="text-sm text-muted-foreground">Height (cm)</label>
                 <input
                   type="number"
                   value={heightCm}
@@ -248,7 +248,7 @@ export default function ProfilePage() {
               </div>
               <div>
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-medium text-muted-foreground">Weight</label>
+                  <label className="text-sm text-muted-foreground">Weight</label>
                   <div className="flex items-center gap-1 bg-muted/60 p-0.5 rounded-full text-xs border border-border/50">
                     <button
                       type="button"
@@ -332,7 +332,7 @@ export default function ProfilePage() {
             )}
 
             <div className="grid gap-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Training Goal</label>
+              <label className="text-sm text-muted-foreground">Training Goal</label>
               <select
                 value={goalType}
                 onChange={(e) => setGoalType(e.target.value as "strength" | "endurance" | "skill")}
@@ -346,7 +346,7 @@ export default function ProfilePage() {
 
             {/* Target Exercises Setup */}
             <div className="grid gap-3 rounded-xl border border-border/70 bg-muted/20 p-4">
-              <div className="text-sm font-semibold text-foreground">Exercise Targets</div>
+              <div className="text-sm font-medium text-foreground">Exercise Targets</div>
               {goals.map((g, idx) => {
                 const exercise = exercises.find((e) => e.id === g.exerciseId)
                 return (
@@ -401,14 +401,14 @@ export default function ProfilePage() {
                 <button
                   type="button"
                   onClick={() => setGoals((arr) => [...arr, { exerciseId: exercises[0]?.id ?? "", targetReps: 10 }])}
-                  className="rounded-full bg-secondary px-3.5 py-1.5 text-xs font-semibold hover:bg-secondary/80 active:scale-[0.98] transition-all cursor-pointer border border-border/60"
+                  className="rounded-full bg-secondary px-3.5 py-1.5 text-sm hover:bg-secondary/80 active:scale-[0.98] transition-all cursor-pointer border border-border/60"
                 >
                   Add Target
                 </button>
                 <button
                   type="button"
                   onClick={() => setGoals((arr) => arr.slice(0, -1))}
-                  className="rounded-full px-3.5 py-1.5 text-xs font-semibold text-muted-foreground hover:bg-muted active:scale-[0.98] transition-all cursor-pointer"
+                  className="rounded-full px-3.5 py-1.5 text-sm text-muted-foreground hover:bg-muted active:scale-[0.98] transition-all cursor-pointer"
                   disabled={goals.length === 0}
                 >
                   Remove Last
@@ -418,7 +418,7 @@ export default function ProfilePage() {
 
             <button
               type="submit"
-              className="h-10 px-5 rounded-full bg-primary text-primary-foreground font-semibold text-sm flex items-center justify-center gap-2 hover:bg-primary/90 active:scale-[0.98] transition-all cursor-pointer shadow-xs"
+              className="h-10 px-5 rounded-full bg-primary text-primary-foreground font-medium text-sm flex items-center justify-center gap-2 hover:bg-primary/90 active:scale-[0.98] transition-all cursor-pointer shadow-xs"
             >
               <Save className="h-4 w-4" />
               <span>Save Profile</span>
@@ -426,15 +426,15 @@ export default function ProfilePage() {
 
             {/* Flattened Current vs Target Section (clean integrated summary, no double border) */}
             <div className="pt-3 border-t border-border/50 space-y-2">
-              <div className="text-sm font-semibold text-foreground">Current vs Target Summary</div>
+              <div className="text-sm font-medium text-foreground">Current vs Target Summary</div>
               <ul className="grid gap-1.5">
                 {goals.length === 0 ? (
-                  <li className="text-xs text-muted-foreground">No targets defined yet.</li>
+                  <li className="text-sm text-muted-foreground">No targets defined yet.</li>
                 ) : (
                   goals.map((g, idx) => {
                     const ex = exercises.find((e) => e.id === g.exerciseId)
                     return (
-                      <li key={idx} className="text-xs flex items-center justify-between py-1 border-b border-border/30 last:border-b-0">
+                      <li key={idx} className="text-sm flex items-center justify-between py-1 border-b border-border/30 last:border-b-0">
                         <span className="font-medium text-foreground">{ex?.name ?? "Exercise"}</span>
                         <span className="text-muted-foreground font-mono">
                           Target {g.targetReps ?? "-"} reps · {g.targetVolume ?? "-"} vol
@@ -450,14 +450,14 @@ export default function ProfilePage() {
           {/* Exercise Rep Goals Section */}
           <div className="grid gap-4 rounded-2xl border bg-card p-5 sm:p-6 shadow-xs">
             <div>
-              <h2 className="text-base font-bold tracking-tight text-foreground">Exercise Rep Goals</h2>
-              <p className="text-xs text-muted-foreground mt-0.5">
+              <h2 className="text-lg font-medium tracking-tight text-foreground">Exercise Rep Goals</h2>
+              <p className="text-sm text-muted-foreground mt-0.5">
                 Set target reps for each exercise to track your progress
               </p>
             </div>
 
             {exercises.length === 0 ? (
-              <p className="text-xs text-muted-foreground">No exercises available.</p>
+              <p className="text-sm text-muted-foreground">No exercises available.</p>
             ) : (
               <div className="space-y-2.5">
                 {exercises.map((ex) => (
@@ -479,7 +479,7 @@ export default function ProfilePage() {
                             [ex.id]: value
                           }))
                         }}
-                        className="w-20 rounded-full border bg-background px-3 py-1.5 text-xs text-center font-mono focus:outline-none focus:ring-1 focus:ring-primary"
+                        className="w-20 rounded-full border bg-background px-3 py-1.5 text-sm text-center font-mono focus:outline-none focus:ring-1 focus:ring-primary"
                         placeholder="Goal"
                         min="1"
                       />
@@ -493,7 +493,7 @@ export default function ProfilePage() {
             <button
               type="button"
               onClick={handleSaveExerciseGoals}
-              className="h-10 px-5 rounded-full bg-primary text-primary-foreground font-semibold text-sm flex items-center justify-center gap-2 cursor-pointer hover:bg-primary/90 active:scale-[0.98] transition-all shadow-xs"
+              className="h-10 px-5 rounded-full bg-primary text-primary-foreground font-medium text-sm flex items-center justify-center gap-2 cursor-pointer hover:bg-primary/90 active:scale-[0.98] transition-all shadow-xs"
             >
               <Save className="h-4 w-4" />
               <span>Save Exercise Goals</span>
@@ -504,7 +504,7 @@ export default function ProfilePage() {
           <div className="grid gap-3 rounded-2xl border bg-card p-5 sm:p-6 shadow-xs">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <h2 className="text-base font-bold tracking-tight text-foreground">Points System Calibration</h2>
+                <h2 className="text-lg font-medium tracking-tight text-foreground">Points System Calibration</h2>
                 <p className="text-xs text-muted-foreground mt-0.5">
                   Normalize past workouts to the balanced points scale. Preserves 100% of your workouts and history.
                 </p>
@@ -524,7 +524,7 @@ export default function ProfilePage() {
           {/* Sound & Vibration Preferences */}
           <div className="grid gap-3 rounded-2xl border bg-card p-5 sm:p-6 shadow-xs">
             <div>
-              <h2 className="text-base font-bold tracking-tight text-foreground">Preferences</h2>
+              <h2 className="text-lg font-medium tracking-tight text-foreground">Preferences</h2>
               <p className="text-xs text-muted-foreground mt-0.5">
                 Customize audio feedback and haptics during workouts.
               </p>

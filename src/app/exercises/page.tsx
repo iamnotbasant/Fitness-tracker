@@ -145,7 +145,7 @@ export default function ExercisesPage() {
             <div className="mb-4 rounded-xl border border-destructive bg-destructive/10 p-4 flex items-start gap-3">
               <AlertCircle className="h-5 w-5 text-destructive mt-0.5" />
               <div className="flex-1">
-                <h3 className="font-semibold text-destructive mb-1">Session Expired</h3>
+                <h3 className="font-medium text-destructive mb-1">Session Expired</h3>
                 <p className="text-sm text-muted-foreground mb-2">
                   Your authentication session has expired. Please log out and log back in to continue.
                 </p>
@@ -155,7 +155,7 @@ export default function ExercisesPage() {
                     localStorage.removeItem("bearer_token")
                     router.push("/login")
                   }}
-                  className="text-sm font-semibold text-destructive hover:underline cursor-pointer"
+                  className="text-sm font-medium text-destructive hover:underline cursor-pointer"
                 >
                   Log Out Now
                 </button>
@@ -168,7 +168,7 @@ export default function ExercisesPage() {
             <h1 className="text-2xl font-bold tracking-tight text-foreground">Exercises</h1>
             <button
               type="button"
-              className="h-9 px-4 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 text-xs sm:text-sm font-semibold shadow-xs inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-[0.97] shrink-0"
+              className="h-9 px-4 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 text-xs sm:text-sm font-medium shadow-xs inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-[0.97] shrink-0"
               onClick={() => setShowForm((s) => !s)}
             >
               <Plus className="h-4 w-4 stroke-[2.5]" />

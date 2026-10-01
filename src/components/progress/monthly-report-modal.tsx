@@ -520,7 +520,7 @@ export function MonthlyReportModal({
                     <div className="text-2xl font-bold text-white font-display tabular-nums">
                       {summary.workouts.curr}
                     </div>
-                    <div className="text-xs text-zinc-500 font-medium">
+                    <div className="text-xs text-zinc-500 font-mono">
                       prev month: {summary.workouts.prev}
                     </div>
                   </div>
@@ -531,7 +531,7 @@ export function MonthlyReportModal({
                     <div className="text-2xl font-bold text-white font-display tabular-nums">
                       {summary.duration.curr}min
                     </div>
-                    <div className="text-xs text-zinc-500 font-medium">
+                    <div className="text-xs text-zinc-500 font-mono">
                       prev month: {summary.duration.prev}min
                     </div>
                   </div>
@@ -542,7 +542,7 @@ export function MonthlyReportModal({
                     <div className="text-2xl font-bold text-white font-display tabular-nums">
                       {summary.volume.curr} kg
                     </div>
-                    <div className="text-xs text-zinc-500 font-medium">
+                    <div className="text-xs text-zinc-500 font-mono">
                       prev month: {summary.volume.prev} kg
                     </div>
                   </div>
@@ -553,7 +553,7 @@ export function MonthlyReportModal({
                     <div className="text-2xl font-bold text-white font-display tabular-nums">
                       {summary.sets.curr}
                     </div>
-                    <div className="text-xs text-zinc-500 font-medium">
+                    <div className="text-xs text-zinc-500 font-mono">
                       prev month: {summary.sets.prev}
                     </div>
                   </div>
@@ -566,7 +566,7 @@ export function MonthlyReportModal({
                   <h2 className="text-sm font-semibold text-white font-display">
                     Workout Days Log
                   </h2>
-                  <span className="text-xs text-zinc-400 font-medium">
+                  <span className="text-xs text-zinc-400 font-mono">
                     {calendarLog.activeDaysCount} {calendarLog.activeDaysCount === 1 ? "day" : "days"} active
                   </span>
                 </div>

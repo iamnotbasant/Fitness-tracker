@@ -219,7 +219,7 @@ export default function ProgressPage() {
         {/* ─── 1. HEADER: "Report" + Period Segmented Control + Monthly Quick Link (Same Row) ─── */}
         <header className="flex flex-col gap-3 pt-2">
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold tracking-tight text-white">
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white font-display">
               Report
             </h1>
           </div>
@@ -239,7 +239,7 @@ export default function ProgressPage() {
                     }}
                     className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer min-h-[36px] flex items-center justify-center shrink-0 active:scale-95 whitespace-nowrap ${
                       isActive
-                        ? "bg-white text-zinc-950 font-bold shadow-xs"
+                        ? "bg-white text-zinc-950 shadow-xs"
                         : "text-zinc-400 hover:text-white"
                     }`}
                   >
@@ -255,7 +255,7 @@ export default function ProgressPage() {
                 soundManager.play("click", 0.2)
                 setMonthlyReportOpen(true)
               }}
-              className="min-h-[38px] px-3.5 rounded-full border border-zinc-800 bg-zinc-900 hover:bg-zinc-800 text-xs font-semibold text-zinc-200 hover:text-white flex items-center gap-1.5 transition-all cursor-pointer shadow-xs shrink-0 active:scale-95 whitespace-nowrap"
+              className="min-h-[38px] px-3.5 rounded-full border border-zinc-800 bg-zinc-900 hover:bg-zinc-800 text-xs font-medium text-zinc-200 hover:text-white flex items-center gap-1.5 transition-all cursor-pointer shadow-xs shrink-0 active:scale-95 whitespace-nowrap"
               title="Open Monthly Report"
               aria-label="Open Monthly Report"
             >
@@ -298,7 +298,7 @@ export default function ProgressPage() {
 
       {/* ─── 5. SECONDARY FEATURES BEHIND CLEAN ENTRY CARDS (Task 6: Minimal IA) ─── */}
       <section className="space-y-2.5">
-        <h2 className="text-sm font-semibold text-zinc-400 font-display">
+        <h2 className="text-xs font-semibold text-zinc-400 font-display">
           More Analytics
         </h2>
 

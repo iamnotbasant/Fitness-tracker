@@ -106,17 +106,17 @@ export function ExerciseCard({ ex, onDelete }: ExerciseCardProps) {
         {/* Standardised Badges: Level, Split, Type */}
         <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
           {ex.level !== undefined && (
-            <span className="rounded-full border border-primary/25 bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary select-none">
+            <span className="rounded-full border border-primary/25 bg-primary/10 px-2.5 py-0.5 text-[11px] font-bold text-primary select-none">
               Level {ex.level}
             </span>
           )}
           {ex.split && (
-            <span className="rounded-full border border-border/80 bg-secondary/80 px-2.5 py-0.5 text-xs font-semibold capitalize text-secondary-foreground select-none">
+            <span className="rounded-full border border-border/80 bg-secondary/80 px-2.5 py-0.5 text-[11px] font-medium capitalize text-secondary-foreground select-none">
               {ex.split}
             </span>
           )}
           {ex.type && ex.type.split(',').map((t, idx) => (
-            <span key={idx} className="rounded-full border border-border/80 bg-secondary/80 px-2.5 py-0.5 text-xs font-semibold capitalize text-secondary-foreground select-none">
+            <span key={idx} className="rounded-full border border-border/80 bg-secondary/80 px-2.5 py-0.5 text-[11px] font-medium capitalize text-secondary-foreground select-none">
               {t.trim()}
             </span>
           ))}

@@ -549,7 +549,7 @@ export default function DashboardPage() {
                   id="time-period-select"
                   value={timePeriod}
                   onChange={(e) => handlePeriodChange(e.target.value as TimePeriod)}
-                  className="px-3 py-1.5 text-xs sm:text-sm font-semibold rounded-xl border border-border/80 bg-background hover:bg-secondary transition-colors cursor-pointer text-foreground shrink-0 focus:outline-none focus:ring-1 focus:ring-primary"
+                  className="px-3 py-1.5 text-xs sm:text-sm font-medium rounded-xl border border-border/80 bg-background hover:bg-secondary transition-colors cursor-pointer text-foreground shrink-0 focus:outline-none focus:ring-1 focus:ring-primary"
                 >
                   <option value="weekly">Weekly</option>
                   <option value="monthly">Monthly</option>
@@ -568,7 +568,7 @@ export default function DashboardPage() {
               </div>
             ) : groupedWorkouts.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-border/80 p-8 text-center bg-card/40">
-                <p className="text-sm font-semibold text-foreground">No workouts found</p>
+                <p className="text-sm font-medium text-foreground">No workouts found</p>
                 <p className="text-xs text-muted-foreground mt-1">
                   No workouts logged for this period. Start a session!
                 </p>
@@ -610,7 +610,7 @@ export default function DashboardPage() {
               </button>
               <button
                 onClick={confirmDelete}
-                className="rounded-full bg-destructive px-4 py-2 text-sm font-semibold text-destructive-foreground hover:bg-destructive/90 cursor-pointer active:scale-95 transition-all"
+                className="rounded-full bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground hover:bg-destructive/90 cursor-pointer active:scale-95 transition-all"
               >
                 Delete
               </button>

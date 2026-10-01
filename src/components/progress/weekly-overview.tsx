@@ -316,7 +316,11 @@ export function WeeklyOverview({
                   aria-label={`${day.dayName}, ${day.dayNumber} ${hasWorkout ? "workout day" : "rest day"}${day.isToday ? " (today)" : ""}`}
                 >
                   {/* Day Label (S M T W T F S) */}
-                  <span className="text-[11px] font-medium font-body leading-none mb-1 text-zinc-400">
+                  <span
+                    className={`text-[11px] font-medium font-body leading-none mb-1 ${
+                      day.isToday ? "text-white font-bold" : "text-zinc-400"
+                    }`}
+                  >
                     {day.dayAbbr}
                   </span>
 

@@ -101,7 +101,7 @@ export function WeeklyWorkoutChart({ sessions }: WeeklyWorkoutChartProps) {
               dataKey="label"
               axisLine={false}
               tickLine={false}
-              tick={{ fill: "#e4e4e7", fontSize: 12, fontWeight: 500, fontFamily: "var(--font-body), sans-serif" }}
+              tick={{ fill: "#e4e4e7", fontSize: 11, fontFamily: "var(--font-body), sans-serif" }}
               dy={6}
             />
             <YAxis

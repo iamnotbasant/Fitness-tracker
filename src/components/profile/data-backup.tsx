@@ -241,7 +241,7 @@ export function DataBackup() {
       <div className="flex items-center gap-2.5 pb-2 border-b border-border/60">
         <Database className="h-5 w-5 text-primary" />
         <div>
-          <h2 className="text-base font-bold tracking-tight text-foreground">Data Backup & Restore</h2>
+          <h2 className="text-lg font-semibold tracking-tight text-foreground">Data Backup & Restore</h2>
           <p className="text-xs text-muted-foreground mt-0.5">
             Export your complete workout data or restore from a JSON / CSV file.
           </p>
