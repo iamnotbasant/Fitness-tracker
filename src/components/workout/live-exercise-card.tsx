@@ -941,8 +941,6 @@ function LiveExerciseCard({
                 className={`group grid items-center gap-2 py-2 text-sm transition-all duration-200 rounded-xl px-1.5 my-0.5 ${
                   isThisSetRunning 
                     ? "bg-primary/5 border border-transparent border-l-2 border-l-primary border-b-border/40" 
-                    : s.done
-                    ? "bg-emerald-500/15 dark:bg-emerald-900/40 border border-emerald-500/60 dark:border-emerald-500/50 hover:bg-emerald-500/20 dark:hover:bg-emerald-900/55 hover:border-emerald-500/80 dark:hover:border-emerald-400/60 shadow-xs"
                     : "border border-transparent border-b-border/40 hover:bg-muted/30"
                 } ${
                   isWeightedExercise ? "grid-cols-[2.2rem_1fr_1fr_1fr_2.5rem]" : "grid-cols-[2.2rem_1fr_1fr_2.5rem]"
@@ -963,11 +961,7 @@ function LiveExerciseCard({
                     ) : s.setType === "failure" ? (
                       <span className="text-[10px] font-black text-rose-500 bg-rose-500/15 px-1.5 py-0.5 rounded leading-none">F</span>
                     ) : (
-                      <span className={`font-semibold text-center leading-none text-xs transition-colors ${
-                        s.done 
-                          ? "text-emerald-600 dark:text-emerald-400 font-bold" 
-                          : "text-muted-foreground group-hover:text-foreground"
-                      }`}>
+                      <span className="font-semibold text-center leading-none text-xs transition-colors text-muted-foreground group-hover:text-foreground">
                         {i + 1}
                       </span>
                     )}
@@ -1037,11 +1031,7 @@ function LiveExerciseCard({
                         min={0}
                         value={pausedTime[i] ?? s.timeSeconds ?? ""}
                         onChange={(e) => updateTimeSeconds(i, e.target.value)}
-                        className={`flex-1 min-w-0 w-full rounded-xl border px-2.5 py-1.5 outline-none focus:border-primary focus:ring-1 focus:ring-primary text-xs font-medium transition-colors ${
-                          s.done
-                            ? "bg-background/70 border-emerald-500/35 dark:border-emerald-700/60 text-foreground placeholder:text-muted-foreground/40"
-                            : "border-border/80 bg-background text-foreground placeholder:text-muted-foreground/50"
-                        }`}
+                        className="flex-1 min-w-0 w-full rounded-xl border border-border/80 bg-background px-2.5 py-1.5 outline-none focus:border-primary focus:ring-1 focus:ring-primary text-xs font-medium transition-colors text-foreground placeholder:text-muted-foreground/50"
                         placeholder={
                           prevSet?.timeSeconds !== undefined && prevSet.timeSeconds > 0
                             ? `${prevSet.timeSeconds}s`
@@ -1059,11 +1049,7 @@ function LiveExerciseCard({
                     min={0}
                     value={s.reps ?? ""}
                     onChange={(e) => updateReps(i, e.target.value)}
-                    className={`w-full rounded-xl border px-2.5 py-1.5 outline-none focus:border-primary focus:ring-1 focus:ring-primary text-xs font-medium transition-colors ${
-                      s.done
-                        ? "bg-background/70 border-emerald-500/35 dark:border-emerald-700/60 text-foreground placeholder:text-muted-foreground/40"
-                        : "border-border/80 bg-background text-foreground placeholder:text-muted-foreground/50"
-                    }`}
+                    className="w-full rounded-xl border border-border/80 bg-background px-2.5 py-1.5 outline-none focus:border-primary focus:ring-1 focus:ring-primary text-xs font-medium transition-colors text-foreground placeholder:text-muted-foreground/50"
                     placeholder={
                       prevSet?.reps !== undefined && prevSet.reps > 0
                         ? String(prevSet.reps)
@@ -1083,11 +1069,7 @@ function LiveExerciseCard({
                     step="0.5"
                     value={s.weight ?? ""}
                     onChange={(e) => updateWeight(i, e.target.value)}
-                    className={`w-full rounded-xl border px-2.5 py-1.5 outline-none focus:border-primary focus:ring-1 focus:ring-primary text-xs font-medium transition-colors ${
-                      s.done
-                        ? "bg-background/70 border-emerald-500/35 dark:border-emerald-700/60 text-foreground placeholder:text-muted-foreground/40"
-                        : "border-border/80 bg-background text-foreground placeholder:text-muted-foreground/50"
-                    }`}
+                    className="w-full rounded-xl border border-border/80 bg-background px-2.5 py-1.5 outline-none focus:border-primary focus:ring-1 focus:ring-primary text-xs font-medium transition-colors text-foreground placeholder:text-muted-foreground/50"
                     placeholder={
                       prevSet?.weight !== undefined && prevSet.weight > 0
                         ? `${prevSet.weight}kg`

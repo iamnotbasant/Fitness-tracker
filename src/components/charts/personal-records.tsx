@@ -80,10 +80,11 @@ export function PersonalRecords({ workouts }: { workouts: Workout[] }) {
         valueDisplay = formatTime(r.maxTimeSeconds)
       } else {
         if (r.maxReps <= 0 && r.maxWeight <= 0) return
+        const repUnit = r.maxReps === 1 ? "rep" : "reps"
         if (r.maxWeight > 0) {
-          valueDisplay = r.maxReps > 0 ? `+${r.maxWeight} kg (${r.maxReps} reps)` : `+${r.maxWeight} kg`
+          valueDisplay = r.maxReps > 0 ? `+${r.maxWeight} kg (${r.maxReps} ${repUnit})` : `+${r.maxWeight} kg`
         } else {
-          valueDisplay = `${r.maxReps} reps`
+          valueDisplay = `${r.maxReps} ${repUnit}`
         }
       }
 
@@ -99,7 +100,7 @@ export function PersonalRecords({ workouts }: { workouts: Workout[] }) {
   if (records.length === 0) {
     return (
       <div className="rounded-3xl border border-zinc-800/90 bg-[#121316] p-5 sm:p-6 text-center shadow-xl">
-        <p className="text-xs text-zinc-500 font-body">No personal records logged yet</p>
+        <p className="text-xs text-zinc-500 font-body">No personal records for this period</p>
       </div>
     )
   }

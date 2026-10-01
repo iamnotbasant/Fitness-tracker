@@ -363,10 +363,10 @@ export function MonthlyReportModal({
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.96 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
-            className="w-full max-w-lg min-h-screen bg-black text-zinc-100 flex flex-col px-4 pt-3 pb-32 sm:px-6"
+            className="w-full max-w-lg lg:max-w-4xl min-h-screen bg-black text-zinc-100 flex flex-col px-4 pt-3 pb-32 sm:px-6 lg:px-8"
           >
             {/* ─── Top Bar: Back button, Monthly Report Title, Month Switcher ─── */}
-            <div className="sticky top-0 z-40 -mx-4 px-4 py-3 bg-black/95 backdrop-blur-md border-b border-zinc-900 flex items-center justify-between mb-4">
+            <div className="sticky top-0 z-40 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-3 bg-black/95 backdrop-blur-md border-b border-zinc-900 flex items-center justify-between mb-4">
               <button
                 type="button"
                 onClick={() => {
@@ -508,12 +508,12 @@ export function MonthlyReportModal({
                 </div>
               </div>
 
-              {/* 3. Section: "Summary" (2x2 grid cards matching Reference 04) */}
+              {/* 3. Section: "Summary" (2x2 on mobile, 4-col on desktop) */}
               <div className="space-y-3 pt-2">
                 <h2 className="text-sm font-semibold text-white font-display">
                   Summary
                 </h2>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                   {/* Card 1: Workouts */}
                   <div className="rounded-2xl border border-zinc-850 bg-zinc-950 p-4 space-y-1">
                     <span className="text-xs text-zinc-400 font-medium block">Workouts</span>
@@ -560,7 +560,7 @@ export function MonthlyReportModal({
                 </div>
               </div>
 
-              {/* 4. Section: "Workout Days Log" (Flame + Streak + Calendar Grid) */}
+              {/* 4. Section: "Workout Days Log" (Calendar + Streak side-by-side on desktop) */}
               <div className="space-y-4 pt-2">
                 <div className="flex items-center justify-between">
                   <h2 className="text-sm font-semibold text-white font-display">
@@ -571,50 +571,55 @@ export function MonthlyReportModal({
                   </span>
                 </div>
 
-                {/* Streak Hero (Amber flame + streak label) */}
-                <div className="flex flex-col items-center justify-center py-2 space-y-1">
-                  <Flame className="w-8 h-8 text-orange-500 fill-orange-500" />
-                  <div className="text-sm font-bold text-white font-display">
-                    {`${calendarLog.weekStreak} Week Streak`}
-                  </div>
-                </div>
-
-                {/* Calendar Table */}
-                <div className="space-y-2">
-                  <div className="grid grid-cols-7 text-center">
-                    {CALENDAR_HEADERS.map((h, i) => (
-                      <span key={i} className="text-xs text-zinc-400 font-medium py-1">
-                        {h}
-                      </span>
-                    ))}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 items-stretch">
+                  {/* Streak Hero (Amber flame + streak label) */}
+                  <div className="lg:col-span-4 rounded-2xl border border-zinc-850/70 lg:border-zinc-850 bg-zinc-950/60 lg:bg-zinc-950 p-4 lg:p-6 flex flex-col items-center justify-center space-y-2 text-center h-full min-h-[140px]">
+                    <Flame className="w-9 h-9 sm:w-10 sm:h-10 text-orange-500 fill-orange-500" />
+                    <div className="text-base sm:text-lg font-bold text-white font-display">
+                      {`${calendarLog.weekStreak} Week Streak`}
+                    </div>
+                    <span className="text-xs text-zinc-400 font-mono">
+                      {calendarLog.activeDaysCount} {calendarLog.activeDaysCount === 1 ? "day" : "days"} active this month
+                    </span>
                   </div>
 
-                  <div className="grid grid-cols-7 gap-y-2 text-center">
-                    {calendarLog.slots.map((slot, idx) => {
-                      if (slot.type === "empty") {
-                        return <div key={`empty-${idx}`} className="h-9" />
-                      }
+                  {/* Calendar Table */}
+                  <div className="lg:col-span-8 space-y-2 rounded-2xl border border-zinc-850/70 lg:border-zinc-850 bg-zinc-950/60 lg:bg-zinc-950 p-3 sm:p-4">
+                    <div className="grid grid-cols-7 text-center">
+                      {CALENDAR_HEADERS.map((h, i) => (
+                        <span key={i} className="text-xs text-zinc-400 font-medium py-1">
+                          {h}
+                        </span>
+                      ))}
+                    </div>
 
-                      return (
-                        <div
-                          key={`day-${slot.dayNum}`}
-                          className="h-9 flex flex-col items-center justify-center relative"
-                        >
-                          <span
-                            className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-display tabular-nums transition-colors ${
-                              slot.hasWorkout
-                                ? "bg-white text-zinc-950 font-bold shadow-xs ring-1 ring-white/20"
-                                : "text-zinc-400 font-normal hover:text-zinc-200"
-                            }`}
+                    <div className="grid grid-cols-7 gap-y-2 text-center">
+                      {calendarLog.slots.map((slot, idx) => {
+                        if (slot.type === "empty") {
+                          return <div key={`empty-${idx}`} className="h-9" />
+                        }
+
+                        return (
+                          <div
+                            key={`day-${slot.dayNum}`}
+                            className="h-9 flex flex-col items-center justify-center relative"
                           >
-                            {slot.dayNum}
-                          </span>
-                          {slot.hasWorkout && (
-                            <span className="absolute bottom-0 w-1 h-1 rounded-full bg-blue-500" />
-                          )}
-                        </div>
-                      )
-                    })}
+                            <span
+                              className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-display tabular-nums transition-colors ${
+                                slot.hasWorkout
+                                  ? "bg-white text-zinc-950 font-bold shadow-xs ring-1 ring-white/20"
+                                  : "text-zinc-400 font-normal hover:text-zinc-200"
+                              }`}
+                            >
+                              {slot.dayNum}
+                            </span>
+                            {slot.hasWorkout && (
+                              <span className="absolute bottom-0 w-1 h-1 rounded-full bg-blue-500" />
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -643,7 +648,7 @@ export function MonthlyReportModal({
             </div>
 
             {/* ─── 6. Bottom Sticky Full-width Primary Share Button ─── */}
-            <div className="sticky bottom-0 z-40 -mx-4 px-4 py-3 bg-black/95 backdrop-blur-md border-t border-zinc-900 mt-auto">
+            <div className="sticky bottom-0 z-40 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-3 bg-black/95 backdrop-blur-md border-t border-zinc-900 mt-auto">
               <button
                 type="button"
                 onClick={handleShareOrDownload}
