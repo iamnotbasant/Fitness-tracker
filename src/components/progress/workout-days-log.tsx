@@ -1,8 +1,10 @@
 "use client"
 
 import React, { useMemo } from "react"
+import { motion, useReducedMotion } from "framer-motion"
 import { Flame } from "lucide-react"
 import type { Workout } from "@/lib/types"
+import { CountUp } from "./count-up"
 import {
   type AggregatedWorkoutSession,
   calculateCurrentStreak,
@@ -98,6 +100,10 @@ export function WorkoutDaysLog({
     }
   }, [workouts, sessions, targetYear, targetMonth])
 
+  const prefersReduced = useReducedMotion()
+
+  let workoutDayIdx = 0
+
   return (
     <div className={`space-y-3 sm:space-y-4 ${className}`}>
       {!hideHeader && (
@@ -112,11 +118,32 @@ export function WorkoutDaysLog({
       )}
 
       <div className="grid grid-cols-1 gap-4 items-stretch">
-        {/* Streak Hero (Amber flame + streak label) */}
+        {/* Streak Hero (Amber flame with warm pulsing glow + streak label) */}
         <div className="rounded-3xl border border-zinc-800/90 bg-[#121316] p-6 flex flex-col items-center justify-center space-y-2 text-center min-h-[160px] shadow-xl">
-          <Flame className="w-10 h-10 sm:w-12 sm:h-12 text-orange-500 fill-orange-500" />
+          <motion.div
+            animate={
+              prefersReduced
+                ? {}
+                : {
+                    scale: [1, 1.06, 1],
+                    filter: [
+                      "drop-shadow(0 0 6px rgba(249, 115, 22, 0.45))",
+                      "drop-shadow(0 0 16px rgba(249, 115, 22, 0.85)) drop-shadow(0 0 24px rgba(234, 88, 12, 0.4))",
+                      "drop-shadow(0 0 6px rgba(249, 115, 22, 0.45))",
+                    ],
+                  }
+            }
+            transition={{
+              duration: 2,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+            className="flex items-center justify-center"
+          >
+            <Flame className="w-10 h-10 sm:w-12 sm:h-12 text-orange-500 fill-orange-500" />
+          </motion.div>
           <div className="text-2xl sm:text-3xl font-extrabold text-white font-display tracking-tight">
-            {streakInfo.currentStreakDays}
+            <CountUp value={streakInfo.currentStreakDays} duration={0.6} />
           </div>
           <div className="text-sm font-semibold text-zinc-300">
             {streakInfo.currentStreakDays === 1 ? "day" : "days"} streak
@@ -136,28 +163,73 @@ export function WorkoutDaysLog({
             ))}
           </div>
 
-          <div className="grid grid-cols-7 gap-y-2 text-center">
+          <div
+            key={`${targetYear}-${targetMonth}`}
+            className="grid grid-cols-7 gap-y-2 text-center"
+          >
             {calendarLog.slots.map((slot, idx) => {
               if (slot.type === "empty") {
                 return <div key={`empty-${idx}`} className="h-9" />
               }
+
+              const isWorkout = Boolean(slot.hasWorkout)
+              const wIdx = isWorkout ? workoutDayIdx++ : 0
 
               return (
                 <div
                   key={`day-${slot.dayNum}`}
                   className="h-9 flex flex-col items-center justify-center relative"
                 >
-                  <span
-                    className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs font-display tabular-nums transition-colors ${
-                      slot.hasWorkout
-                        ? "bg-white text-zinc-950 font-bold shadow-xs ring-1 ring-white/20"
-                        : "text-zinc-400 font-normal hover:text-zinc-200"
-                    }`}
-                  >
-                    {slot.dayNum}
-                  </span>
-                  {slot.hasWorkout && (
-                    <span className="absolute bottom-0.5 w-1 h-1 rounded-full bg-blue-500" />
+                  {isWorkout ? (
+                    <motion.span
+                      initial={prefersReduced ? false : { scale: 0, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={
+                        prefersReduced
+                          ? { duration: 0 }
+                          : {
+                              type: "spring",
+                              stiffness: 420,
+                              damping: 22,
+                              delay: Math.min(wIdx * 0.02, 0.3),
+                            }
+                      }
+                      className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs font-display tabular-nums bg-white text-zinc-950 font-bold shadow-xs ring-1 ring-white/20"
+                    >
+                      {slot.dayNum}
+                    </motion.span>
+                  ) : (
+                    <motion.span
+                      initial={prefersReduced ? false : { opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={
+                        prefersReduced
+                          ? { duration: 0 }
+                          : {
+                              duration: 0.2,
+                              delay: Math.min((slot.dayNum || 0) * 0.004, 0.15),
+                              ease: "easeOut",
+                            }
+                      }
+                      className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs font-display tabular-nums text-zinc-400 font-normal hover:text-zinc-200 transition-colors"
+                    >
+                      {slot.dayNum}
+                    </motion.span>
+                  )}
+                  {isWorkout && (
+                    <motion.span
+                      initial={prefersReduced ? false : { scale: 0, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={
+                        prefersReduced
+                          ? { duration: 0 }
+                          : {
+                              duration: 0.2,
+                              delay: Math.min(wIdx * 0.02 + 0.06, 0.35),
+                            }
+                      }
+                      className="absolute bottom-0.5 w-1 h-1 rounded-full bg-blue-500"
+                    />
                   )}
                 </div>
               )

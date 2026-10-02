@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useMemo } from "react"
+import { motion, useReducedMotion } from "framer-motion"
 import type { Workout } from "@/lib/types"
 import { useExercises } from "@/hooks/use-local-data"
 
@@ -16,6 +17,7 @@ export const formatTime = (sec: number) => {
 
 export function PersonalRecords({ workouts }: { workouts: Workout[] }) {
   const { exercises } = useExercises()
+  const prefersReduced = useReducedMotion()
 
   const records = useMemo(() => {
     const timerExerciseNames = new Set(
@@ -119,11 +121,25 @@ export function PersonalRecords({ workouts }: { workouts: Workout[] }) {
   }
 
   return (
-    <div className="rounded-3xl border border-zinc-800/90 bg-[#121316] p-5 sm:p-6 shadow-xl">
+    <div
+      key={`records-${records.map((r) => r.name + r.valueDisplay).join("-")}`}
+      className="rounded-3xl border border-zinc-800/90 bg-[#121316] p-5 sm:p-6 shadow-xl"
+    >
       <div className="divide-y divide-zinc-800/60 lg:grid lg:grid-cols-2 lg:divide-y-0 lg:gap-x-8">
-        {records.map((r) => (
-          <div
+        {records.map((r, idx) => (
+          <motion.div
             key={r.name}
+            initial={prefersReduced ? false : { opacity: 0, x: -16 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={
+              prefersReduced
+                ? { duration: 0 }
+                : {
+                    duration: 0.28,
+                    delay: Math.min(idx * 0.05, 0.45),
+                    ease: [0.22, 1, 0.36, 1],
+                  }
+            }
             className="flex items-center justify-between py-3 min-h-[44px] gap-3 lg:border-b lg:border-zinc-800/60"
           >
             <span className="text-sm font-medium text-zinc-300 font-body truncate">
@@ -132,7 +148,7 @@ export function PersonalRecords({ workouts }: { workouts: Workout[] }) {
             <span className="text-sm font-semibold text-white font-display tabular-nums shrink-0">
               {r.valueDisplay}
             </span>
-          </div>
+          </motion.div>
         ))}
       </div>
     </div>

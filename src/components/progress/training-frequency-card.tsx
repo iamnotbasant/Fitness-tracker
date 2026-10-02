@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useMemo } from "react"
+import { motion, useReducedMotion } from "framer-motion"
 import type { Workout, Exercise } from "@/lib/types"
 import { Share2, Check } from "lucide-react"
 import { toast } from "sonner"
@@ -183,6 +184,7 @@ export function TrainingFrequencyCard({
 }: TrainingFrequencyCardProps) {
   const [selectedMuscle, setSelectedMuscle] = useState<string | null>(null)
   const [hoveredMuscle, setHoveredMuscle] = useState<string | null>(null)
+  const prefersReduced = useReducedMotion()
 
   // Calculate total sets, volume, and reps directly from period-filtered workouts
   const { totalSets, totalVolumeKg, totalReps } = useMemo(() => {
@@ -505,8 +507,21 @@ function getMuscleColors(
       </div>
 
       {/* ─── 2. Front & Back Anatomical Figures (Side-by-side, Reference 08 style) ─── */}
-      <div className="w-full flex items-center justify-center gap-4 sm:gap-8 py-3">
-
+      <motion.div
+        animate={
+          prefersReduced
+            ? {}
+            : {
+                y: [-4, 4, -4],
+              }
+        }
+        transition={{
+          duration: 3,
+          repeat: Infinity,
+          ease: "easeInOut",
+        }}
+        className="w-full flex items-center justify-center gap-4 sm:gap-8 py-3"
+      >
         {/* Front Figure */}
         <div className="flex-1 max-w-[155px] sm:max-w-[195px] flex flex-col items-center">
           <svg
@@ -526,7 +541,7 @@ function getMuscleColors(
             {backParts.map((p, i) => renderPart(p, i, "back"))}
           </svg>
         </div>
-      </div>
+      </motion.div>
 
       {/* ─── 3. Trained Muscle Badges (e.g. "3 Chest", "1 Core") ─── */}
       <div className="space-y-3 pt-2">

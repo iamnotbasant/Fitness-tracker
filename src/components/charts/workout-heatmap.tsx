@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useMemo, useState, useRef, useEffect } from "react"
+import { motion, useReducedMotion } from "framer-motion"
 import type { Workout } from "@/lib/types"
 import soundManager from "@/lib/sounds"
 
@@ -60,6 +61,8 @@ export function WorkoutHeatmap({
 }: WorkoutHeatmapProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
+  const prefersReduced = useReducedMotion()
+  const cascadeKey = `${period}-${propStartDate || ""}-${propEndDate || ""}`
 
   // Tooltip & Info state
   const [hoveredDay, setHoveredDay] = useState<DayCell | null>(null)
@@ -542,12 +545,23 @@ export function WorkoutHeatmap({
                       const isHighlighted = day.isToday || day.isSelectedDate
 
                       return (
-                        <div
-                          key={rowIdx}
+                        <motion.div
+                          key={`${cascadeKey}-cell-${colIdx}-${rowIdx}`}
+                          initial={prefersReduced ? false : { opacity: 0, scale: 0 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={
+                            prefersReduced
+                              ? { duration: 0 }
+                              : {
+                                  duration: 0.18,
+                                  delay: Math.min(colIdx * 0.008, 0.45),
+                                  ease: "easeOut",
+                                }
+                          }
                           onMouseEnter={(e) => handleCellInteraction(day, e, false)}
                           onMouseLeave={() => setHoveredDay(null)}
                           onClick={(e) => handleCellInteraction(day, e, true)}
-                          className={`w-[10px] h-[10px] rounded-[2px] cursor-pointer transition-all duration-100 ${
+                          className={`w-[10px] h-[10px] rounded-[2px] cursor-pointer transition-shadow duration-100 ${
                             isHighlighted ? "ring-1 ring-white/70" : ""
                           }`}
                           style={{

@@ -16,14 +16,21 @@ import {
   formatWeekLabel,
   toLocalDateStr,
 } from "./workout-helpers"
+import { CountUp } from "./count-up"
 
 interface TotalStatsCardProps {
   sessions: AggregatedWorkoutSession[]
   allSessions?: AggregatedWorkoutSession[]
   className?: string
+  resetKey?: string | number
 }
 
-export function TotalStatsCard({ sessions, allSessions, className = "" }: TotalStatsCardProps) {
+export function TotalStatsCard({
+  sessions,
+  allSessions,
+  className = "",
+  resetKey,
+}: TotalStatsCardProps) {
   // Stats calculation
   const workoutCount = sessions.length
   const totalTimeMin = sessions.reduce((acc, s) => acc + s.durationMin, 0)
@@ -112,7 +119,7 @@ export function TotalStatsCard({ sessions, allSessions, className = "" }: TotalS
         <div className="min-w-0">
           <span className="text-xs text-zinc-400 font-medium block truncate">Workout</span>
           <span className="text-2xl sm:text-3xl font-extrabold text-[#2563eb] font-display tabular-nums mt-1 block truncate">
-            {workoutCount}
+            <CountUp value={workoutCount} duration={0.8} resetKey={resetKey} />
           </span>
         </div>
 
@@ -120,7 +127,7 @@ export function TotalStatsCard({ sessions, allSessions, className = "" }: TotalS
         <div className="min-w-0">
           <span className="text-xs text-zinc-400 font-medium block truncate">Time(min)</span>
           <span className="text-2xl sm:text-3xl font-extrabold text-[#2563eb] font-display tabular-nums mt-1 block truncate">
-            {totalTimeMin}
+            <CountUp value={totalTimeMin} duration={0.8} resetKey={resetKey} />
           </span>
         </div>
 
@@ -130,9 +137,11 @@ export function TotalStatsCard({ sessions, allSessions, className = "" }: TotalS
             {totalWeightVolume > 0 ? "Volume (kg)" : "Total Reps"}
           </span>
           <span className="text-2xl sm:text-3xl font-extrabold text-[#2563eb] font-display tabular-nums mt-1 block truncate">
-            {totalWeightVolume > 0
-              ? totalWeightVolume.toLocaleString()
-              : totalReps.toLocaleString()}
+            <CountUp
+              value={totalWeightVolume > 0 ? totalWeightVolume : totalReps}
+              duration={0.8}
+              resetKey={resetKey}
+            />
           </span>
         </div>
       </div>

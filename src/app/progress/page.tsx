@@ -25,6 +25,8 @@ import { MuscleDistributionRadar } from "@/components/progress/muscle-distributi
 import { MonthlyReportModal } from "@/components/progress/monthly-report-modal"
 import { PersonalRecords } from "@/components/charts/personal-records"
 import { PageTransition } from "@/components/ui/page-transition"
+import { motion, useReducedMotion } from "framer-motion"
+import { Reveal } from "@/components/progress/reveal"
 
 const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
@@ -61,6 +63,7 @@ export default function ProgressPage() {
 
   const { workouts, isLoading: workoutsLoading } = useWorkouts()
   const { exercises } = useExercises()
+  const prefersReduced = useReducedMotion()
 
   useEffect(() => {
     setMounted(true)
@@ -287,6 +290,7 @@ export default function ProgressPage() {
     return new Date().toLocaleDateString("en-US", { month: "long" })
   }, [])
   const currentYear = useMemo(() => new Date().getFullYear(), [])
+  const periodKey = `${period}-${navOffset}-${startDateStr}-${endDateStr}`
 
   if (!mounted || workoutsLoading) {
     return (
@@ -318,7 +322,7 @@ export default function ProgressPage() {
 
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5">
             {/* Period Segmented Control */}
-            <div className="flex items-center p-1 rounded-full bg-zinc-900 border border-zinc-800 w-full sm:w-auto">
+            <div className="relative flex items-center p-1 rounded-full bg-zinc-900 border border-zinc-800 w-full sm:w-auto">
               {PERIOD_FILTERS.map((f) => {
                 const isActive = period === f.id
                 return (
@@ -326,13 +330,24 @@ export default function ProgressPage() {
                     key={f.id}
                     type="button"
                     onClick={() => handlePeriodChange(f.id)}
-                    className={`flex-1 sm:flex-initial sm:px-4 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer min-h-[36px] flex items-center justify-center active:scale-95 whitespace-nowrap ${
+                    className={`relative flex-1 sm:flex-initial sm:px-4 py-1.5 rounded-full text-xs font-semibold transition-colors cursor-pointer min-h-[36px] flex items-center justify-center active:scale-95 whitespace-nowrap isolate ${
                       isActive
-                        ? "bg-white text-zinc-950 shadow-xs"
+                        ? "text-zinc-950 font-bold"
                         : "text-zinc-400 hover:text-white"
                     }`}
                   >
-                    {f.label}
+                    {isActive && (
+                      <motion.span
+                        layoutId="activePeriodTab"
+                        className="absolute inset-0 bg-white rounded-full shadow-xs -z-1"
+                        transition={{
+                          type: "spring",
+                          stiffness: 500,
+                          damping: 38,
+                        }}
+                      />
+                    )}
+                    <span className="relative z-10">{f.label}</span>
                   </button>
                 )
               })}
@@ -377,170 +392,203 @@ export default function ProgressPage() {
               ) : (
                 /* Today / Week / Month / Year: < Label > Pill */
                 <div className="inline-flex items-center gap-1 p-1 rounded-full bg-zinc-900 border border-zinc-800 shadow-sm min-h-[36px]">
-                  <button
+                  <motion.button
                     type="button"
+                    whileHover={prefersReduced ? {} : { scale: 1.08 }}
+                    whileTap={prefersReduced ? {} : { scale: 0.88 }}
+                    transition={{ type: "spring", stiffness: 450, damping: 20 }}
                     onClick={() => {
                       soundManager.play("click", 0.15)
                       setNavOffset((o) => o - 1)
                     }}
-                    className="w-7 h-7 rounded-full flex items-center justify-center text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer active:scale-95"
+                    className="w-7 h-7 rounded-full flex items-center justify-center text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer"
                     aria-label="Previous period"
                     title="Previous"
                   >
                     <ChevronLeft className="w-4 h-4" />
-                  </button>
+                  </motion.button>
                   <span className="text-xs sm:text-sm font-semibold text-white font-display px-2 whitespace-nowrap min-w-[130px] text-center">
                     {navigatorLabel}
                   </span>
-                  <button
+                  <motion.button
                     type="button"
+                    whileHover={prefersReduced ? {} : { scale: 1.08 }}
+                    whileTap={prefersReduced ? {} : { scale: 0.88 }}
+                    transition={{ type: "spring", stiffness: 450, damping: 20 }}
                     onClick={() => {
                       soundManager.play("click", 0.15)
                       setNavOffset((o) => o + 1)
                     }}
-                    className="w-7 h-7 rounded-full flex items-center justify-center text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer active:scale-95"
+                    className="w-7 h-7 rounded-full flex items-center justify-center text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer"
                     aria-label="Next period"
                     title="Next"
                   >
                     <ChevronRight className="w-4 h-4" />
-                  </button>
+                  </motion.button>
                 </div>
               )}
 
               {/* Reset to Today affordance when navigated away */}
               {(navOffset !== 0 || (period === "all" && customStartDate)) && (
-                <button
+                <motion.button
                   type="button"
+                  whileHover={prefersReduced ? {} : { scale: 1.04 }}
+                  whileTap={prefersReduced ? {} : { scale: 0.94 }}
+                  transition={{ type: "spring", stiffness: 450, damping: 20 }}
                   onClick={() => {
                     soundManager.play("click", 0.15)
                     setNavOffset(0)
                     setCustomStartDate("")
                     setCustomEndDate("")
                   }}
-                  className="h-8 px-3 rounded-full text-xs font-semibold bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white transition-all cursor-pointer flex items-center gap-1 active:scale-95 shadow-sm"
+                  className="h-8 px-3 rounded-full text-xs font-semibold bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white transition-all cursor-pointer flex items-center gap-1 shadow-sm"
                   title="Reset to current period"
                 >
                   <RotateCcw className="w-3 h-3 text-zinc-400" />
                   <span>Today</span>
-                </button>
+                </motion.button>
               )}
             </div>
           </div>
         </header>
 
-        {/* ─── 2. TOTAL SECTION ─── */}
-        <section className="space-y-2 min-w-0">
-          <div className="flex items-center justify-between min-h-[32px]">
-            <h2 className="text-base sm:text-lg font-bold text-white font-display">
-              Total
-            </h2>
-          </div>
-          <TotalStatsCard
-            sessions={filteredSessions}
-            allSessions={allSessions}
-          />
-        </section>
+        {/* ─── DYNAMIC ANALYTICS SECTIONS (Keyed for smooth period transitions) ─── */}
+        <motion.div
+          key={periodKey}
+          initial={prefersReduced ? false : { opacity: 0.85, y: 4 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+          className="space-y-6 sm:space-y-7"
+        >
+          {/* ─── 2. TOTAL SECTION ─── */}
+          <Reveal delay={0.04}>
+            <section className="space-y-2 min-w-0">
+              <div className="flex items-center justify-between min-h-[32px]">
+                <h2 className="text-base sm:text-lg font-bold text-white font-display">
+                  Total
+                </h2>
+              </div>
+              <TotalStatsCard
+                sessions={filteredSessions}
+                allSessions={allSessions}
+                resetKey={periodKey}
+              />
+            </section>
+          </Reveal>
 
-        {/* ─── 3. STREAK / WORKOUT DAYS LOG SECTION ─── */}
-        <section className="space-y-2 min-w-0">
-          <WorkoutDaysLog
-            workouts={workouts}
-            sessions={allSessions}
-            month={streakMonth}
-            year={streakYear}
-            title="Streak"
-          />
-        </section>
+          {/* ─── 3. STREAK / WORKOUT DAYS LOG SECTION ─── */}
+          <Reveal delay={0.08}>
+            <section className="space-y-2 min-w-0">
+              <WorkoutDaysLog
+                workouts={workouts}
+                sessions={allSessions}
+                month={streakMonth}
+                year={streakYear}
+                title="Streak"
+              />
+            </section>
+          </Reveal>
 
-        {/* ─── 4. TRAINING FREQUENCY / MASCOT (Coral Anatomical Figures) ─── */}
-        <section className="space-y-2 min-w-0">
-          <h2 className="text-base sm:text-lg font-bold text-white font-display">
-            Training Frequency
-          </h2>
-          <TrainingFrequencyCard
-            workouts={filteredWorkouts}
-            exercises={exercises}
-            periodLabel={currentPeriodLabel}
-          />
-        </section>
+          {/* ─── 4. TRAINING FREQUENCY / MASCOT (Coral Anatomical Figures) ─── */}
+          <Reveal delay={0.08}>
+            <section className="space-y-2 min-w-0">
+              <h2 className="text-base sm:text-lg font-bold text-white font-display">
+                Training Frequency
+              </h2>
+              <TrainingFrequencyCard
+                workouts={filteredWorkouts}
+                exercises={exercises}
+                periodLabel={currentPeriodLabel}
+              />
+            </section>
+          </Reveal>
 
-        {/* ─── 5. GITHUB-STYLE WORKOUT HEATMAP (Contribution Graph) ─── */}
-        <section className="space-y-2 min-w-0">
-          <WorkoutHeatmap
-            workouts={workouts}
-            period={period}
-            startDate={startDateStr}
-            endDate={endDateStr}
-          />
-        </section>
+          {/* ─── 5. GITHUB-STYLE WORKOUT HEATMAP (Contribution Graph) ─── */}
+          <Reveal delay={0.08}>
+            <section className="space-y-2 min-w-0">
+              <WorkoutHeatmap
+                workouts={workouts}
+                period={period}
+                startDate={startDateStr}
+                endDate={endDateStr}
+              />
+            </section>
+          </Reveal>
 
-        {/* ─── 6. MUSCLE DISTRIBUTION (Expanded Inline Radar + Delta Stats) ─── */}
-        <section className="space-y-2 min-w-0">
-          <h2 className="text-base sm:text-lg font-bold text-white font-display">
-            Muscle Distribution
-          </h2>
-          <MuscleDistributionRadar
-            workouts={workouts}
-            exercises={exercises}
-            customCurrentWorkouts={filteredWorkouts}
-            customPreviousWorkouts={previousPeriodWorkouts}
-            currentLabel={currentPeriodLabel}
-            previousLabel={previousPeriodLabel}
-            hidePeriodSelector={true}
-            title=""
-            subtitle=""
-          />
-        </section>
+          {/* ─── 6. MUSCLE DISTRIBUTION (Expanded Inline Radar + Delta Stats) ─── */}
+          <Reveal delay={0.08}>
+            <section className="space-y-2 min-w-0">
+              <h2 className="text-base sm:text-lg font-bold text-white font-display">
+                Muscle Distribution
+              </h2>
+              <MuscleDistributionRadar
+                workouts={workouts}
+                exercises={exercises}
+                customCurrentWorkouts={filteredWorkouts}
+                customPreviousWorkouts={previousPeriodWorkouts}
+                currentLabel={currentPeriodLabel}
+                previousLabel={previousPeriodLabel}
+                hidePeriodSelector={true}
+                title=""
+                subtitle=""
+              />
+            </section>
+          </Reveal>
 
-        {/* ─── 7. MORE ANALYTICS (Monthly Report Entry Card) ─── */}
-        <section className="space-y-2 min-w-0">
-          <h2 className="text-base sm:text-lg font-bold text-white font-display">
-            More Analytics
-          </h2>
-          <div className="w-full">
-            <div
-              role="button"
-              tabIndex={0}
-              onClick={() => {
-                soundManager.play("click", 0.2)
-                setMonthlyReportOpen(true)
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault()
-                  soundManager.play("click", 0.2)
-                  setMonthlyReportOpen(true)
-                }
-              }}
-              className="group rounded-3xl border border-zinc-800/90 bg-[#121316] p-5 sm:p-6 flex items-center justify-between gap-4 hover:bg-zinc-900/90 hover:border-zinc-700 transition-all duration-200 cursor-pointer shadow-xl active:scale-[0.99] min-h-[72px]"
-            >
-              <div className="flex items-center gap-4 min-w-0">
-                <div className="w-11 h-11 rounded-2xl bg-zinc-800/80 border border-zinc-700/60 text-zinc-200 flex items-center justify-center shrink-0 group-hover:bg-zinc-800 group-hover:border-zinc-600 group-hover:text-white transition-colors">
-                  <CalendarIcon className="w-5 h-5 stroke-[1.75]" />
-                </div>
-                <div className="min-w-0">
-                  <h3 className="text-base font-semibold text-white font-display tracking-tight truncate">
-                    Monthly Report
-                  </h3>
-                  <p className="text-xs sm:text-sm text-zinc-400 font-body truncate mt-0.5">
-                    {`${currentMonthName} ${currentYear} · 12-mo trend, calendar log & share`}
-                  </p>
+          {/* ─── 7. MORE ANALYTICS (Monthly Report Entry Card) ─── */}
+          <Reveal delay={0.08}>
+            <section className="space-y-2 min-w-0">
+              <h2 className="text-base sm:text-lg font-bold text-white font-display">
+                More Analytics
+              </h2>
+              <div className="w-full">
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => {
+                    soundManager.play("click", 0.2)
+                    setMonthlyReportOpen(true)
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault()
+                      soundManager.play("click", 0.2)
+                      setMonthlyReportOpen(true)
+                    }
+                  }}
+                  className="group rounded-3xl border border-zinc-800/90 bg-[#121316] p-5 sm:p-6 flex items-center justify-between gap-4 hover:bg-zinc-900/90 hover:border-zinc-700 transition-all duration-200 cursor-pointer shadow-xl active:scale-[0.99] min-h-[72px]"
+                >
+                  <div className="flex items-center gap-4 min-w-0">
+                    <div className="w-11 h-11 rounded-2xl bg-zinc-800/80 border border-zinc-700/60 text-zinc-200 flex items-center justify-center shrink-0 group-hover:bg-zinc-800 group-hover:border-zinc-600 group-hover:text-white transition-colors">
+                      <CalendarIcon className="w-5 h-5 stroke-[1.75]" />
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="text-base font-semibold text-white font-display tracking-tight truncate">
+                        Monthly Report
+                      </h3>
+                      <p className="text-xs sm:text-sm text-zinc-400 font-body truncate mt-0.5">
+                        {`${currentMonthName} ${currentYear} · 12-mo trend, calendar log & share`}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-zinc-500 group-hover:text-zinc-300 group-hover:translate-x-0.5 transition-all shrink-0">
+                    <ChevronRight className="w-5 h-5 stroke-[2]" />
+                  </div>
                 </div>
               </div>
-              <div className="w-8 h-8 rounded-full flex items-center justify-center text-zinc-500 group-hover:text-zinc-300 group-hover:translate-x-0.5 transition-all shrink-0">
-                <ChevronRight className="w-5 h-5 stroke-[2]" />
-              </div>
-            </div>
-          </div>
-        </section>
+            </section>
+          </Reveal>
 
-        {/* ─── 8. PERSONAL PR RECORDS (Follows Period Filter) ─── */}
-        <section className="space-y-2 min-w-0">
-          <h2 className="text-base sm:text-lg font-bold text-white font-display">
-            Personal Records
-          </h2>
-          <PersonalRecords workouts={filteredWorkouts} />
-        </section>
+          {/* ─── 8. PERSONAL PR RECORDS (Follows Period Filter) ─── */}
+          <Reveal delay={0.08}>
+            <section className="space-y-2 min-w-0">
+              <h2 className="text-base sm:text-lg font-bold text-white font-display">
+                Personal Records
+              </h2>
+              <PersonalRecords workouts={filteredWorkouts} />
+            </section>
+          </Reveal>
+        </motion.div>
 
         {/* ─── MODALS ─── */}
         {/* Monthly Report Modal */}
