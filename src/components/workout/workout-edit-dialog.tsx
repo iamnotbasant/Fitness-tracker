@@ -37,6 +37,17 @@ export default function WorkoutEditDialog({ open, onClose, onSave, workout }: Pr
     return typeStr.includes("timer") || nameStr.includes("plank") || nameStr.includes("hang") || nameStr.includes("hold")
   }
 
+  // Helper to check if exercise is weighted
+  const isWeightedExercise = (exercise: WorkoutExercise) => {
+    const exerciseDef = exercises?.find(e => e.name.toLowerCase() === exercise.exerciseName.toLowerCase())
+    const typeStr = String(exerciseDef?.type || "").toLowerCase()
+    return (
+      typeStr.includes("weighted") ||
+      (exercise.weight !== undefined && exercise.weight !== null) ||
+      exercise.setDetails?.some(s => s.weight !== undefined && s.weight !== null)
+    )
+  }
+
   const updateExerciseSet = (exerciseIndex: number, setIndex: number, field: 'reps' | 'timeSeconds' | 'weight', value: number | undefined) => {
     const updated = [...editableExercises]
     if (updated[exerciseIndex].setDetails) {
@@ -45,6 +56,31 @@ export default function WorkoutEditDialog({ open, onClose, onSave, workout }: Pr
         [field]: value
       }
     }
+    setEditableExercises(updated)
+  }
+
+  const handleAddSet = (exerciseIndex: number) => {
+    const updated = [...editableExercises]
+    const exercise = updated[exerciseIndex]
+    if (!exercise) return
+
+    if (!exercise.setDetails) {
+      exercise.setDetails = []
+    }
+
+    const isTimeBased = isTimerExercise(exercise.exerciseName)
+    const isWeighted = isWeightedExercise(exercise)
+
+    const newSet = {
+      reps: undefined,
+      weight: isWeighted ? undefined : undefined,
+      timeSeconds: isTimeBased ? undefined : undefined,
+      done: false,
+    }
+
+    exercise.setDetails.push(newSet as any)
+    exercise.sets = exercise.setDetails.length
+
     setEditableExercises(updated)
   }
 
@@ -107,12 +143,12 @@ export default function WorkoutEditDialog({ open, onClose, onSave, workout }: Pr
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-2 sm:p-4">
       <div className="w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl border bg-card shadow-lg">
-        <div className="sticky top-0 z-10 flex items-center justify-between border-b bg-card px-6 py-4">
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b bg-card px-4 sm:px-6 py-3 sm:py-4">
           <div>
-            <h2 className="text-xl font-semibold">Edit Workout</h2>
-            <p className="text-sm text-muted-foreground mt-1">Make changes to your workout</p>
+            <h2 className="text-lg sm:text-xl font-semibold">Edit Workout</h2>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">Make changes to your workout</p>
           </div>
           <button
             onClick={onClose}
@@ -123,9 +159,9 @@ export default function WorkoutEditDialog({ open, onClose, onSave, workout }: Pr
           </button>
         </div>
 
-        <div className="p-6 space-y-6">
+        <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
           {/* Date and Time */}
-          <div className="grid grid-cols-2 gap-4 rounded-xl border bg-muted/30 p-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 rounded-xl border bg-muted/30 p-3 sm:p-4">
             <div>
               <div className="text-xs text-muted-foreground mb-1">Date</div>
               <input
@@ -172,67 +208,80 @@ export default function WorkoutEditDialog({ open, onClose, onSave, workout }: Pr
 
                   <div className="space-y-2">
                     {exercise.setDetails && exercise.setDetails.length > 0 ? (
-                      exercise.setDetails.map((setDetail, setIdx) => (
-                        <div key={setIdx} className="flex items-center gap-3 text-sm">
-                          <span className="font-medium w-12">Set {setIdx + 1}</span>
-                          
-                          {isTimeBased ? (
-                            <>
-                              <input
-                                type="number"
-                                value={setDetail.timeSeconds ?? ""}
-                                onChange={(e) => updateExerciseSet(exIdx, setIdx, 'timeSeconds', Number(e.target.value) || undefined)}
-                                className="w-20 rounded-lg border bg-card px-2 py-1.5 outline-none focus:ring-2 focus:ring-primary"
-                                placeholder="sec"
-                                min={0}
-                              />
-                              <span className="text-muted-foreground">seconds</span>
-                            </>
-                          ) : (
-                            <>
-                              <input
-                                type="number"
-                                value={setDetail.reps ?? ""}
-                                onChange={(e) => updateExerciseSet(exIdx, setIdx, 'reps', Number(e.target.value) || undefined)}
-                                className="w-20 rounded-lg border bg-card px-2 py-1.5 outline-none focus:ring-2 focus:ring-primary"
-                                placeholder="reps"
-                                min={0}
-                              />
-                              <span className="text-muted-foreground">reps</span>
-                            </>
-                          )}
+                      exercise.setDetails.map((setDetail, setIdx) => {
+                        const isWeighted = isWeightedExercise(exercise)
+                        return (
+                          <div key={setIdx} className="flex items-center gap-2 sm:gap-3 text-sm flex-wrap sm:flex-nowrap">
+                            <span className="font-medium text-xs sm:text-sm w-11 sm:w-12 shrink-0">Set {setIdx + 1}</span>
+                            
+                            {isTimeBased ? (
+                              <div className="flex items-center gap-1.5">
+                                <input
+                                  type="number"
+                                  value={setDetail.timeSeconds ?? ""}
+                                  onChange={(e) => updateExerciseSet(exIdx, setIdx, 'timeSeconds', e.target.value === "" ? undefined : Number(e.target.value))}
+                                  className="w-16 sm:w-20 rounded-lg border bg-card px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-primary"
+                                  placeholder="sec"
+                                  min={0}
+                                />
+                                <span className="text-xs sm:text-sm text-muted-foreground">seconds</span>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-1.5">
+                                <input
+                                  type="number"
+                                  value={setDetail.reps ?? ""}
+                                  onChange={(e) => updateExerciseSet(exIdx, setIdx, 'reps', e.target.value === "" ? undefined : Number(e.target.value))}
+                                  className="w-16 sm:w-20 rounded-lg border bg-card px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-primary"
+                                  placeholder="reps"
+                                  min={0}
+                                />
+                                <span className="text-xs sm:text-sm text-muted-foreground">reps</span>
+                              </div>
+                            )}
 
-                          {setDetail.weight !== undefined && !isTimeBased && (
-                            <>
-                              <input
-                                type="number"
-                                value={setDetail.weight ?? ""}
-                                onChange={(e) => updateExerciseSet(exIdx, setIdx, 'weight', Number(e.target.value) || undefined)}
-                                className="w-20 rounded-lg border bg-card px-2 py-1.5 outline-none focus:ring-2 focus:ring-primary"
-                                placeholder="kg"
-                                min={0}
-                                step="0.5"
-                              />
-                              <span className="text-muted-foreground">kg</span>
-                            </>
-                          )}
+                            {(setDetail.weight !== undefined || isWeighted) && !isTimeBased && (
+                              <div className="flex items-center gap-1.5">
+                                <input
+                                  type="number"
+                                  value={setDetail.weight ?? ""}
+                                  onChange={(e) => updateExerciseSet(exIdx, setIdx, 'weight', e.target.value === "" ? undefined : Number(e.target.value))}
+                                  className="w-16 sm:w-20 rounded-lg border bg-card px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-primary"
+                                  placeholder="kg"
+                                  min={0}
+                                  step="0.5"
+                                />
+                                <span className="text-xs sm:text-sm text-muted-foreground">kg</span>
+                              </div>
+                            )}
 
-                          <button
-                            onClick={() => handleRemoveSet(exIdx, setIdx)}
-                            disabled={exercise.setDetails!.length <= 1}
-                            className="ml-auto rounded-lg p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:text-muted-foreground disabled:hover:bg-transparent"
-                            aria-label="Remove set"
-                            title={exercise.setDetails!.length <= 1 ? "Cannot remove last set" : "Remove set"}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
-                      ))
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveSet(exIdx, setIdx)}
+                              disabled={exercise.setDetails!.length <= 1}
+                              className="ml-auto rounded-lg p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:text-muted-foreground disabled:hover:bg-transparent"
+                              aria-label="Remove set"
+                              title={exercise.setDetails!.length <= 1 ? "Cannot remove last set" : "Remove set"}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        )
+                      })
                     ) : (
                       <div className="text-sm text-muted-foreground">
                         No set details available for editing
                       </div>
                     )}
+
+                    <button
+                      type="button"
+                      onClick={() => handleAddSet(exIdx)}
+                      className="mt-2.5 flex items-center justify-center gap-1.5 w-full py-1.5 px-3 rounded-lg border border-dashed border-border/80 text-xs font-medium text-muted-foreground hover:text-foreground hover:border-primary/50 hover:bg-muted/30 transition-colors cursor-pointer"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      <span>Add set</span>
+                    </button>
                   </div>
                 </div>
               )
@@ -245,16 +294,16 @@ export default function WorkoutEditDialog({ open, onClose, onSave, workout }: Pr
           </div>
         </div>
 
-        <div className="sticky bottom-0 flex items-center gap-3 border-t bg-card px-6 py-4">
+        <div className="sticky bottom-0 flex items-center gap-3 border-t bg-card px-4 sm:px-6 py-3 sm:py-4">
           <button
             onClick={onClose}
-            className="flex-1 rounded-xl border bg-background px-4 py-3 font-medium hover:bg-muted transition-colors"
+            className="flex-1 rounded-xl border bg-background px-4 py-2.5 sm:py-3 font-medium hover:bg-muted transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
-            className="flex-1 rounded-xl bg-primary px-4 py-3 font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+            className="flex-1 rounded-xl bg-primary px-4 py-2.5 sm:py-3 font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
           >
             Save Changes
           </button>

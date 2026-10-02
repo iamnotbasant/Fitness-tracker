@@ -86,6 +86,7 @@ export const workouts = pgTable('workouts', {
   timeSeconds: integer('time_seconds'),
   weight: real('weight'),
   durationSeconds: integer('duration_seconds'),
+  clientId: text('client_id'),
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
 });
 

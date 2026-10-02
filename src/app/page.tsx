@@ -344,11 +344,16 @@ export default function DashboardPage() {
         )
       }
       
-      // Update existing exercises
+      // Update existing exercises and create newly added sets for them
       await Promise.all(
-        existingExercises.flatMap((exercise: any) =>
-          (exercise.allIds || [exercise.id]).map(async (id: string, idx: number) => {
-            const setDetail = exercise.setDetails?.[idx]
+        existingExercises.flatMap((exercise: any) => {
+          const exerciseDetails = exercises?.find((e) => e.name.toLowerCase() === exercise.exerciseName.toLowerCase())
+          const allIds = exercise.allIds || [exercise.id]
+          const setDetails = exercise.setDetails || []
+
+          // 1. Existing sets with an id -> PUT
+          const updatePromises = allIds.map(async (id: string, idx: number) => {
+            const setDetail = setDetails[idx]
             if (!setDetail) return
 
             // Only include defined fields
@@ -379,7 +384,48 @@ export default function DashboardPage() {
               throw new Error(errorData.error || "Failed to update workout")
             }
           })
-        )
+
+          // 2. Newly added sets on this existing exercise (idx >= allIds.length) -> POST
+          const createPromises = setDetails.slice(allIds.length).map(async (setDetail: any, addedIdx: number) => {
+            const setIndex = allIds.length + addedIdx
+            const createPayload: any = {
+              date: editedWorkout.date,
+              time: editedWorkout.time,
+              exerciseId: exerciseDetails?.id || exercise.exerciseId,
+              exerciseName: exercise.exerciseName,
+              sets: 1,
+              setNumber: setIndex + 1,
+              clientId: typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : undefined,
+            }
+
+            if (setDetail.reps !== undefined && setDetail.reps !== null) {
+              createPayload.reps = setDetail.reps
+            } else {
+              createPayload.reps = 0
+            }
+
+            if (setDetail.timeSeconds !== undefined && setDetail.timeSeconds !== null) {
+              createPayload.timeSeconds = setDetail.timeSeconds
+            }
+            if (setDetail.weight !== undefined && setDetail.weight !== null) {
+              createPayload.weight = setDetail.weight
+            }
+
+            const res = await fetch("/api/workouts", {
+              method: "POST",
+              headers: authHeaders,
+              body: JSON.stringify(createPayload),
+            })
+
+            if (!res.ok) {
+              const errorData = await res.json().catch(() => ({}))
+              console.error("Failed to create added set:", errorData)
+              throw new Error(errorData.error || "Failed to create added set")
+            }
+          })
+
+          return [...updatePromises, ...createPromises]
+        })
       )
       
       // Create new exercises
@@ -397,6 +443,7 @@ export default function DashboardPage() {
               exerciseName: exercise.exerciseName,
               sets: 1,
               setNumber: setIndex + 1,
+              clientId: typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : undefined,
             }
             
             if (setDetail.reps !== undefined && setDetail.reps !== null) {

@@ -38,6 +38,7 @@ export type Workout = {
   setNumber?: number
   durationSeconds?: number // Total workout session duration
   setType?: SetType
+  clientId?: string
 }
 
 export type Goal = {

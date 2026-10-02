@@ -18,6 +18,7 @@ export type WorkoutExercise = {
     timeSeconds?: number
     weight?: number
     setType?: string
+    done?: boolean
   }>
   allIds?: string[]
 }

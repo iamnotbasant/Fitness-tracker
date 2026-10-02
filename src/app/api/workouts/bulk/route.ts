@@ -66,6 +66,7 @@ export async function POST(request: NextRequest) {
       if (timeSeconds !== null) row.timeSeconds = timeSeconds;
       if (weight !== null) row.weight = weight;
       if (w.durationSeconds) row.durationSeconds = Number(w.durationSeconds);
+      if (w.clientId) row.clientId = String(w.clientId).trim();
 
       sanitizedRows.push(row);
     }

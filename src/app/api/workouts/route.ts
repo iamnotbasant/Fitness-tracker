@@ -87,7 +87,19 @@ export async function POST(request: NextRequest) {
     if ('user_id' in body) delete body.user_id;
     if ('id' in body) delete body.id;
 
-    const { date, time, exerciseId, exerciseName, sets, reps, rest, notes, bonusPoints, timeSeconds, weight, durationSeconds } = body;
+    const { clientId, date, time, exerciseId, exerciseName, sets, reps, rest, notes, bonusPoints, timeSeconds, weight, durationSeconds } = body;
+
+    if (clientId) {
+      const existing = await db.select().from(workouts)
+        .where(and(eq(workouts.userId, currentUser.id), eq(workouts.clientId, clientId)))
+        .limit(1);
+      if (existing.length > 0) {
+        return NextResponse.json({
+          ...existing[0],
+          total_points: (existing[0].points || 0) + (existing[0].bonusPoints || 0),
+        }, { status: 200 }); // idempotent: return existing, don't duplicate
+      }
+    }
 
     if (!date) {
       return NextResponse.json({ 
@@ -173,6 +185,7 @@ export async function POST(request: NextRequest) {
     if (timeSeconds !== undefined && timeSeconds !== null) insertValues.timeSeconds = timeSeconds;
     if (weight !== undefined && weight !== null) insertValues.weight = weight;
     if (durationSeconds !== undefined && durationSeconds !== null) insertValues.durationSeconds = durationSeconds;
+    if (clientId) insertValues.clientId = clientId;
 
     const newWorkout = await db.insert(workouts)
       .values(insertValues)

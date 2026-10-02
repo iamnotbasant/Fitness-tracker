@@ -245,7 +245,8 @@ export function useWorkouts() {
       const pending: Workout[] = JSON.parse(pendingRaw)
       if (!Array.isArray(pending) || pending.length === 0) return serverWorkouts
       const existingIds = new Set(serverWorkouts.map((w) => String(w.id)))
-      const pendingUnique = pending.filter((w) => !existingIds.has(String(w.id)))
+      const existingClientIds = new Set(serverWorkouts.map((w) => w.clientId).filter(Boolean))
+      const pendingUnique = pending.filter((w) => !existingIds.has(String(w.id)) && (!w.clientId || !existingClientIds.has(w.clientId)))
       return [...pendingUnique, ...serverWorkouts]
     } catch {
       return serverWorkouts
@@ -255,6 +256,7 @@ export function useWorkouts() {
   const upsert = async (payload: Omit<Workout, "volume"> & { volume?: number }) => {
     const token = localStorage.getItem("bearer_token")
     const volume = payload.volume ?? payload.sets * payload.reps
+    const clientId = payload.clientId || (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : undefined)
     const res = await fetch("/api/workouts", {
       method: "POST",
       headers: {
@@ -262,7 +264,7 @@ export function useWorkouts() {
         ...(token && { Authorization: `Bearer ${token}` }),
       },
       credentials: "include",
-      body: JSON.stringify({ ...payload, volume }),
+      body: JSON.stringify({ ...payload, volume, ...(clientId && { clientId }) }),
     })
     if (!res.ok) throw new Error("Failed to upsert workout")
     await mutate()
@@ -298,6 +300,7 @@ export function useWorkouts() {
     await Promise.all(
       list.map((w: any) => {
         const { id, userId, user_id, ...workoutData } = w
+        const clientId = workoutData.clientId || (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : undefined)
         return fetch("/api/workouts", {
           method: "POST",
           headers: {
@@ -305,7 +308,7 @@ export function useWorkouts() {
             ...(token && { Authorization: `Bearer ${token}` }),
           },
           credentials: "include",
-          body: JSON.stringify(workoutData),
+          body: JSON.stringify({ ...workoutData, ...(clientId && { clientId }) }),
         })
       })
     )
@@ -833,6 +836,7 @@ export function useActiveSession() {
     const preparedWorkouts: Workout[] = newWorkouts.map((w, idx) => ({
       ...w,
       id: `local-${Date.now()}-${idx}`,
+      clientId: crypto.randomUUID(), // stable idempotency key, survives retries
     }))
 
     // 1. Immediately store in offline queue so user never loses data
